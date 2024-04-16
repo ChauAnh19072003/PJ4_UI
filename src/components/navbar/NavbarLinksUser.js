@@ -135,7 +135,8 @@ export default function HeaderLinks(props) {
         bills={bills}
         setUnreadCount={setUnreadCount}
         unreadCount={unreadCount}
-      />
+        scrollBehavior='inside'
+        />
       <Menu>
         <MenuButton p="0px">
           <Avatar
