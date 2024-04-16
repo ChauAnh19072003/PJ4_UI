@@ -30,13 +30,13 @@ export default function BalanceCard(props) {
     fetchTotalBalance();
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchTotalBalance();
-    }, 100); // Update every 5 seconds
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     fetchTotalBalance();
+  //   }, 100); // Update every 5 seconds
 
-    return () => clearInterval(interval); // Clean up interval on component unmount
-  }, []);
+  //   return () => clearInterval(interval); // Clean up interval on component unmount
+  // }, []);
   return (
     <Card 
       backgroundImage={bgMastercard}

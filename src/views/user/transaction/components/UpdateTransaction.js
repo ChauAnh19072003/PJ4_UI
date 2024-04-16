@@ -43,7 +43,6 @@ const UpdateTransaction = ({
   currencies,
   groupedCategories,
   setDeleteAlertOpen,
-  handleOpenUpdateModal,
   selectedTransaction,
 }) => {
   const inputText = useColorModeValue("gray.700", "gray.100");

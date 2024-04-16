@@ -55,7 +55,7 @@ export default function TotalSpent(props) {
           <Select
             value={selectedOption}
             onChange={handleChange}
-            w="15%"
+            w="18%"
             bg={boxBg}
             fontSize="sm"
             fontWeight="500"
