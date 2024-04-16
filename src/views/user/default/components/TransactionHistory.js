@@ -41,9 +41,13 @@ const TransactionHistory = (props) => {
       if (currentUser) {
         try {
           let response = await axios.get(
-            `/api/transactions/users/${currentUser.id}?page=0&size=4`
+            `/api/transactions/users/${currentUser.id}`
           );
-          setTransactions(response.data.content);
+          const sortedTransactions = response.data.content.sort(
+            (a, b) => a.transactionId - b.transactionId
+          );
+          const latestTransactions = sortedTransactions.slice(-4);
+          setTransactions(latestTransactions);                   
         } catch (error) {
           console.error("Error fetching transaction data: ", error);
         }

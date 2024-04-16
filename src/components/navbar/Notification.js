@@ -14,7 +14,6 @@ import { MdNotificationsNone } from "react-icons/md";
 import { ItemContent } from "components/menu/ItemContent";
 
 function Notification({ bills }) {
-  // const navbarIcon = useColorModeValue("gray.400", "white");
   const textColorBrand = useColorModeValue("brand.700", "brand.400");
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const shadow = useColorModeValue(
@@ -23,6 +22,7 @@ function Notification({ bills }) {
   );
 
   const [unreadCount, setUnreadCount] = useState(0);
+  
   useEffect(() => {
     let count = 0;
     if (bills && bills.overdueBills && bills.overdueBills.content) {
@@ -33,6 +33,7 @@ function Notification({ bills }) {
     }
     setUnreadCount(count);
   }, [bills]);
+  
   return (
     <Menu>
       <MenuButton p="0px">
@@ -82,7 +83,7 @@ function Notification({ bills }) {
             Mark all read
           </Text>
         </Flex>
-        <Flex flexDirection="column">
+        <Flex flexDirection="column" overflowY="auto" maxHeight="300px">
           {bills &&
             bills.overdueBills &&
             Array.isArray(bills.overdueBills.content) &&
@@ -95,7 +96,10 @@ function Notification({ bills }) {
                 borderRadius="8px"
                 mb="10px"
               >
-                <ItemContent info={bill.billName} dueDate={bill.dueDate}></ItemContent>
+                <ItemContent
+                  info={bill.billName}
+                  dueDate={bill.dueDate}
+                ></ItemContent>
               </MenuItem>
             ))}
           {bills &&
