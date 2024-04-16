@@ -7,11 +7,14 @@ import {
   Flex,
   useDisclosure,
 } from "@chakra-ui/react";
+import axios from "axios";
 import IconBox from "components/icons/IconBox";
 import { FaPiggyBank } from "react-icons/fa6";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import CreateBill from "./CreateBill";
 import CreateTransaction from "./CreateTransaction";
+import AuthService from "services/auth/auth.service";
+import Card from "components/card/Card";
 
 const TransactionHistory = (props) => {
   const { ...rest } = props;
@@ -30,12 +33,34 @@ const TransactionHistory = (props) => {
     onOpen: onCreateTransactionModalOpen,
   } = useDisclosure();
 
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const currentUser = AuthService.getCurrentUser();
+      if (currentUser) {
+        try {
+          let response = await axios.get(
+            `/api/transactions/users/${currentUser.id}?page=0&size=4`
+          );
+          setTransactions(response.data.content);
+        } catch (error) {
+          console.error("Error fetching transaction data: ", error);
+        }
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <>
       <Box>
         <Flex justifyContent="space-between" alignItems="center" mb="30px">
           <Box textAlign="center">
-            <CreateTransaction onCreateTransactionModalOpen={onCreateTransactionModalOpen}/>
+            <CreateTransaction
+              onCreateTransactionModalOpen={onCreateTransactionModalOpen}
+            />
             <Text
               color={textColor}
               fontSize="12px"
@@ -98,6 +123,29 @@ const TransactionHistory = (props) => {
         >
           Your transactions
         </Text>
+        {transactions.map((transaction) => (
+          <Box key={transaction.transactionId} my={2}>
+            <Card
+              backgroundColor={
+                transaction.category.type === "INCOME" ? "green.200" : "red.200"
+              }
+            >
+              <Flex alignItems="center">
+                <Text flex="1" display="flex" alignItems="center">
+                  <img
+                    src={`/assets/img/icons/${transaction.category.icon.path}`}
+                    alt={transaction.category.name}
+                    width="20"
+                    height="20"
+                    style={{ marginRight: "8px" }}
+                  />
+                  {transaction.category.name}
+                </Text>
+                <Text flex="2">{transaction.transactionDate}</Text>
+              </Flex>
+            </Card>
+          </Box>
+        ))}
       </Box>
     </>
   );

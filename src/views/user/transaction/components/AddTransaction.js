@@ -35,12 +35,12 @@ import "react-toastify/dist/ReactToastify.css";
 const AddTransaction = ({
   onCreateModalClose,
   fetchTransaction,
-  currentPage,
   wallets,
   categories,
   currencies,
   groupedCategories,
   resetCreateModalData,
+  currentPage
 }) => {
   const inputText = "gray.700";
 
@@ -192,19 +192,21 @@ const AddTransaction = ({
           };
         }
 
-        await axios.post("/api/transactions", requestData);
-        fetchTransaction(currentPage);
-        toast.success("Create Transaction Successful!", {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-        onCreateModalClose();
+        const response = await axios.post("/api/transactions", requestData);
+        if (response.status === 200) {
+          fetchTransaction(currentPage);
+          toast.success("Create Transaction Successful!", {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+          onCreateModalClose();
+        }
       } catch (error) {
         if (
           error.response &&

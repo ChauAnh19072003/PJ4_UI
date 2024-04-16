@@ -111,7 +111,7 @@ export default function UserReports() {
       <Box w="50px">
         <Divider orientation="vertical" margin="25px" />
       </Box>
-      <Box w="400px" mx={10}>
+      <Box w="450px" mx={10}>
         <SimpleGrid columns={{ base: 1, md: 1, xl: 1 }} gap="20px" mb="20px">
           <BalanceCard />
         </SimpleGrid>

@@ -55,24 +55,27 @@ function ListData() {
   const { cachedTransactions, updateCachedTransactions } = useDataTransaction();
   const isMounted = useRef(true);
 
-  const fetchTransaction = useCallback(async (page) => {
-    const currentUser = AuthService.getCurrentUser();
-    if (currentUser) {
-      try {
-        let response = await axios.get(
-          `/api/transactions/users/${currentUser.id}?page=${page}&size=10`
-        );
-        if (isMounted.current) {
-          setTransaction(response.data);
-          setTotalPages(response.data.totalPages);
-          updateCachedTransactions(page, response.data);
+  const fetchTransaction = useCallback(
+    async (page) => {
+      const currentUser = AuthService.getCurrentUser();
+      if (currentUser) {
+        try {
+          let response = await axios.get(
+            `/api/transactions/users/${currentUser.id}?page=${page}&size=10`
+          );
+          if (isMounted.current) {
+            setTransaction(response.data);
+            setTotalPages(response.data.totalPages);
+            updateCachedTransactions(page, response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching transaction: ", error);
         }
-      } catch (error) {
-        console.error("Error fetching transaction: ", error);
       }
-    }
-  }, [updateCachedTransactions]);
-  
+    },
+    [updateCachedTransactions]
+  );
+
   useEffect(() => {
     if (!cachedTransactions[currentPage]) {
       fetchTransaction(currentPage);
@@ -80,8 +83,7 @@ function ListData() {
       setTransaction(cachedTransactions[currentPage]);
       setTotalPages(cachedTransactions[currentPage]?.totalPages || 1);
     }
-  }, [currentPage, cachedTransactions, fetchTransaction]); 
-  
+  }, [currentPage, cachedTransactions, fetchTransaction]);
 
   const resetCreateModalData = () => {};
 
@@ -133,7 +135,7 @@ function ListData() {
         try {
           const [categoriesResponse, walletsResponse] = await Promise.all([
             axios.get(`/api/categories/user/${currentUser.id}`),
-            axios.get(`/api/wallets/users/${currentUser.id}`)
+            axios.get(`/api/wallets/users/${currentUser.id}`),
           ]);
           const grouped = categoriesResponse.data.reduce((acc, category) => {
             const { type } = category;
@@ -151,8 +153,9 @@ function ListData() {
         }
       }
     };
+
     fetchData();
-  }, []);
+  }, [fetchTransaction]);
 
   return (
     <>
@@ -205,7 +208,8 @@ function ListData() {
           _hover={{
             bgGradient: "linear(to-r, #2b71ad, #422AFB)",
           }}
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault();
             resetCreateModalData();
             onCreateModalOpen();
           }}
@@ -226,13 +230,12 @@ function ListData() {
           <AddTransaction
             onCreateModalClose={onCreateModalClose}
             fetchTransaction={fetchTransaction}
-            setCurrentPage={setCurrentPage}
             wallets={wallets}
             categories={categories}
             currencies={currencies}
             groupedCategories={groupedCategories}
-            selectedTransaction={selectedTransaction}
             resetCreateModalData={resetCreateModalData}
+            currentPage={currentPage}
           />
         </ModalContent>
       </Modal>
