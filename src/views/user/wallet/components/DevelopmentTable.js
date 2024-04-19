@@ -64,24 +64,40 @@ const WalletsOverview = () => {
     const currentUser = AuthService.getCurrentUser();
     if (currentUser && currentUser.id) {
       try {
-        const walletTypesRes = await axios.get(`/api/wallet_types`);
-        setWalletTypes(walletTypesRes.data);
-
-        const walletsRes = await axios.get(
+        const response = await axios.get(
           `/api/wallets/users/${currentUser.id}`
         );
-        const walletsWithType = walletsRes.data.map((wallet) => {
-          const walletType = walletTypesRes.data.find(
-            (type) => type.typeId === wallet.walletType
-          );
-          return {
-            ...wallet,
-            walletTypeName: walletType ? walletType.typeName : "Unknown",
-          };
-        });
 
-        setWallets(walletsWithType);
+        // Debugging: Log the response data
+        console.log("API response data:", response.data);
+
+        if (Array.isArray(response.data)) {
+          const walletTypesRes = await axios.get(`/api/wallet_types`);
+          setWalletTypes(walletTypesRes.data);
+
+          const walletsWithType = response.data.map((wallet) => {
+            const walletType = walletTypesRes.data.find(
+              (type) => type.typeId === wallet.walletType
+            );
+            return {
+              ...wallet,
+              walletTypeName: walletType ? walletType.typeName : "Unknown",
+            };
+          });
+
+          setWallets(walletsWithType);
+        } else {
+          // Handle non-array response
+          console.error(
+            "Expected an array for wallets, received:",
+            response.data
+          );
+          setWallets([]);
+          toast.info("You don't have any wallets.");
+        }
       } catch (error) {
+        console.error("Failed to fetch wallet data:", error);
+        setWallets([]);
         toast.error("Failed to fetch wallet data.");
       } finally {
         setLoading(false);
@@ -207,61 +223,67 @@ const WalletsOverview = () => {
         >
           Add New Wallet
         </Button>
-        {wallets.map((wallet) => (
-          <Box
-            key={wallet.walletId}
-            mb={4}
-            p={6}
-            borderWidth="1px"
-            borderRadius="lg"
-            overflow="hidden"
-            boxShadow="lg"
-            bg="white"
-            transition="transform 0.2s"
-            _hover={{ transform: "scale(1.02)" }}
-            role="group"
-          >
-            <Flex alignItems="center" justifyContent="space-between">
-              <Box>
-                <Text fontWeight="semibold" fontSize="xl" color="#2D3748">
-                  {wallet.walletName}
-                </Text>
-                <Text fontSize="md" color="#4A5568">
-                  {wallet.balance} {wallet.currency}
-                  <Text as="span" fontWeight="bold" ml={2}>
-                    • {wallet.walletTypeName}
+        {Array.isArray(wallets) && wallets.length > 0 ? (
+          wallets.map((wallet) => (
+            <Box
+              key={wallet.walletId}
+              mb={4}
+              p={6}
+              borderWidth="1px"
+              borderRadius="lg"
+              overflow="hidden"
+              boxShadow="lg"
+              bg="white"
+              transition="transform 0.2s"
+              _hover={{ transform: "scale(1.02)" }}
+              role="group"
+            >
+              <Flex alignItems="center" justifyContent="space-between">
+                <Box>
+                  <Text fontWeight="semibold" fontSize="xl" color="#2D3748">
+                    {wallet.walletName}
                   </Text>
-                </Text>
-              </Box>
-              <Flex alignItems="center">
-                <IconButton
-                  icon={<EditIcon />}
-                  size="sm"
-                  variant="outline"
-                  colorScheme="blue"
-                  aria-label="Edit wallet"
-                  onClick={() => openModalToEdit(wallet)}
-                  isRound
-                  mr={2}
-                  _groupHover={{ visibility: "visible" }}
-                />
-                <IconButton
-                  icon={<DeleteIcon />}
-                  size="sm"
-                  variant="outline"
-                  colorScheme="red"
-                  aria-label="Delete wallet"
-                  onClick={() => {
-                    setWalletToDelete(wallet.walletId);
-                    setIsDeleteAlertOpen(true);
-                  }}
-                  isRound
-                  _groupHover={{ visibility: "visible" }}
-                />
+                  <Text fontSize="md" color="#4A5568">
+                    {wallet.balance} {wallet.currency}
+                    <Text as="span" fontWeight="bold" ml={2}>
+                      • {wallet.walletTypeName}
+                    </Text>
+                  </Text>
+                </Box>
+                <Flex alignItems="center">
+                  <IconButton
+                    icon={<EditIcon />}
+                    size="sm"
+                    variant="outline"
+                    colorScheme="blue"
+                    aria-label="Edit wallet"
+                    onClick={() => openModalToEdit(wallet)}
+                    isRound
+                    mr={2}
+                    _groupHover={{ visibility: "visible" }}
+                  />
+                  <IconButton
+                    icon={<DeleteIcon />}
+                    size="sm"
+                    variant="outline"
+                    colorScheme="red"
+                    aria-label="Delete wallet"
+                    onClick={() => {
+                      setWalletToDelete(wallet.walletId);
+                      setIsDeleteAlertOpen(true);
+                    }}
+                    isRound
+                    _groupHover={{ visibility: "visible" }}
+                  />
+                </Flex>
               </Flex>
-            </Flex>
-          </Box>
-        ))}
+            </Box>
+          ))
+        ) : (
+          <Center p={10}>
+            <Text>No wallets found.</Text>
+          </Center>
+        )}
       </Box>
 
       {/*Add/Edit Wallet Modal */}

@@ -16,6 +16,8 @@ import Wallet from "views/user/wallet";
 import Category from "views/user/categories"
 import Bill from  "views/user/bill"
 import Transactions from "views/user/transaction";
+import Saving from "views/user/saving";
+import Budget from "views/user/budget";
 
 const Routes = [
   {
@@ -43,13 +45,15 @@ const Routes = [
     name: "Budget",
     layout: "/user",
     path:"/budget",
-    icon: <Icon as ={GrMoney} width='20px' height='20px' color='inherit'/>
+    icon: <Icon as ={GrMoney} width='20px' height='20px' color='inherit'/>,
+    component: Budget
   },
   {
     name: "Save",
     layout: "/user",
     path:"/save",
-    icon: <Icon as ={TbPigMoney} width='20px' height='20px' color='inherit'/>
+    icon: <Icon as ={TbPigMoney} width='20px' height='20px' color='inherit'/>,
+    component: Saving
   },
   {
     name: "Categories",
