@@ -171,11 +171,15 @@ function ListData() {
             value={searchWallet}
             onChange={(e) => setSearchWallet(e.target.value)}
           >
-            {wallets.map((wallet) => (
-              <option key={wallet.walletId} value={wallet.walletName}>
-                {wallet.walletName}
-              </option>
-            ))}
+            {Array.isArray(wallets) && wallets.length > 0 ? (
+              wallets.map((wallet) => (
+                <option key={wallet.walletId} value={wallet.walletName}>
+                  {wallet.walletName}
+                </option>
+              ))
+            ) : (
+              <option value="">No wallets found</option>
+            )}
           </Select>
         </Box>
         <Box w="20%" mr={4}>
@@ -311,7 +315,12 @@ function ListData() {
           <Text flex="1">Note</Text>
         </Flex>
 
-        {transaction &&
+        {wallets.length === 0 ? (
+          <Text textAlign="center" fontSize="xl" mt={5}>
+            You need to create wallet before create transaction
+          </Text>
+        ) : (
+          transaction &&
           transaction.content &&
           transaction.content
             .filter((transaction) =>
@@ -414,7 +423,8 @@ function ListData() {
                   </Flex>
                 </Box>
               );
-            })}
+            })
+        )}
       </Flex>
 
       <Flex justifyContent="center" mt={4}>

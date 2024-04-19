@@ -40,7 +40,7 @@ const AddTransaction = ({
   currencies,
   groupedCategories,
   resetCreateModalData,
-  currentPage
+  currentPage,
 }) => {
   const inputText = "gray.700";
 
@@ -56,6 +56,7 @@ const AddTransaction = ({
   const [changeCurrency, setChangeCurrency] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
   const [chooseReurrenceType, setChooseRecurrenceType] = useState("DAILY");
+  const [showRecurrenceOptions, setShowRecurrenceOptions] = useState(false);
   const [changeStartDate, setChangeStartDate] = useState(() => {
     const newDate = new Date();
     newDate.setUTCHours(0, 0, 0, 0);
@@ -248,23 +249,35 @@ const AddTransaction = ({
     setChooseIntervalAmount(value);
   };
 
+  useEffect(() => {
+    if (chooseReurrenceType && chooseReurrenceType !== "N/A") {
+      setShowRecurrenceOptions(true);
+    } else {
+      setShowRecurrenceOptions(false);
+    }
+  }, [chooseReurrenceType]);
+
   return (
     <>
       <ModalBody>
-        <Box mb={4}>
-          <Text mb={2}>Wallet:</Text>
-          <Select
-            value={changeWallet}
-            onChange={(e) => setChangeWallet(e.target.value)}
-            color={inputText}
-            placeholder="Select Wallet"
-          >
-            {wallets.map((wallet) => (
-              <option key={wallet.walletId} value={wallet.walletName}>
-                {wallet.walletName}
-              </option>
-            ))}
-          </Select>
+        <Box mr={4}>
+          {wallets && wallets.length > 0 ? (
+            <Select
+              placeholder="Select Wallet"
+              value={changeWallet}
+              onChange={(e) => setChangeWallet(e.target.value)}
+            >
+              {wallets.map((wallet) => (
+                <option key={wallet.walletId} value={wallet.walletName}>
+                  {wallet.walletName}
+                </option>
+              ))}
+            </Select>
+          ) : (
+            <Text color="red.500">
+              No wallets available. Please create a wallet first.
+            </Text>
+          )}
         </Box>
         <Box
           mb={4}
@@ -346,7 +359,7 @@ const AddTransaction = ({
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent>
+            <PopoverContent maxH="500px" overflowY="auto">
               <PopoverArrow />
               <PopoverCloseButton />
               <PopoverHeader>Select Category</PopoverHeader>
@@ -398,63 +411,87 @@ const AddTransaction = ({
             color={inputText}
           />
         </Box>
-        <Box mb={4}>
-          <RadioGroup
-            onChange={(value) => setChooseRecurrenceType(value)}
-            value={chooseReurrenceType}
+        {showRecurrenceOptions && (
+          <>
+            <Box mb={4}>
+              <RadioGroup
+                onChange={(value) => setChooseRecurrenceType(value)}
+                value={chooseReurrenceType}
+              >
+                <Text mb={2}>Recurrence:</Text>
+                <Flex direction="row" justify="space-between">
+                  <Radio value="DAILY">Daily</Radio>
+                  <Radio value="WEEKLY">Weekly</Radio>
+                  <Radio value="MONTHLY">Monthly</Radio>
+                  <Radio value="ANNUALLY">Annually</Radio>
+                </Flex>
+              </RadioGroup>
+            </Box>
+            <Box
+              mb={4}
+              display="flex"
+              flexDirection={{ base: "column", md: "row" }}
+              alignItems="center"
+            >
+              <FormControl mr={{ base: 0, md: 4 }}>
+                <Text mb={2}>Start Date:</Text>
+                <DatePicker
+                  selected={changeStartDate}
+                  onChange={(date) => setChangeStartDate(date)}
+                  dateFormat="yyyy-MM-dd"
+                  customInput={<Input color={inputText} />}
+                  wrapperClassName="custom-datepicker"
+                  placeholderText="YYYY/MM/DD"
+                />
+              </FormControl>
+              <FormControl>
+                <Text mb={2}>End Date:</Text>
+                <DatePicker
+                  selected={changeEndDate}
+                  onChange={(date) => setChangeEndDate(date)}
+                  dateFormat="yyyy-MM-dd"
+                  customInput={<Input color={inputText} />}
+                  wrapperClassName="custom-datepicker"
+                  placeholderText="YYYY/MM/DD"
+                />
+              </FormControl>
+            </Box>
+            <Box mb={4}>
+              <Text mb={2}>Interval Amount:</Text>
+              <NumberInput
+                value={chooseIntervalAmount}
+                onChange={handleIntervalChange}
+                min={0}
+              >
+                <NumberInputField color={inputText} />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </Box>
+          </>
+        )}
+        {!showRecurrenceOptions ? (
+          <Button
+            onClick={() => setShowRecurrenceOptions(true)}
+            variant="outline"
+            colorScheme="blue"
+            mb={4}
+            width="100%"
           >
-            <Text mb={2}>Recurrence:</Text>
-            <Flex direction="row" justify="space-between">
-              <Radio value="DAILY">Daily</Radio>
-              <Radio value="WEEKLY">Weekly</Radio>
-              <Radio value="MONTHLY">Monthly</Radio>
-              <Radio value="ANNUALLY">Annually</Radio>
-            </Flex>
-          </RadioGroup>
-        </Box>
-        <Box
-          mb={4}
-          display="flex"
-          flexDirection={{ base: "column", md: "row" }}
-          alignItems="center"
-        >
-          <FormControl mr={{ base: 0, md: 4 }}>
-            <Text mb={2}>Start Date:</Text>
-            <DatePicker
-              selected={changeStartDate}
-              onChange={(date) => setChangeStartDate(date)}
-              dateFormat="yyyy-MM-dd"
-              customInput={<Input color={inputText} />}
-              wrapperClassName="custom-datepicker"
-              placeholderText="YYYY/MM/DD"
-            />
-          </FormControl>
-          <FormControl>
-            <Text mb={2}>End Date:</Text>
-            <DatePicker
-              selected={changeEndDate}
-              onChange={(date) => setChangeEndDate(date)}
-              dateFormat="yyyy-MM-dd"
-              customInput={<Input color={inputText} />}
-              wrapperClassName="custom-datepicker"
-              placeholderText="YYYY/MM/DD"
-            />
-          </FormControl>
-        </Box>
-        <Box mb={4}>
-          <Text mb={2}>Interval Amount:</Text>
-          <NumberInput
-            value={chooseIntervalAmount}
-            onChange={handleIntervalChange}
-            min={0}
+            Show more choose recurrence
+          </Button>
+        ) : (
+          <Button
+            backgroundColor="red.300"
+            onClick={() => setShowRecurrenceOptions(false)}
+            mb={4}
+            width="100%"
           >
-            <NumberInputField color={inputText} />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
-        </Box>
+            Hide
+          </Button>
+        )}
       </ModalBody>
       <ModalFooter justifyContent="center">
         <Button colorScheme="blue" mr={3} onClick={handleCreateBill}>

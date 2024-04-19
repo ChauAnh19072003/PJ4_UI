@@ -319,7 +319,7 @@ const UpdateTransaction = ({
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent>
+            <PopoverContent maxH="500px" overflowY="auto">
               <PopoverArrow />
               <PopoverCloseButton />
               <PopoverHeader>Select Category</PopoverHeader>
