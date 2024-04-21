@@ -1,56 +1,277 @@
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
+  Divider,
   Icon,
   SimpleGrid,
   useColorModeValue,
-  Divider,
+  Select,
+  Spacer,
+  Spinner,
+  Center,
+  Text,
+  Flex,
 } from "@chakra-ui/react";
+import { MdAttachMoney, MdBarChart } from "react-icons/md";
 import MiniCalendar from "components/calendar/MiniCalendar";
+import { TbPigMoney } from "react-icons/tb";
+import AuthService from "services/auth/auth.service";
 import MiniStatistics from "components/card/MiniStatistics";
 import IconBox from "components/icons/IconBox";
-import React, { useEffect, useState } from "react";
-import { MdAttachMoney, MdBarChart } from "react-icons/md";
-import { TbPigMoney } from "react-icons/tb";
 import TotalSpent from "views/user/default/components/TotalSpent";
-import BalanceCard from "views/user/default/components/RightContent";
-import AuthService from "services/auth/auth.service";
+import axios from "axios";
+import Card from "components/card/Card";
+import TransactionHistory from "./components/TransactionHistory";
 
-export default function UserReports() {
-  // Chakra Color Mode
+const UserReports = () => {
   const brandColor = useColorModeValue("brand.500", "white");
   const boxBg = useColorModeValue("secondaryGray.300", "whiteAlpha.100");
+  const [loading, setLoading] = useState(true);
+  const [income, setIncome] = useState("0 VND");
+  const [expense, setExpense] = useState("0 VND");
+  const [wallets, setWallets] = useState([]);
+  const [selectedWallet, setSelectedWallet] = useState("");
+  const [totalBalance, setTotalBalance] = useState("0");
+  const [selectedWalletDetails, setSelectedWalletDetails] = useState(null);
+  const userId = AuthService.getCurrentUser()?.id;
+  const [transactions, setTransactions] = useState([]);
 
-  const [income, setIncome] = useState("$0");
-  const [expense, setExpense] = useState("$0");
-  useEffect(() => {
-    const userId = AuthService.getCurrentUser();
-    const fetchIncome = async () => {
+  const fetchTotalIncomeForAllWallets = useCallback(async () => {
+    try {
+      const response = await axios.get(`/api/transactions/income/${userId}`);
+      const data = response.data;
+      const currency = selectedWalletDetails?.currency || "VND";
+      return currency === "VND"
+        ? `${data.toLocaleString()}VND`
+        : `$${data.toLocaleString()}`;
+    } catch (error) {
+      console.error("Error fetching total income:", error);
+      const currency = selectedWalletDetails?.currency || "VND";
+      return currency === "VND" ? `0VND` : `$0`;
+    }
+  }, [userId, selectedWalletDetails]);
+
+  const fetchTotalExpenseForAllWallets = useCallback(async () => {
+    try {
+      const response = await axios.get(`/api/transactions/expense/${userId}`);
+      const data = response.data;
+      const currency = data.currency || "VND";
+      return currency === "VND"
+        ? `${data.toLocaleString()}VND`
+        : `$${data.toLocaleString()}`;
+    } catch (error) {
+      console.error("Error fetching total expense:", error);
+      const currency = selectedWalletDetails?.currency || "VND";
+      return currency === "VND" ? `0VND` : `$0`;
+    }
+  }, [userId, selectedWalletDetails]);
+
+  const fetchWallets = useCallback(async () => {
+    try {
+      const response = await axios.get(`/api/wallets/users/${userId}`);
+      const data = response.data;
+      setWallets(data);
+
+      const totalBalanceResponse = await axios.get(
+        `/api/wallets/total-balance/${userId}`
+      );
+      const totalBalanceData = totalBalanceResponse.data.toLocaleString();
+      setTotalBalance(totalBalanceData);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching wallets:", error);
+      setTotalBalance("0");
+    }
+  }, [userId]);
+
+  const fetchIncomeForSelectedWallet = useCallback(
+    async (walletId) => {
       try {
-        const response = await fetch(
-          `/api/transactions/income/${userId.id}`
-        ); // Thay userId bằng id của user
-        const data = await response.json();
-        setIncome(`$${data}`);
+        const incomeResponse = await axios.get(
+          `/api/transactions/income/${userId}/${walletId}`
+        );
+        const incomeData = incomeResponse.data;
+        const incomeAmount = incomeData.toLocaleString();
+
+        const walletResponse = await axios.get(`/api/wallets/${walletId}`);
+        const walletCurrency = walletResponse.data.currency || "VND";
+
+        return walletCurrency === "VND"
+          ? `${incomeAmount}VND`
+          : `$${incomeAmount}`;
       } catch (error) {
         console.error("Error fetching income:", error);
+        return "0VND";
       }
-    };
+    },
+    [userId]
+  );
 
-    const fetchExpense = async () => {
+  const fetchExpenseForSelectedWallet = useCallback(
+    async (walletId) => {
       try {
-        const response = await fetch(
-          `/api/transactions/expense/${userId.id}`
-        ); // Thay userId bằng id của user
-        const data = await response.json();
-        setExpense(`$${data}`);
+        const expenseResponse = await axios.get(
+          `/api/transactions/expense/${userId}/${walletId}`
+        );
+        const expenseData = expenseResponse.data;
+        const expenseAmount = expenseData.toLocaleString();
+
+        const walletResponse = await axios.get(`/api/wallets/${walletId}`);
+        const walletCurrency = walletResponse.data.currency || "VND";
+
+        return walletCurrency === "VND"
+          ? `${expenseAmount}VND`
+          : `$${expenseAmount}`;
       } catch (error) {
         console.error("Error fetching expense:", error);
+        return "0VND";
+      }
+    },
+    [userId]
+  );
+
+  const fetchTransactionsSelectWallet = useCallback(
+    async (walletId) => {
+      try {
+        let response;
+        if (walletId === "all") {
+          response = await axios.get(
+            `/api/transactions/users/wallets/${userId}`
+          );
+        } else {
+          response = await axios.get(`/api/transactions/${userId}/${walletId}`);
+        }
+
+        const sortedTransactions = response.data.sort(
+          (a, b) => b.transactionId - a.transactionId
+        );
+        const latestTransactions = sortedTransactions.slice(0, 4);
+        setTransactions(latestTransactions);
+
+        if (walletId === "all") {
+          const totalBalanceResponse = await axios.get(
+            `/api/wallets/total-balance/${userId}`
+          );
+          const totalBalanceData = totalBalanceResponse.data.toLocaleString();
+          return [latestTransactions, totalBalanceData];
+        } else {
+          return latestTransactions;
+        }
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+        return [];
+      }
+    },
+    [userId]
+  );
+
+  const handleWalletChange = useCallback(
+    async (event) => {
+      const walletId = event.target.value;
+      setSelectedWallet(walletId);
+      setLoading(true);
+      try {
+        if (walletId === "all") {
+          const [totalIncome, totalExpense] = await Promise.all([
+            fetchTotalIncomeForAllWallets(),
+            fetchTotalExpenseForAllWallets(),
+          ]);
+
+          setIncome(totalIncome);
+          setExpense(totalExpense);
+
+          const [transactions, totalBalanceData] = await Promise.all([
+            fetchTransactionsSelectWallet(walletId),
+            axios
+              .get(`/api/wallets/total-balance/${userId}`)
+              .then((res) => res.data.toLocaleString()),
+          ]);
+
+          setTransactions(transactions);
+          setTotalBalance(totalBalanceData);
+        } else if (walletId) {
+          const response = await axios.get(`/api/wallets/${walletId}`);
+          const selectedWalletData = response.data;
+          setSelectedWalletDetails(selectedWalletData);
+          const [income, expense, transactions] = await Promise.all([
+            fetchIncomeForSelectedWallet(walletId),
+            fetchExpenseForSelectedWallet(walletId),
+            fetchTransactionsSelectWallet(walletId),
+          ]);
+
+          setIncome(income);
+          setExpense(expense);
+          setTransactions(transactions);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setTotalBalance("0");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      fetchTotalIncomeForAllWallets,
+      fetchTotalExpenseForAllWallets,
+      fetchIncomeForSelectedWallet,
+      fetchExpenseForSelectedWallet,
+      fetchTransactionsSelectWallet,
+      userId,
+    ]
+  );
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const totalIncome = await fetchTotalIncomeForAllWallets();
+        const totalExpense = await fetchTotalExpenseForAllWallets();
+
+        if (!selectedWallet || selectedWallet === "") {
+          setIncome(totalIncome);
+          setExpense(totalExpense);
+
+          const totalBalanceResponse = await axios.get(
+            `/api/wallets/total-balance/${userId}`
+          );
+          const totalBalanceData = totalBalanceResponse.data.toLocaleString();
+
+          const transactionAllWallet = await axios.get(
+            `/api/transactions/users/wallets/${userId}`
+          );
+          const sortedTransactions = transactionAllWallet.data.sort(
+            (a, b) => b.transactionId - a.transactionId
+          );
+          const latestTransactions = sortedTransactions.slice(0, 4);
+          setTransactions(latestTransactions);
+          setTotalBalance(totalBalanceData);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setTotalBalance("0");
+      } finally {
+        fetchWallets();
+        setLoading(false);
       }
     };
 
-    fetchIncome();
-    fetchExpense();
-  }, []);
+    fetchData();
+  }, [
+    fetchTotalIncomeForAllWallets,
+    fetchTotalExpenseForAllWallets,
+    fetchWallets,
+    selectedWallet,
+    userId,
+  ]);
+
+  if (loading) {
+    return (
+      <Center h="100vh">
+        <Spinner />
+      </Center>
+    );
+  }
+
   return (
     <Box display="flex" pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <Box w="700px" mx={10}>
@@ -66,7 +287,7 @@ export default function UserReports() {
                 }
               />
             }
-            name="Income"
+            name="Total Income"
             value={income}
           />
           <MiniStatistics
@@ -85,8 +306,9 @@ export default function UserReports() {
                 }
               />
             }
-            name="Expense"
+            name="Total Expense"
             value={expense}
+            fontSize="lg"
           />
           <MiniStatistics
             startContent={
@@ -113,9 +335,69 @@ export default function UserReports() {
       </Box>
       <Box w="450px" mx={10}>
         <SimpleGrid columns={{ base: 1, md: 1, xl: 1 }} gap="20px" mb="20px">
-          <BalanceCard />
+          <Card>
+            <Select
+              placeholder={
+                wallets.length > 0 ? "All Wallet" : "No wallets found"
+              }
+              value={selectedWallet || ""}
+              onChange={handleWalletChange}
+            >
+              {Array.isArray(wallets) &&
+                wallets.length > 0 &&
+                wallets.map((wallet) => (
+                  <option key={wallet.walletId} value={wallet.walletId}>
+                    {wallet.walletName}
+                  </option>
+                ))}
+            </Select>
+            {selectedWalletDetails ? (
+              <Card mt={2} w="300px" mx={5} backgroundColor={["yellow.200"]}>
+                <Flex
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-evenly"
+                >
+                  <Text fontWeight="semibold" fontSize="xl" color="#2D3748">
+                    Balance
+                  </Text>
+                  <Text fontSize="md" color="#4A5568">
+                    {selectedWalletDetails.balance.toLocaleString()}{" "}
+                    {selectedWalletDetails.currency}
+                  </Text>
+                </Flex>
+              </Card>
+            ) : (
+              <Card mt={2} w="300px" mx={5} backgroundColor={["yellow.200"]}>
+                <Flex
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="space-evenly"
+                >
+                  <Text fontWeight="semibold" fontSize="xl" color="#2D3748">
+                    Balance
+                  </Text>
+                  <Text fontSize="md" color="#4A5568">
+                    {wallets.length > 0 && `${totalBalance}VND`}
+                  </Text>
+                </Flex>
+              </Card>
+            )}
+          </Card>
+          <Card
+            justifyContent="center"
+            align="center"
+            direction="column"
+            w="100%"
+            mb="0px"
+          >
+            <Spacer mb="20px" />
+            <TransactionHistory transactions={transactions} />
+          </Card>
         </SimpleGrid>
       </Box>
     </Box>
   );
-}
+};
+
+export default UserReports;

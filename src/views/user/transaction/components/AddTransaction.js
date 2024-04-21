@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import AuthService from "services/auth/auth.service";
 import DatePicker from "react-datepicker";
@@ -37,56 +37,38 @@ const AddTransaction = ({
   fetchTransaction,
   wallets,
   categories,
-  currencies,
   groupedCategories,
   resetCreateModalData,
   currentPage,
 }) => {
   const inputText = "gray.700";
+  const adjustDateToUTC = (date) => {
+    date.setHours(date.getHours() + 7);
+    date.setUTCHours(0, 0, 0, 0);
+    return date;
+  };
 
   const [changeAmount, setChangeAmount] = useState("");
   const [changeDate, setChangeDate] = useState(() => {
-    const newDate = new Date();
-    newDate.setHours(newDate.getHours() + 7); // UTC+7
-    newDate.setUTCHours(0, 0, 0, 0);
-    return newDate;
+    adjustDateToUTC(new Date());
   });
   const [changeWallet, setChangeWallet] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
-  const [changeCurrency, setChangeCurrency] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
   const [chooseReurrenceType, setChooseRecurrenceType] = useState("DAILY");
   const [showRecurrenceOptions, setShowRecurrenceOptions] = useState(false);
-  const [changeStartDate, setChangeStartDate] = useState(() => {
-    const newDate = new Date();
-    newDate.setUTCHours(0, 0, 0, 0);
-    newDate.setHours(newDate.getHours() + 7); // UTC+7
-    return newDate;
-  });
-  const [changeEndDate, setChangeEndDate] = useState(() => {
-    const newDate = new Date();
-    newDate.setUTCHours(0, 0, 0, 0);
-    newDate.setHours(newDate.getHours() + 7); // UTC+7
-    return newDate;
-  });
+  const [selectedWalletCurrency, setSelectedWalletCurrency] = useState("");
+  const [changeStartDate, setChangeStartDate] = useState(
+    adjustDateToUTC(new Date())
+  );
+  const [changeEndDate, setChangeEndDate] = useState(
+    adjustDateToUTC(new Date())
+  );
   const [chooseIntervalAmount, setChooseIntervalAmount] = useState(1);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     if (!changeWallet) {
       toast.error("Please select wallet!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return false;
-    }
-    if (!changeCurrency) {
-      toast.error("Please select currency!", {
         position: "top-center",
         autoClose: 3000,
         hideProgressBar: false,
@@ -112,21 +94,26 @@ const AddTransaction = ({
       return false;
     }
     return true;
-  };
+  }, [changeWallet, changeCategory]);
+
+  const handleChangeWallet = useCallback(
+    (value) => {
+      setChangeWallet(value);
+      const selectedWallet = wallets.find(
+        (wallet) => wallet.walletName === value
+      );
+      setSelectedWalletCurrency(selectedWallet ? selectedWallet.currency : "");
+    },
+    [wallets]
+  );
 
   useEffect(() => {
     if (resetCreateModalData) {
       setChangeAmount("");
-      setChangeCategory("");
-      setChangeDate(() => {
-        const newDate = new Date();
-        newDate.setUTCHours(0, 0, 0, 0);
-        newDate.setHours(newDate.getHours() + 7); // UTC+7
-        return newDate;
-      });
+      setChangeDate(adjustDateToUTC(new Date()));
       setChangeWallet("");
       setChangeNotes("");
-      setChangeCurrency("");
+      setSelectedWalletCurrency("");
       setChangeStartDate();
       setChangeEndDate();
       setChooseRecurrenceType();
@@ -135,7 +122,7 @@ const AddTransaction = ({
     }
   }, [resetCreateModalData]);
 
-  const handleCreateBill = async () => {
+  const handleCreateBill = useCallback(async () => {
     if (!validateForm()) {
       return;
     }
@@ -163,7 +150,7 @@ const AddTransaction = ({
             bankName: walletData.bankName,
             bankAccountNum: walletData.bankAccountNum,
             walletType: walletData.walletType,
-            currency: walletData.currency,
+            currency: selectedWalletCurrency,
           },
           category: {
             id: categoryData.id,
@@ -176,7 +163,6 @@ const AddTransaction = ({
             userId: currentUser.id,
           },
           notes: changeNotes,
-          currency: changeCurrency,
         };
 
         if (
@@ -194,6 +180,7 @@ const AddTransaction = ({
         }
 
         const response = await axios.post("/api/transactions", requestData);
+
         if (response.status === 200) {
           fetchTransaction(currentPage);
           toast.success("Create Transaction Successful!", {
@@ -209,6 +196,8 @@ const AddTransaction = ({
           onCreateModalClose();
         }
       } catch (error) {
+        console.error("Error:", error); // Logging the error
+
         if (
           error.response &&
           error.response.data &&
@@ -243,11 +232,28 @@ const AddTransaction = ({
         }
       }
     }
-  };
+  }, [
+    changeAmount,
+    changeCategory,
+    changeDate,
+    changeEndDate,
+    changeNotes,
+    changeStartDate,
+    changeWallet,
+    chooseIntervalAmount,
+    chooseReurrenceType,
+    currentPage,
+    fetchTransaction,
+    wallets,
+    categories,
+    onCreateModalClose,
+    validateForm,
+    selectedWalletCurrency,
+  ]);
 
-  const handleIntervalChange = (value) => {
+  const handleIntervalChange = useCallback((value) => {
     setChooseIntervalAmount(value);
-  };
+  }, []);
 
   useEffect(() => {
     if (chooseReurrenceType && chooseReurrenceType !== "N/A") {
@@ -257,6 +263,38 @@ const AddTransaction = ({
     }
   }, [chooseReurrenceType]);
 
+  const categoryOptions = useMemo(() => {
+    return Object.keys(groupedCategories).map((type) => (
+      <Box key={type} mb={2}>
+        <Text fontWeight="bold" mb={2}>
+          {type === "EXPENSE" ? "Expense" : type === "DEBT" ? "Debt" : "Income"}
+        </Text>
+        {groupedCategories[type].map((category) => (
+          <Button
+            key={category.id}
+            variant="ghost"
+            w="100%"
+            textAlign="left"
+            justifyContent="start"
+            alignItems="center"
+            onClick={() => {
+              setChangeCategory(category.id.toString());
+            }}
+          >
+            <img
+              src={`/assets/img/icons/${category.icon.path}`}
+              alt={category.name}
+              width="20"
+              height="20"
+              style={{ marginRight: "8px" }}
+            />
+            {category.name}
+          </Button>
+        ))}
+      </Box>
+    ));
+  }, [groupedCategories]);
+
   return (
     <>
       <ModalBody>
@@ -265,7 +303,7 @@ const AddTransaction = ({
             <Select
               placeholder="Select Wallet"
               value={changeWallet}
-              onChange={(e) => setChangeWallet(e.target.value)}
+              onChange={(e) => handleChangeWallet(e.target.value)}
             >
               {wallets.map((wallet) => (
                 <option key={wallet.walletId} value={wallet.walletName}>
@@ -279,6 +317,7 @@ const AddTransaction = ({
             </Text>
           )}
         </Box>
+
         <Box
           mb={4}
           display="flex"
@@ -297,18 +336,13 @@ const AddTransaction = ({
           </FormControl>
           <FormControl>
             <Text mb={2}>Currency:</Text>
-            <Select
-              value={changeCurrency}
-              onChange={(e) => setChangeCurrency(e.target.value)}
-              placeholder="Select Currency"
+            <Input
+              type="text"
+              placeholder="Currency"
+              value={selectedWalletCurrency}
               color={inputText}
-            >
-              {currencies.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
-            </Select>
+              disabled
+            />
           </FormControl>
         </Box>
         <Box mb={4}>
@@ -359,45 +393,11 @@ const AddTransaction = ({
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent maxH="500px" overflowY="auto">
+            <PopoverContent overflowY="auto" maxHeight="450px">
               <PopoverArrow />
               <PopoverCloseButton />
               <PopoverHeader>Select Category</PopoverHeader>
-              <PopoverBody>
-                {Object.keys(groupedCategories).map((type) => (
-                  <Box key={type} mb={2}>
-                    <Text fontWeight="bold" mb={2}>
-                      {type === "EXPENSE"
-                        ? "Expense"
-                        : type === "DEBT"
-                        ? "Debt"
-                        : "Income"}
-                    </Text>
-                    {groupedCategories[type].map((category) => (
-                      <Button
-                        key={category.id}
-                        variant="ghost"
-                        w="100%"
-                        textAlign="left"
-                        justifyContent="start"
-                        alignItems="center"
-                        onClick={() => {
-                          setChangeCategory(category.id.toString());
-                        }}
-                      >
-                        <img
-                          src={`/assets/img/icons/${category.icon.path}`}
-                          alt={category.name}
-                          width="20"
-                          height="20"
-                          style={{ marginRight: "8px" }}
-                        />
-                        {category.name}
-                      </Button>
-                    ))}
-                  </Box>
-                ))}
-              </PopoverBody>
+              <PopoverBody>{categoryOptions}</PopoverBody>
             </PopoverContent>
           </Popover>
         </Box>

@@ -1,42 +1,14 @@
-import { Box, useColorModeValue, Text, Flex } from "@chakra-ui/react";
-import axios from "axios";
-import React, { useState, useEffect } from "react";
-import AuthService from "services/auth/auth.service";
+import React from "react";
+import { Box, Flex, Text, Button, useColorModeValue } from "@chakra-ui/react";
+import { useHistory } from "react-router-dom";
 import Card from "components/card/Card";
 
-const TransactionHistory = (props) => {
-  const bgFocus = useColorModeValue(
-    { bg: "secondaryGray.300" },
-    { bg: "whiteAlpha.100" }
-  );
+const TransactionHistory = ({ transactions }) => {
+  const history = useHistory();
   const textColor = useColorModeValue("secondaryGray.900", "white");
 
-  const [transactions, setTransactions] = useState([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const currentUser = AuthService.getCurrentUser();
-      if (currentUser) {
-        try {
-          let response = await axios.get(
-            `/api/transactions/users/${currentUser.id}`
-          );
-          const sortedTransactions = response.data.content.sort(
-            (a, b) => a.transactionId - b.transactionId
-          );
-          const latestTransactions = sortedTransactions.slice(-4);
-          setTransactions(latestTransactions);
-        } catch (error) {
-          console.error("Error fetching transaction data: ", error);
-        }
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  return (
-    <>
+  if (!Array.isArray(transactions) || transactions.length === 0) {
+    return (
       <Box>
         <Text
           color={textColor}
@@ -44,19 +16,68 @@ const TransactionHistory = (props) => {
           textAlign="start"
           fontWeight="700"
           lineHeight="100%"
-          mb="20px"
+          marginBottom="20px"
         >
           Your transactions
         </Text>
+        <Text
+          color={textColor}
+          fontSize="16px"
+          textAlign="start"
+          marginBottom="20px"
+        >
+          No transactions found.
+        </Text>
+        <Button
+          fontWeight="200"
+          fontSize="15px"
+          color="blue"
+          onClick={() => {
+            history.push("/user/transactions");
+          }}
+        >
+          See more
+        </Button>
+      </Box>
+    );
+  }
+
+  return (
+    <>
+      <Box>
+        <Flex justifyContent="space-between" alignItems="center">
+          <Text
+            color={textColor}
+            fontSize="20px"
+            textAlign="start"
+            fontWeight="700"
+            lineHeight="100%"
+            marginBottom="20px"
+          >
+            Your transactions
+          </Text>
+          <Button
+            fontWeight="200"
+            fontSize="15px"
+            color="blue"
+            marginBottom="20px"
+            onClick={() => {
+              history.push("/user/transactions");
+            }}
+          >
+            See more
+          </Button>
+        </Flex>
+
         {transactions.map((transaction) => (
-          <Box key={transaction.transactionId} my={2}>
+          <Box key={transaction.transactionId} marginBottom="2">
             <Card
               backgroundColor={
                 transaction.category.type === "INCOME" ? "green.200" : "red.200"
               }
             >
               <Flex alignItems="center">
-                <Text flex="1" display="flex" alignItems="center">
+                <Text flex="1" display="flex" alignItems="center" ml={2}>
                   <img
                     src={`/assets/img/icons/${transaction.category.icon.path}`}
                     alt={transaction.category.name}
@@ -66,7 +87,11 @@ const TransactionHistory = (props) => {
                   />
                   {transaction.category.name}
                 </Text>
-                <Text flex="2">{transaction.transactionDate}</Text>
+                <Text flex="1">{transaction.transactionDate}</Text>
+                <Text flex="1" textAlign="end">
+                  {transaction.amount.toLocaleString()}{" "}
+                  {transaction.wallet.currency}
+                </Text>
               </Flex>
             </Card>
           </Box>

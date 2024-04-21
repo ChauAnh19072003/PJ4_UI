@@ -21,6 +21,8 @@ import {
   Input,
   Select,
   useColorModeValue,
+  Center,
+  Spinner,
 } from "@chakra-ui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -36,11 +38,11 @@ function ListData() {
   const [totalPages, setTotalPages] = useState(1);
   const [chooseTransactionId, setChooseTransactionId] = useState(null);
   const [wallets, setWallets] = useState([]);
-  const [currencies] = useState(["VND", "USD"]);
   const [categories, setCategories] = useState([]);
   const [groupedCategories, setGroupedCategories] = useState({});
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [isDataLoaded, setDataLoaded] = useState(false);
   const {
     isOpen: isCreateModalOpen,
     onOpen: onCreateModalOpen,
@@ -84,6 +86,13 @@ function ListData() {
       setTotalPages(cachedTransactions[currentPage]?.totalPages || 1);
     }
   }, [currentPage, cachedTransactions, fetchTransaction]);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const resetCreateModalData = () => {};
 
@@ -148,6 +157,7 @@ function ListData() {
           setCategories(categoriesResponse.data);
           setGroupedCategories(grouped);
           setWallets(walletsResponse.data);
+          setDataLoaded(true);
         } catch (error) {
           console.error("Error fetching data:", error);
         }
@@ -236,7 +246,6 @@ function ListData() {
             fetchTransaction={fetchTransaction}
             wallets={wallets}
             categories={categories}
-            currencies={currencies}
             groupedCategories={groupedCategories}
             resetCreateModalData={resetCreateModalData}
             currentPage={currentPage}
@@ -261,7 +270,6 @@ function ListData() {
             setChooseTransactionId={setChooseTransactionId}
             wallets={wallets}
             categories={categories}
-            currencies={currencies}
             groupedCategories={groupedCategories}
             setDeleteAlertOpen={setDeleteAlertOpen}
             handleOpenUpdateModal={handleOpenUpdateModal}
@@ -315,7 +323,11 @@ function ListData() {
           <Text flex="1">Note</Text>
         </Flex>
 
-        {wallets.length === 0 ? (
+        {!isDataLoaded ? (
+          <Center>
+            <Spinner my="20px" />
+          </Center>
+        ) : wallets && wallets.length === 0 ? (
           <Text textAlign="center" fontSize="xl" mt={5}>
             You need to create wallet before create transaction
           </Text>
