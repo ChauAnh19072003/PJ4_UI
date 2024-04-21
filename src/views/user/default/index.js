@@ -66,24 +66,6 @@ const UserReports = () => {
     }
   }, [userId, selectedWalletDetails]);
 
-  const fetchWallets = useCallback(async () => {
-    try {
-      const response = await axios.get(`/api/wallets/users/${userId}`);
-      const data = response.data;
-      setWallets(data);
-
-      const totalBalanceResponse = await axios.get(
-        `/api/wallets/total-balance/${userId}`
-      );
-      const totalBalanceData = totalBalanceResponse.data.toLocaleString();
-      setTotalBalance(totalBalanceData);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching wallets:", error);
-      setTotalBalance("0");
-    }
-  }, [userId]);
-
   const fetchIncomeForSelectedWallet = useCallback(
     async (walletId) => {
       try {
@@ -134,7 +116,7 @@ const UserReports = () => {
     async (walletId) => {
       try {
         let response;
-        if (walletId === "all") {
+        if (!walletId || walletId === "") {
           response = await axios.get(
             `/api/transactions/users/wallets/${userId}`
           );
@@ -148,12 +130,8 @@ const UserReports = () => {
         const latestTransactions = sortedTransactions.slice(0, 4);
         setTransactions(latestTransactions);
 
-        if (walletId === "all") {
-          const totalBalanceResponse = await axios.get(
-            `/api/wallets/total-balance/${userId}`
-          );
-          const totalBalanceData = totalBalanceResponse.data.toLocaleString();
-          return [latestTransactions, totalBalanceData];
+        if (walletId === "") {
+          return [latestTransactions];
         } else {
           return latestTransactions;
         }
@@ -170,8 +148,13 @@ const UserReports = () => {
       const walletId = event.target.value;
       setSelectedWallet(walletId);
       setLoading(true);
+
       try {
-        if (walletId === "all") {
+        if (walletId === "") {
+          const response = await axios.get(`/api/wallets/users/${userId}`);
+          const data = response.data;
+          setWallets(data);
+          setSelectedWalletDetails("");
           const [totalIncome, totalExpense] = await Promise.all([
             fetchTotalIncomeForAllWallets(),
             fetchTotalExpenseForAllWallets(),
@@ -180,20 +163,42 @@ const UserReports = () => {
           setIncome(totalIncome);
           setExpense(totalExpense);
 
-          const [transactions, totalBalanceData] = await Promise.all([
-            fetchTransactionsSelectWallet(walletId),
-            axios
-              .get(`/api/wallets/total-balance/${userId}`)
-              .then((res) => res.data.toLocaleString()),
-          ]);
+          let totalBalanceData = 0;
+          if (Array.isArray(data)) {
+            totalBalanceData = data
+              .reduce((acc, curr) => {
+                let balanceInVND = curr.balance;
+                if (curr.currency === "USD") {
+                  balanceInVND *= 23000;
+                }
+                return acc + balanceInVND;
+              }, 0)
+              .toLocaleString();
+          } else {
+            let balanceInVND = data.balance;
+            if (data.currency === "USD") {
+              balanceInVND *= 23000;
+            }
+            totalBalanceData = balanceInVND.toLocaleString();
+          }
 
-          setTransactions(transactions);
+          const transactionAllWallet = await axios.get(
+            `/api/transactions/users/wallets/${userId}`
+          );
+          const sortedTransactions = transactionAllWallet.data.sort(
+            (a, b) => b.transactionId - a.transactionId
+          );
+          const latestTransactions = sortedTransactions.slice(0, 4);
+
+          setTransactions(latestTransactions);
           setTotalBalance(totalBalanceData);
         } else if (walletId) {
           const response = await axios.get(`/api/wallets/${walletId}`);
           const selectedWalletData = response.data;
+          setWallets([selectedWalletData]);
           setSelectedWalletDetails(selectedWalletData);
-          const [income, expense, transactions] = await Promise.all([
+          console.log(selectedWalletData);
+          const [income, expense, transactionsData] = await Promise.all([
             fetchIncomeForSelectedWallet(walletId),
             fetchExpenseForSelectedWallet(walletId),
             fetchTransactionsSelectWallet(walletId),
@@ -201,7 +206,7 @@ const UserReports = () => {
 
           setIncome(income);
           setExpense(expense);
-          setTransactions(transactions);
+          setTransactions(transactionsData);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -224,6 +229,9 @@ const UserReports = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        const response = await axios.get(`/api/wallets/users/${userId}`);
+        const data = response.data;
+        setWallets(data);
         const totalIncome = await fetchTotalIncomeForAllWallets();
         const totalExpense = await fetchTotalExpenseForAllWallets();
 
@@ -231,10 +239,15 @@ const UserReports = () => {
           setIncome(totalIncome);
           setExpense(totalExpense);
 
-          const totalBalanceResponse = await axios.get(
-            `/api/wallets/total-balance/${userId}`
-          );
-          const totalBalanceData = totalBalanceResponse.data.toLocaleString();
+          const totalBalanceData = data
+            .reduce((acc, curr) => {
+              let balanceInVND = curr.balance;
+              if (curr.currency === "USD") {
+                balanceInVND *= 23000;
+              }
+              return acc + balanceInVND;
+            }, 0)
+            .toLocaleString();
 
           const transactionAllWallet = await axios.get(
             `/api/transactions/users/wallets/${userId}`
@@ -250,7 +263,9 @@ const UserReports = () => {
         console.error("Error fetching data:", error);
         setTotalBalance("0");
       } finally {
-        fetchWallets();
+        const response = await axios.get(`/api/wallets/users/${userId}`);
+        const data = response.data;
+        setWallets(data);
         setLoading(false);
       }
     };
@@ -259,7 +274,6 @@ const UserReports = () => {
   }, [
     fetchTotalIncomeForAllWallets,
     fetchTotalExpenseForAllWallets,
-    fetchWallets,
     selectedWallet,
     userId,
   ]);
