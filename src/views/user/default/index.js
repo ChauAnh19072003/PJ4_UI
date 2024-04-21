@@ -287,9 +287,81 @@ const UserReports = () => {
   }
 
   return (
-    <Box display="flex" pt={{ base: "130px", md: "80px", xl: "80px" }}>
-      <Box w="700px" mx={10}>
-        <SimpleGrid columns={{ base: 1, md: 1, xl: 3 }} gap="20px" mb="20px">
+    <Box
+      display="flex"
+      flexDirection={{ base: "column", md: "row", xl: "row" }}
+      pt={{ base: "130px", md: "80px", xl: "80px" }}
+      alignItems="start"
+    >
+      <Box
+        mx={{ base: 4, md: 10 }}
+        maxW={{ base: "100%", md: "100%", xl: "100%" }}
+        display={{ base: "block", md: "none", xl: "none" }}
+        mb="20px"
+      >
+        <Card w={{ base: "328px", md: "100%", xl: "100%" }}>
+          <Select
+            placeholder={wallets.length > 0 ? "All Wallet" : "No wallets found"}
+            value={selectedWallet || ""}
+            onChange={handleWalletChange}
+            fontSize={{ base: "13px" }}
+          >
+            {Array.isArray(wallets) &&
+              wallets.length > 0 &&
+              wallets.map((wallet) => (
+                <option key={wallet.walletId} value={wallet.walletId}>
+                  {wallet.walletName}
+                </option>
+              ))}
+          </Select>
+          {selectedWalletDetails ? (
+            <Card mt={2} w="100%" backgroundColor={["yellow.200"]}>
+              <Flex
+                display="flex"
+                alignItems="center"
+                justifyContent="space-evenly"
+              >
+                <Text
+                  fontWeight="semibold"
+                  fontSize={{ base: "18px" }}
+                  color="#2D3748"
+                >
+                  Balance
+                </Text>
+                <Text fontSize={{ base: "13px" }} color="#4A5568">
+                  {selectedWalletDetails.balance.toLocaleString()}{" "}
+                  {selectedWalletDetails.currency}
+                </Text>
+              </Flex>
+            </Card>
+          ) : (
+            <Card mt={2} w="100%" backgroundColor={["yellow.200"]}>
+              <Flex
+                display="flex"
+                alignItems="center"
+                justifyContent="space-evenly"
+              >
+                <Text
+                  fontWeight="semibold"
+                  fontSize={{ base: "18px" }}
+                  color="#2D3748"
+                >
+                  Balance
+                </Text>
+                <Text fontSize={{ base: "13px" }} color="#4A5568">
+                  {wallets.length > 0 && `${totalBalance}VND`}
+                </Text>
+              </Flex>
+            </Card>
+          )}
+        </Card>
+      </Box>
+      <Box
+        flex="1"
+        mx={{ base: 4, md: 10 }}
+        maxW={{ base: "100%", md: "600px", xl: "600px" }}
+      >
+        <SimpleGrid columns={{ base: 1, md: 1, xl: 2 }} gap="20px" mb="20px">
           <MiniStatistics
             startContent={
               <IconBox
@@ -324,32 +396,27 @@ const UserReports = () => {
             value={expense}
             fontSize="lg"
           />
-          <MiniStatistics
-            startContent={
-              <IconBox
-                w="56px"
-                h="56px"
-                bg={boxBg}
-                icon={
-                  <Icon w="32px" h="32px" as={TbPigMoney} color={brandColor} />
-                }
-              />
-            }
-            name="Save"
-            value="$100.39"
-          />
         </SimpleGrid>
 
         <SimpleGrid columns={{ base: 1, md: 1, xl: 1 }} gap="20px" mb="20px">
           <TotalSpent />
         </SimpleGrid>
       </Box>
-      <Box w="50px">
+
+      <Box w="50px" display={{ base: "none", md: "block", xl: "block" }}>
         <Divider orientation="vertical" margin="25px" />
       </Box>
-      <Box w="450px" mx={10}>
+
+      <Box
+        flex="1"
+        mx={{ base: 4, md: 10 }}
+        maxW={{ base: "100%", md: "400px", xl: "400px" }}
+      >
         <SimpleGrid columns={{ base: 1, md: 1, xl: 1 }} gap="20px" mb="20px">
-          <Card>
+          <Card
+            w={{ base: "328px", md: "100%", xl: "100%" }}
+            display={{ base: "none", md: "block", xl: "block" }}
+          >
             <Select
               placeholder={
                 wallets.length > 0 ? "All Wallet" : "No wallets found"
@@ -366,7 +433,7 @@ const UserReports = () => {
                 ))}
             </Select>
             {selectedWalletDetails ? (
-              <Card mt={2} w="300px" mx={5} backgroundColor={["yellow.200"]}>
+              <Card mt={2} w="100%" backgroundColor={["yellow.200"]}>
                 <Flex
                   display="flex"
                   alignItems="center"
@@ -382,7 +449,7 @@ const UserReports = () => {
                 </Flex>
               </Card>
             ) : (
-              <Card mt={2} w="300px" mx={5} backgroundColor={["yellow.200"]}>
+              <Card mt={2} w="100%" backgroundColor={["yellow.200"]}>
                 <Flex
                   display="flex"
                   alignItems="center"
@@ -402,8 +469,8 @@ const UserReports = () => {
             justifyContent="center"
             align="center"
             direction="column"
-            w="100%"
             mb="0px"
+            w={{ base: "328px", md: "100%", xl: "100%" }}
           >
             <Spacer mb="20px" />
             <TransactionHistory transactions={transactions} />

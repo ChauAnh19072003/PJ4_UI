@@ -76,8 +76,16 @@ const TransactionHistory = ({ transactions }) => {
                 transaction.category.type === "INCOME" ? "green.200" : "red.200"
               }
             >
-              <Flex alignItems="center">
-                <Text flex="1" display="flex" alignItems="center" ml={2}>
+              <Flex
+                alignItems="center"
+                fontSize={{ base: "13px", md: "15px", xl: "15px" }}
+              >
+                <Text
+                  flex="1"
+                  display="flex"
+                  alignItems="center"
+                  ml={{ base: 0, md: 2, xl: 2 }}
+                >
                   <img
                     src={`/assets/img/icons/${transaction.category.icon.path}`}
                     alt={transaction.category.name}

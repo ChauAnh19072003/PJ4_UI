@@ -173,9 +173,14 @@ function ListData() {
       <Flex
         justifyContent="center"
         my="20px"
-        direction={{ base: "row", md: "row" }}
+        direction={{ base: "column", md: "row" }}
+        alignItems="center"
       >
-        <Box w="20%" mr={4}>
+        <Box
+          w={{ base: "60%", md: "20%", xl: "20%" }}
+          mr={4}
+          mb={{ base: "20px", md: 0, xl: 0 }}
+        >
           <Select
             placeholder="Select Wallet"
             value={searchWallet}
@@ -192,7 +197,11 @@ function ListData() {
             )}
           </Select>
         </Box>
-        <Box w="20%" mr={4}>
+        <Box
+          w={{ base: "60%", md: "20%", xl: "20%" }}
+          mr={4}
+          mb={{ base: "20px", md: 0, xl: 0 }}
+        >
           <Select
             placeholder="Select Type"
             value={searchCateType}
@@ -202,7 +211,12 @@ function ListData() {
             <option value="expense">Expense</option>
           </Select>
         </Box>
-        <Box mr={4} w="20%">
+        <Box
+          mr={4}
+          w={{ base: "100%", md: "20%", xl: "20%" }}
+          textAlign="center"
+          mb={{ base: "20px", md: 0, xl: 0 }}
+        >
           <DatePicker
             selected={searchDate}
             onChange={(date) => setSearchDate(date)}
@@ -217,7 +231,7 @@ function ListData() {
           borderRadius="30px"
           color="white"
           fontWeight="bold"
-          w="20%"
+          w={{ base: "60%", md: "20%", xl: "20%" }}
           bgGradient="linear(to-r, #2b71ad, green.500)"
           _hover={{
             bgGradient: "linear(to-r, #2b71ad, #422AFB)",
@@ -397,7 +411,7 @@ function ListData() {
                   mb={1}
                   py="2"
                   px="4"
-                  fontSize="sm"
+                  fontSize={{ sm: "10px", lg: "sm" }}
                   _hover={{
                     boxShadow:
                       "20px rgba(0, 0, 0, 0.1), 0 0 20px -20px rgba(0, 0, 0, 0.1), 20px 0 20px -20px rgba(0, 0, 0, 0.5), 0 20px 20px -20px rgba(0, 0, 0, 0.5)",

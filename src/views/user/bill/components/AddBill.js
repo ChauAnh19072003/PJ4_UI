@@ -271,7 +271,7 @@ function AddBill({
                 w="120px"
               />
             </Box>
-            <Text flex={1} mb={2} mr={4} textAlign="right">
+            <Text flex={1} mb={2} mr={2} textAlign="right">
               {" "}
               Category:
             </Text>
@@ -304,7 +304,17 @@ function AddBill({
                         style={{ marginRight: "8px" }}
                       />
                     ) : (
-                      "Select Category"
+                      <Text
+                        w="100%"
+                        textAlign="center"
+                        justifyContent="start"
+                        alignItems="center"
+                        mb="5px"
+                        fontSize="15px"
+                      >
+                        {" "}
+                        Select Category
+                      </Text>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -317,7 +327,7 @@ function AddBill({
                   <PopoverArrow />
                   <PopoverCloseButton />
                   <PopoverHeader>Select Category</PopoverHeader>
-                  <PopoverBody>{categoryOptions}</PopoverBody>
+                  <PopoverBody>{categoryOptions} </PopoverBody>
                 </PopoverContent>
               </Popover>
             </Box>
