@@ -34,7 +34,7 @@ import {
   PopoverHeader,
   PopoverBody,
   Badge,
-  Image
+  Image,
 } from "@chakra-ui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -181,25 +181,25 @@ const DebtsOverview = () => {
       return;
     }
 
-    const today = new Date().toISOString().split("T")[0];
-
-    const updatedDebtData = {
-      ...debtForm,
-      userId: currentUser.id,
-      categoryId: debtForm.categoryId,
-      isPaid: true,
-      paidDate: today,
-    };
-
     try {
+      const response = await axios.get(`/api/debts/${debtId}`);
+      const currentDebtData = response.data;
+
+      const today = new Date().toISOString().split("T")[0];
+      const updatedDebtData = {
+        ...currentDebtData,
+        isPaid: true,
+        paidDate: today,
+      };
+
+      delete updatedDebtData.id;
+
       await axios.put(`/api/debts/update/${debtId}`, updatedDebtData);
-      toast.success("Debt marked as paid successfully");
+      toast.success("Paid successfully");
       fetchDebts();
     } catch (error) {
       toast.error(
-        `Error marking debt as paid: ${
-          error.response?.data?.message || error.message
-        }`
+        `Error updating debt: ${error.response?.data?.message || error.message}`
       );
     }
   };
