@@ -24,6 +24,7 @@ import {
   Box,
   Input,
   useColorModeValue,
+  Image,
 } from "@chakra-ui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -56,6 +57,8 @@ function BillList() {
   const [selectedBill, setSelectedBill] = useState(null);
   const inputText = useColorModeValue("gray.700", "gray.100");
   const isFetchingRef = useRef(false);
+  const [categories, setCategories] = useState([]);
+  const [groupedCategories, setGroupedCategories] = useState({});
 
   const fetchBills = useCallback(
     async (currentPage) => {
@@ -178,22 +181,57 @@ function BillList() {
     setSortConfig({ key, direction });
   };
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const currentUser = AuthService.getCurrentUser();
+      if (currentUser) {
+        try {
+          const [categoriesResponse] = await Promise.all([
+            axios.get(`/api/categories/user/${currentUser.id}`),
+          ]);
+          const grouped = categoriesResponse.data.reduce((acc, category) => {
+            const { type } = category;
+            if (!acc[type]) {
+              acc[type] = [];
+            }
+            acc[type].push(category);
+            return acc;
+          }, {});
+          setCategories(categoriesResponse.data);
+          setGroupedCategories(grouped);
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        }
+      }
+    };
+
+    fetchData();
+  }, [fetchBills]);
+
   return (
     <>
       <ToastContainer />{" "}
       <Flex
         justifyContent="center"
         my="20px"
-        direction={{ base: "row", md: "row" }}
+        direction={{ base: "column", md: "row" }}
+        alignItems="center"
       >
         <SearchBar
-          w="40%"
-          marginLeft="20px"
+          w={{ base: "60%", md: "40%", xl: "40%" }}
+          marginLeft={{ base: 0, md: "20px" }}
           borderRadius="30px"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          mb={{ base: "20px", md: 0, xl: 0 }}
         />
-        <Box mr={4} w="20%" mx="20px">
+        <Box
+          mr={4}
+          w={{ base: "100%", md: "40%", xl: "40%" }}
+          mx={{ base: 0, md: "20px" }}
+          mb={{ base: "20px", md: 0, xl: 0 }}
+          textAlign="center"
+        >
           <DatePicker
             selected={searchDate}
             onChange={(date) => setSearchDate(date)}
@@ -208,7 +246,7 @@ function BillList() {
           borderRadius="30px"
           color="white"
           fontWeight="bold"
-          w="20%"
+          w={{ base: "60%", md: "40%", xl: "40%" }}
           bgGradient="linear(to-r, #2b71ad, green.500)"
           _hover={{
             bgGradient: "linear(to-r, #2b71ad, #422AFB)",
@@ -217,7 +255,7 @@ function BillList() {
             resetCreateModalData();
             onCreateModalOpen();
           }}
-          mx="20px"
+          mx={{ base: 0, md: "20px", xl: "20px" }}
         >
           Add
         </Button>
@@ -234,6 +272,8 @@ function BillList() {
             currentTab={currentTab}
             resetCreateModalData={resetCreateModalData}
             pagePerTab={pagePerTab}
+            categories={categories}
+            groupedCategories={groupedCategories}
           />
         </ModalContent>
       </Modal>
@@ -253,6 +293,8 @@ function BillList() {
             setDeleteAlertOpen={setDeleteAlertOpen}
             handleOpenUpdateModal={handleOpenUpdateModal}
             selectedBill={selectedBill}
+            categories={categories}
+            groupedCategories={groupedCategories}
           />
         </ModalContent>
       </Modal>
@@ -287,9 +329,11 @@ function BillList() {
                   borderBottomWidth="1px"
                   borderColor="gray.200"
                   py="2"
-                  px="8"
+                  px={{ base: 0, md: 8, xl: 8 }}
                   fontSize={{ sm: "10px", lg: "12px" }}
                   color="gray.400"
+                  textAlign={"center"}
+                  alignItems="center"
                 >
                   <Text
                     flex="1"
@@ -366,6 +410,11 @@ function BillList() {
                     .map((bill, contentIndex) => {
                       const startIndex =
                         pagePerTab[index] * billsPerPage + contentIndex + 1;
+                      const category = categories.find(
+                        (cat) => cat.id === parseInt(bill.category.id)
+                      );
+                      const iconPath = category ? category.icon.path : "";
+                      const categoryName = category ? category.name : "";
                       return (
                         <Box
                           key={bill.billId}
@@ -377,14 +426,20 @@ function BillList() {
                           background={getRowColor(bill.dueDate)}
                           mb={1}
                           py="2"
-                          px="4"
-                          fontSize="sm"
+                          px={{ base: 0, md: 2, xl: 2 }}
+                          fontSize={{ sm: "10px", lg: "sm" }}
                           _hover={{
                             boxShadow:
                               "20px 20px 20px -20px rgba(0, 0, 0, 0.4), -20px -20px 20px -20px rgba(0, 0, 0, 0.1), 0 0 20px -20px rgba(0, 0, 0, 0.1), 20px 0 20px -20px rgba(0, 0, 0, 0.5), 0 20px 20px -20px rgba(0, 0, 0, 0.5)",
                           }}
                         >
-                          <Flex key={bill.billId} py="2" px="4">
+                          <Flex
+                            key={bill.billId}
+                            py="2"
+                            px={{ base: 0, md: 6, xl: 6 }}
+                            textAlign={"center"}
+                            alignItems={"center"}
+                          >
                             <Box
                               flex="1"
                               color="secondaryGray.900"
@@ -392,13 +447,27 @@ function BillList() {
                             >
                               {startIndex}
                             </Box>
-                            <Box
-                              flex="2"
-                              color="secondaryGray.900"
-                              fontWeight="bold"
-                            >
-                              {bill.billName}
+                            <Box flex="2">
+                              <Box
+                                ml={{ base: 0, md: 10, xl: 10 }}
+                                color="secondaryGray.900"
+                                fontWeight="bold"
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <Image
+                                  src={`/assets/img/icons/${iconPath}`}
+                                  alt={categoryName}
+                                  width="8"
+                                  height="8"
+                                  mr={2}
+                                />
+                                {bill.billName}
+                              </Box>
                             </Box>
+
                             <Box
                               flex="1"
                               color="secondaryGray.900"
@@ -410,6 +479,7 @@ function BillList() {
                               flex="2"
                               color="secondaryGray.900"
                               fontWeight="bold"
+                              textAlign={"center"}
                             >
                               {bill.recurrence && bill.recurrence.startDate
                                 ? bill.recurrence.startDate

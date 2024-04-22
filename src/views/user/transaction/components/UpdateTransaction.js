@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import AuthService from "services/auth/auth.service";
 import DatePicker from "react-datepicker";
@@ -46,78 +46,40 @@ const UpdateTransaction = ({
   selectedTransaction,
 }) => {
   const inputText = useColorModeValue("gray.700", "gray.100");
-
+  const adjustDateToUTC = (date) => {
+    date.setHours(date.getHours() + 7);
+    date.setUTCHours(0, 0, 0, 0);
+    return date;
+  };
   const [changeAmount, setChangeAmount] = useState("");
   const [changeDate, setChangeDate] = useState(() => {
-    const newDate = new Date();
-    newDate.setUTCHours(0, 0, 0, 0);
-    newDate.setHours(newDate.getHours() + 7); // UTC+7
-    return newDate;
+    adjustDateToUTC(new Date());
   });
   const [changeWallet, setChangeWallet] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
-  const [changeCurrency, setChangeCurrency] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
   const [chooseReurrenceType, setChooseRecurrenceType] = useState("DAILY");
-  const [changeStartDate, setChangeStartDate] = useState(() => {
-    const newDate = new Date();
-    newDate.setUTCHours(0, 0, 0, 0);
-    newDate.setHours(newDate.getHours() + 7); // UTC+7
-    return newDate;
-  });
-  const [changeEndDate, setChangeEndDate] = useState(() => {
-    const newDate = new Date();
-    newDate.setUTCHours(0, 0, 0, 0);
-    newDate.setHours(newDate.getHours() + 7); // UTC+7
-    return newDate;
-  });
+  const [selectedWalletCurrency, setSelectedWalletCurrency] = useState("");
+  const [changeStartDate, setChangeStartDate] = useState(
+    adjustDateToUTC(new Date())
+  );
+  const [changeEndDate, setChangeEndDate] = useState(
+    adjustDateToUTC(new Date())
+  );
   const [chooseIntervalAmount, setChooseIntervalAmount] = useState(1);
 
-  useEffect(() => {
-    if (selectedTransaction) {
-      setChooseTransactionId(selectedTransaction.transactionId);
-      setChangeWallet(selectedTransaction.wallet.walletName);
-      setChangeAmount(selectedTransaction.amount.toString());
-      setChangeCurrency(selectedTransaction.currency);
+  const handleChangeWallet = useCallback(
+    (value) => {
+      setChangeWallet(value);
+      const selectedWallet = wallets.find(
+        (wallet) => wallet.walletName === value
+      );
+      setSelectedWalletCurrency(selectedWallet ? selectedWallet.currency : "");
+    },
+    [wallets]
+  );
 
-      const selectedCategory = selectedTransaction.category
-        ? selectedTransaction.category.id.toString()
-        : "";
-      setChangeCategory(selectedCategory);
-
-      setChangeDate(() => {
-        const newDate = new Date(selectedTransaction.transactionDate);
-        newDate.setHours(newDate.getHours() + 7);
-        newDate.setUTCHours(0, 0, 0, 0);
-        return newDate;
-      });
-      setChangeNotes(selectedTransaction.notes);
-
-      if (selectedTransaction.recurrence) {
-        setChooseRecurrenceType(selectedTransaction.recurrence.recurrenceType);
-        setChangeStartDate(() => {
-          const newDate = new Date(selectedTransaction.recurrence.startDate);
-          newDate.setHours(newDate.getHours() + 7);
-          newDate.setUTCHours(0, 0, 0, 0);
-          return newDate;
-        });
-        setChangeEndDate(() => {
-          const newDate = new Date(selectedTransaction.recurrence.endDate);
-          newDate.setHours(newDate.getHours() + 7);
-          newDate.setUTCHours(0, 0, 0, 0);
-          return newDate;
-        });
-        setChooseIntervalAmount(selectedTransaction.recurrence.intervalAmount);
-      } else {
-        setChooseRecurrenceType(null);
-        setChangeStartDate(null);
-        setChangeEndDate(null);
-        setChooseIntervalAmount(0);
-      }
-    }
-  }, [selectedTransaction, setChooseTransactionId]);
-
-  const handleUpdateTransaction = async () => {
+  const handleUpdateTransaction = useCallback(async () => {
     const currentUser = AuthService.getCurrentUser();
     try {
       if (currentUser) {
@@ -162,11 +124,10 @@ const UpdateTransaction = ({
             userId: currentUser.id,
           },
           notes: changeNotes,
-          currency: changeCurrency,
         };
 
         const response = await axios.put(
-          `/api/transactions/${chooseTransactionId}`,
+          `/api/transactions/update/${chooseTransactionId}`,
           requestData
         );
 
@@ -219,7 +180,60 @@ const UpdateTransaction = ({
         });
       }
     }
-  };
+  }, [
+    changeAmount,
+    changeDate,
+    changeWallet,
+    changeCategory,
+    changeNotes,
+    chooseTransactionId,
+    currentPage,
+    selectedTransaction,
+    fetchTransaction,
+    onUpdateModalClose,
+    wallets,
+    categories,
+  ]);
+
+  useEffect(() => {
+    if (selectedTransaction) {
+      setChooseTransactionId(selectedTransaction.transactionId);
+      setChangeWallet(selectedTransaction.wallet.walletName);
+      setChangeAmount(selectedTransaction.amount.toString());
+      setSelectedWalletCurrency(selectedTransaction.wallet.currency);
+
+      const selectedCategory = selectedTransaction.category
+        ? selectedTransaction.category.id.toString()
+        : "";
+      setChangeCategory(selectedCategory);
+
+      setChangeDate(() => {
+        return adjustDateToUTC(new Date(selectedTransaction.transactionDate));
+      });
+
+      setChangeNotes(selectedTransaction.notes);
+
+      if (selectedTransaction.recurrence) {
+        setChooseRecurrenceType(selectedTransaction.recurrence.recurrenceType);
+        setChangeStartDate(() => {
+          return adjustDateToUTC(
+            new Date(selectedTransaction.recurrence.startDate)
+          );
+        });
+        setChangeEndDate(() => {
+          return adjustDateToUTC(
+            new Date(selectedTransaction.recurrence.endDate)
+          );
+        });
+        setChooseIntervalAmount(selectedTransaction.recurrence.intervalAmount);
+      } else {
+        setChooseRecurrenceType(null);
+        setChangeStartDate(null);
+        setChangeEndDate(null);
+        setChooseIntervalAmount(0);
+      }
+    }
+  }, [selectedTransaction, setChooseTransactionId, wallets, categories]);
 
   return (
     <>
@@ -228,7 +242,7 @@ const UpdateTransaction = ({
           <Text mb={2}>Wallet:</Text>
           <Select
             value={changeWallet}
-            onChange={(e) => setChangeWallet(e.target.value)}
+            onChange={(e) => handleChangeWallet(e.target.value)}
             color={inputText}
             placeholder="Select Wallet"
           >
@@ -257,18 +271,13 @@ const UpdateTransaction = ({
           </FormControl>
           <FormControl>
             <Text mb={2}>Currency:</Text>
-            <Select
-              value={changeCurrency}
-              onChange={(e) => setChangeCurrency(e.target.value)}
-              placeholder="Select Currency"
+            <Input
+              type="text"
+              placeholder="Currency"
+              value={selectedWalletCurrency}
               color={inputText}
-            >
-              {currencies.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
-            </Select>
+              disabled
+            />
           </FormControl>
         </Box>
         <Box mb={4}>
@@ -319,7 +328,7 @@ const UpdateTransaction = ({
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent>
+            <PopoverContent overflowY="auto" maxHeight="450px">
               <PopoverArrow />
               <PopoverCloseButton />
               <PopoverHeader>Select Category</PopoverHeader>

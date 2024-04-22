@@ -1,11 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  useContext,
-  lazy,
-  Suspense,
-} from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import AuthService from "services/auth/auth.service";
 import { SearchBar } from "components/navbar/searchBar/SearchBar";
 import axios from "axios";
@@ -102,7 +95,7 @@ const CategoryList = () => {
   // DELETE
   const handleDeleteCategory = async (categoryId) => {
     try {
-      await axios.delete(`/api/categories/${categoryId}`);
+      await axios.delete(`/api/categories/delete/${categoryId}`);
       const updatedCategories = categories.filter(
         (category) => category.id !== categoryIdToDelete
       );

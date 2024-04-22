@@ -185,7 +185,10 @@ const WalletsOverview = () => {
 
     try {
       if (isEditing) {
-        await axios.put(`/api/wallets/update/${currentWallet.walletId}`, walletData);
+        await axios.put(
+          `/api/wallets/update/${currentWallet.walletId}`,
+          walletData
+        );
         toast.success("Wallet updated successfully");
       } else {
         await axios.post("/api/wallets/create", walletData);

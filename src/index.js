@@ -12,7 +12,6 @@ import Login from "auth/SigninUp";
 import AuthService from "services/auth/auth.service";
 import ForgotPassword from "auth/ForgotPassword";
 import ResetPassword from "auth/ResetPassword";
-import UserProfile from "views/user/profile";
 import { myAtom } from "config/recoil";
 import { RecoilRoot } from "recoil";
 ReactDOM.render(
@@ -36,7 +35,6 @@ ReactDOM.render(
                 to={AuthService.isLoggedIn() ? "/user" : "/visitor"}
               />
               <Route path="/user" component={UserLayout} />
-              <Route path="/user/profile/:userId" component={UserProfile} />
               <Route path="/auth/forgot-password" component={ForgotPassword} />
               <Route
                 path="/auth/reset-password/:token"

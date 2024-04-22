@@ -21,6 +21,8 @@ import {
   Input,
   Select,
   useColorModeValue,
+  Center,
+  Spinner,
 } from "@chakra-ui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -36,11 +38,11 @@ function ListData() {
   const [totalPages, setTotalPages] = useState(1);
   const [chooseTransactionId, setChooseTransactionId] = useState(null);
   const [wallets, setWallets] = useState([]);
-  const [currencies] = useState(["VND", "USD"]);
   const [categories, setCategories] = useState([]);
   const [groupedCategories, setGroupedCategories] = useState({});
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [isDataLoaded, setDataLoaded] = useState(false);
   const {
     isOpen: isCreateModalOpen,
     onOpen: onCreateModalOpen,
@@ -85,6 +87,13 @@ function ListData() {
     }
   }, [currentPage, cachedTransactions, fetchTransaction]);
 
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const resetCreateModalData = () => {};
 
   const handleOpenUpdateModal = (transaction) => {
@@ -95,7 +104,7 @@ function ListData() {
 
   const handleDeleteTransaction = async (transactionId) => {
     try {
-      await axios.delete(`/api/transactions/${transactionId}`);
+      await axios.delete(`/api/transactions/delete/${transactionId}`);
       setDeleteAlertOpen(false);
       onUpdateModalClose();
       toast.success("Delete Transaction Successful", {
@@ -148,6 +157,7 @@ function ListData() {
           setCategories(categoriesResponse.data);
           setGroupedCategories(grouped);
           setWallets(walletsResponse.data);
+          setDataLoaded(true);
         } catch (error) {
           console.error("Error fetching data:", error);
         }
@@ -163,22 +173,35 @@ function ListData() {
       <Flex
         justifyContent="center"
         my="20px"
-        direction={{ base: "row", md: "row" }}
+        direction={{ base: "column", md: "row" }}
+        alignItems="center"
       >
-        <Box w="20%" mr={4}>
+        <Box
+          w={{ base: "60%", md: "20%", xl: "20%" }}
+          mr={4}
+          mb={{ base: "20px", md: 0, xl: 0 }}
+        >
           <Select
             placeholder="Select Wallet"
             value={searchWallet}
             onChange={(e) => setSearchWallet(e.target.value)}
           >
-            {wallets.map((wallet) => (
-              <option key={wallet.walletId} value={wallet.walletName}>
-                {wallet.walletName}
-              </option>
-            ))}
+            {Array.isArray(wallets) && wallets.length > 0 ? (
+              wallets.map((wallet) => (
+                <option key={wallet.walletId} value={wallet.walletName}>
+                  {wallet.walletName}
+                </option>
+              ))
+            ) : (
+              <option value="">No wallets found</option>
+            )}
           </Select>
         </Box>
-        <Box w="20%" mr={4}>
+        <Box
+          w={{ base: "60%", md: "20%", xl: "20%" }}
+          mr={4}
+          mb={{ base: "20px", md: 0, xl: 0 }}
+        >
           <Select
             placeholder="Select Type"
             value={searchCateType}
@@ -188,7 +211,12 @@ function ListData() {
             <option value="expense">Expense</option>
           </Select>
         </Box>
-        <Box mr={4} w="20%">
+        <Box
+          mr={4}
+          w={{ base: "100%", md: "20%", xl: "20%" }}
+          textAlign="center"
+          mb={{ base: "20px", md: 0, xl: 0 }}
+        >
           <DatePicker
             selected={searchDate}
             onChange={(date) => setSearchDate(date)}
@@ -203,7 +231,7 @@ function ListData() {
           borderRadius="30px"
           color="white"
           fontWeight="bold"
-          w="20%"
+          w={{ base: "60%", md: "20%", xl: "20%" }}
           bgGradient="linear(to-r, #2b71ad, green.500)"
           _hover={{
             bgGradient: "linear(to-r, #2b71ad, #422AFB)",
@@ -232,7 +260,6 @@ function ListData() {
             fetchTransaction={fetchTransaction}
             wallets={wallets}
             categories={categories}
-            currencies={currencies}
             groupedCategories={groupedCategories}
             resetCreateModalData={resetCreateModalData}
             currentPage={currentPage}
@@ -257,7 +284,6 @@ function ListData() {
             setChooseTransactionId={setChooseTransactionId}
             wallets={wallets}
             categories={categories}
-            currencies={currencies}
             groupedCategories={groupedCategories}
             setDeleteAlertOpen={setDeleteAlertOpen}
             handleOpenUpdateModal={handleOpenUpdateModal}
@@ -311,7 +337,16 @@ function ListData() {
           <Text flex="1">Note</Text>
         </Flex>
 
-        {transaction &&
+        {!isDataLoaded ? (
+          <Center>
+            <Spinner my="20px" />
+          </Center>
+        ) : wallets && wallets.length === 0 ? (
+          <Text textAlign="center" fontSize="xl" mt={5}>
+            You need to create wallet before create transaction
+          </Text>
+        ) : (
+          transaction &&
           transaction.content &&
           transaction.content
             .filter((transaction) =>
@@ -376,7 +411,7 @@ function ListData() {
                   mb={1}
                   py="2"
                   px="4"
-                  fontSize="sm"
+                  fontSize={{ sm: "10px", lg: "sm" }}
                   _hover={{
                     boxShadow:
                       "20px rgba(0, 0, 0, 0.1), 0 0 20px -20px rgba(0, 0, 0, 0.1), 20px 0 20px -20px rgba(0, 0, 0, 0.5), 0 20px 20px -20px rgba(0, 0, 0, 0.5)",
@@ -414,7 +449,8 @@ function ListData() {
                   </Flex>
                 </Box>
               );
-            })}
+            })
+        )}
       </Flex>
 
       <Flex justifyContent="center" mt={4}>
