@@ -116,7 +116,7 @@ function UpdateBill({
         const categoryData = categories.find(
           (cat) => cat.id === parseInt(changeCategory)
         );
-        const response = await axios.put(`/api/bills/${chooseBillId}`, {
+        const response = await axios.put(`/api/bills/update/${chooseBillId}`, {
           billId: chooseBillId,
           billName: changeBillName,
           category: {

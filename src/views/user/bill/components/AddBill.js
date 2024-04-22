@@ -42,6 +42,7 @@ function AddBill({
   categories,
   groupedCategories,
 }) {
+  const inputText = useColorModeValue("gray.700", "gray.100");
   const [changeBillName, setChangeBillName] = useState("");
   const [changeAmount, setChangeAmount] = useState("");
   const [changeDueDate, setChangeDueDate] = useState(() => {
@@ -66,7 +67,6 @@ function AddBill({
     return newDate;
   });
   const [chooseIntervalAmount, setChooseIntervalAmount] = useState(1);
-  const inputText = useColorModeValue("gray.700", "gray.100");
 
   const validateForm = useCallback(() => {
     if (!changeCategory) {
@@ -144,7 +144,7 @@ function AddBill({
           };
         }
 
-        await axios.post("/api/bills", requestData);
+        await axios.post("/api/bills/create", requestData);
         fetchBills(pagePerTab[currentTab]);
         onCreateModalClose();
         toast.success("Create Successfull!", {

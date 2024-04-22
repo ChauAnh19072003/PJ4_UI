@@ -35,16 +35,13 @@ const UpdateCategory = ({
     const currentUser = AuthService.getCurrentUser();
     try {
       if (currentUser) {
-        const response = await axios.put(
-          `/api/categories/${selectedCategory.id}`,
-          {
-            id: selectedCategory.id,
-            name: newCategoryName,
-            userId: currentUser.id,
-            icon: selectedIcon,
-            type: newCategoryType,
-          }
-        );
+        await axios.put(`/api/categories/update/${selectedCategory.id}`, {
+          id: selectedCategory.id,
+          name: newCategoryName,
+          userId: currentUser.id,
+          icon: selectedIcon,
+          type: newCategoryType,
+        });
 
         fetchCategories();
         onClose();

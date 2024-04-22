@@ -17,9 +17,10 @@ import React, { useEffect, useState, useCallback } from "react";
 import { FaEthereum } from "react-icons/fa";
 import routes from "routes.js";
 import { ThemeEditor } from "./ThemeEditor";
-import { useHistory, Link } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import AuthService from "services/auth/auth.service";
 import Notification from "./Notification";
+import UserProfile from "auth/UserProfile";
 // import AuthVerify from 'components/navbar/AuthVerify'
 export default function HeaderLinks(props) {
   const { secondary } = props;
@@ -135,8 +136,8 @@ export default function HeaderLinks(props) {
         bills={bills}
         setUnreadCount={setUnreadCount}
         unreadCount={unreadCount}
-        scrollBehavior='inside'
-        />
+        scrollBehavior="inside"
+      />
       <Menu>
         <MenuButton p="0px">
           <Avatar
@@ -173,20 +174,7 @@ export default function HeaderLinks(props) {
             </Text>
           </Flex>
           <Flex flexDirection="column" p="10px">
-            <MenuItem
-              _hover={{ bg: "none" }}
-              _focus={{ bg: "none" }}
-              borderRadius="8px"
-              px="14px"
-            >
-              {currentUser && currentUser.userId ? (
-                <Link to={`/user/profile/${currentUser.userId}`}>
-                  <Text fontSize="sm">Profile Settings</Text>
-                </Link>
-              ) : (
-                <Text fontSize="sm">Profile Settings</Text>
-              )}
-            </MenuItem>
+            <UserProfile />
             <MenuItem
               _hover={{ bg: "none" }}
               _focus={{ bg: "none" }}

@@ -127,7 +127,7 @@ const UpdateTransaction = ({
         };
 
         const response = await axios.put(
-          `/api/transactions/${chooseTransactionId}`,
+          `/api/transactions/update/${chooseTransactionId}`,
           requestData
         );
 

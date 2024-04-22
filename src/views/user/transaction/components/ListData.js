@@ -104,7 +104,7 @@ function ListData() {
 
   const handleDeleteTransaction = async (transactionId) => {
     try {
-      await axios.delete(`/api/transactions/${transactionId}`);
+      await axios.delete(`/api/transactions/delete/${transactionId}`);
       setDeleteAlertOpen(false);
       onUpdateModalClose();
       toast.success("Delete Transaction Successful", {

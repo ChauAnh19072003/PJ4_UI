@@ -179,7 +179,10 @@ const AddTransaction = ({
           };
         }
 
-        const response = await axios.post("/api/transactions", requestData);
+        const response = await axios.post(
+          "/api/transactions/create",
+          requestData
+        );
 
         if (response.status === 200) {
           fetchTransaction(currentPage);

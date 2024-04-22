@@ -7,9 +7,8 @@ import Header from "components/visitor/Header";
 import Footer from "components/visitor/Footer";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import PasswordField from "./PasswordField";
 const Login = () => {
-  const [showPassword, setShowPassword] = useState(false)
-  const handleClick = () => setShowPassword(!showPassword)
   const history = useHistory();
   const [isSignUpMode, setIsSignUpMode] = useState(false);
 
@@ -176,24 +175,18 @@ const Login = () => {
                     onChange={onChangeEmail}
                   />
                 </div>
-                <div className="input-field">
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    name="password"
-                    value={password}
-                    onChange={onChangePassword}
-                  />
-                </div>
-                <div className="input-field">
-                  <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    name="confirmPassword"
-                    value={confirmPassword}
-                    onChange={onChangeConfirmPassword}
-                  />
-                </div>
+                <PasswordField
+                  label="Password"
+                  name="password"
+                  value={password}
+                  onChange={onChangePassword}
+                />
+                <PasswordField
+                  label="Confirm Password"
+                  name="confirmPassword"
+                  value={confirmPassword}
+                  onChange={onChangeConfirmPassword}
+                />
                 <button className="btn">Sign Up</button>
               </form>
               <form className="sign-in-form" onSubmit={handleLogin} ref={form}>
@@ -207,15 +200,12 @@ const Login = () => {
                     onChange={onChangeEmail}
                   />
                 </div>
-                <div className="input-field">
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    name="password"
-                    value={password}
-                    onChange={onChangePassword}
-                  />
-                </div>
+                <PasswordField
+                  label="Password"
+                  name="password"
+                  value={password}
+                  onChange={onChangePassword}
+                />
                 <button className="btn solid">Sign In</button>
                 <Link
                   to="/auth/forgot-password"

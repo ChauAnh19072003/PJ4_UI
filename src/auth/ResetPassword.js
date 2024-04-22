@@ -8,6 +8,7 @@ import AuthStyles from "./AuthStyles";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
+import PasswordField from "./PasswordField";
 
 const ResetPassword = () => {
   const history = useHistory();
@@ -15,7 +16,7 @@ const ResetPassword = () => {
   const form = useRef();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-    useState(false);
+  useState(false);
   const onChangePassword = (e) => {
     const password = e.target.value;
     setPassword(password);
@@ -96,7 +97,7 @@ const ResetPassword = () => {
   return (
     <HomepageStyles>
       <Header />
-      <ToastContainer/>
+      <ToastContainer />
       <div className="visual"></div>
       <AuthStyles>
         <div className="container password-reset-form">
@@ -108,24 +109,18 @@ const ResetPassword = () => {
                 ref={form}
               >
                 <h2>Reset Password</h2>
-                <div className="input-field">
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    name="password"
-                    value={password}
-                    onChange={onChangePassword}
-                  />
-                </div>
-                <div className="input-field">
-                  <input
-                    type="password"
-                    placeholder="Confirm Password"
-                    name="confirmPassword"
-                    value={confirmPassword}
-                    onChange={onChangeConfirmPassword}
-                  />
-                </div>
+                <PasswordField
+                  label="Password"
+                  name="password"
+                  value={password}
+                  onChange={onChangePassword}
+                />
+                <PasswordField
+                  label="Confirm Password"
+                  name="confirmPassword"
+                  value={confirmPassword}
+                  onChange={onChangeConfirmPassword}
+                />
                 <button className="btn">Reset</button>
               </form>
             </div>

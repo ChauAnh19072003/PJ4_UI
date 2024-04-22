@@ -14,7 +14,6 @@ import {
 } from "@chakra-ui/react";
 import { MdAttachMoney, MdBarChart } from "react-icons/md";
 import MiniCalendar from "components/calendar/MiniCalendar";
-import { TbPigMoney } from "react-icons/tb";
 import AuthService from "services/auth/auth.service";
 import MiniStatistics from "components/card/MiniStatistics";
 import IconBox from "components/icons/IconBox";
@@ -38,7 +37,9 @@ const UserReports = () => {
 
   const fetchTotalIncomeForAllWallets = useCallback(async () => {
     try {
-      const response = await axios.get(`/api/transactions/income/${userId}`);
+      const response = await axios.get(
+        `/api/transactions/allIncome/users/${userId}`
+      );
       const data = response.data;
       const currency = selectedWalletDetails?.currency || "VND";
       return currency === "VND"
@@ -53,7 +54,9 @@ const UserReports = () => {
 
   const fetchTotalExpenseForAllWallets = useCallback(async () => {
     try {
-      const response = await axios.get(`/api/transactions/expense/${userId}`);
+      const response = await axios.get(
+        `/api/transactions/allExpense/users/${userId}`
+      );
       const data = response.data;
       const currency = data.currency || "VND";
       return currency === "VND"
@@ -70,12 +73,12 @@ const UserReports = () => {
     async (walletId) => {
       try {
         const incomeResponse = await axios.get(
-          `/api/transactions/income/${userId}/${walletId}`
+          `/api/transactions/income/users/${userId}/wallets/${walletId}`
         );
         const incomeData = incomeResponse.data;
         const incomeAmount = incomeData.toLocaleString();
 
-        const walletResponse = await axios.get(`/api/wallets/${walletId}`);
+        const walletResponse = await axios.get(`/api/allWallets/${walletId}`);
         const walletCurrency = walletResponse.data.currency || "VND";
 
         return walletCurrency === "VND"
@@ -93,12 +96,12 @@ const UserReports = () => {
     async (walletId) => {
       try {
         const expenseResponse = await axios.get(
-          `/api/transactions/expense/${userId}/${walletId}`
+          `/api/transactions/expense/users/${userId}/wallets/${walletId}`
         );
         const expenseData = expenseResponse.data;
         const expenseAmount = expenseData.toLocaleString();
 
-        const walletResponse = await axios.get(`/api/wallets/${walletId}`);
+        const walletResponse = await axios.get(`/api/allWallets/${walletId}`);
         const walletCurrency = walletResponse.data.currency || "VND";
 
         return walletCurrency === "VND"
@@ -118,7 +121,7 @@ const UserReports = () => {
         let response;
         if (!walletId || walletId === "") {
           response = await axios.get(
-            `/api/transactions/users/wallets/${userId}`
+            `/api/transactions/users/allWallets/${userId}`
           );
         } else {
           response = await axios.get(`/api/transactions/${userId}/${walletId}`);
@@ -183,7 +186,7 @@ const UserReports = () => {
           }
 
           const transactionAllWallet = await axios.get(
-            `/api/transactions/users/wallets/${userId}`
+            `/api/transactions/users/allWallets/${userId}`
           );
           const sortedTransactions = transactionAllWallet.data.sort(
             (a, b) => b.transactionId - a.transactionId
@@ -250,7 +253,7 @@ const UserReports = () => {
             .toLocaleString();
 
           const transactionAllWallet = await axios.get(
-            `/api/transactions/users/wallets/${userId}`
+            `/api/transactions/users/allWallets/${userId}`
           );
           const sortedTransactions = transactionAllWallet.data.sort(
             (a, b) => b.transactionId - a.transactionId

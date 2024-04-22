@@ -80,7 +80,7 @@ const SavingGoalsView = () => {
 
   const handleDeleteSavingGoal = async () => {
     try {
-      await axios.delete(`/api/savinggoals/${savingGoalToDelete}`);
+      await axios.delete(`/api/savinggoals/delete/${savingGoalToDelete}`);
       toast.success("Saving goal successfully deleted");
       const currentUser = AuthService.getCurrentUser();
       if (currentUser && currentUser.id) {
