@@ -105,7 +105,7 @@ const BudgetsOverview = ({ userId }) => {
   const handleDeleteBudget = async () => {
     if (budgetToDelete) {
       try {
-        await axios.delete(`/api/budgets/${budgetToDelete}`);
+        await axios.delete(`/api/budgets/delete/${budgetToDelete}`);
         toast.success("Budget successfully deleted");
         fetchBudgets();
         setBudgetToDelete(null);
@@ -118,15 +118,15 @@ const BudgetsOverview = ({ userId }) => {
   };
 
   const openModalToAdd = () => {
-    setBudgetForm(initialBudgetState); // Reset the form to its initial state
-    setIsEditing(false); // We are adding, not editing
-    onOpen(); // Open the modal
+    setBudgetForm(initialBudgetState); 
+    setIsEditing(false); 
+    onOpen(); 
   };
 
   const openModalToEdit = (budget) => {
-    setBudgetForm(budget); // Populate the form with the budget's data
-    setIsEditing(true); // We are editing, not adding
-    onOpen(); // Open the modal
+    setBudgetForm(budget);
+    setIsEditing(true); 
+    onOpen(); 
   };
 
   const handleBudgetFormChange = (field, value) => {
@@ -148,9 +148,9 @@ const BudgetsOverview = ({ userId }) => {
 
     try {
       if (selectedBudget) {
-        await axios.put(`/api/budgets/${selectedBudget.budgetId}`, budgetData);
+        await axios.put(`/api/budgets/update/${selectedBudget.budgetId}`, budgetData);
       } else {
-        await axios.post(`/api/budgets`, budgetData);
+        await axios.post(`/api/budgets/create`, budgetData);
       }
       toast.success(
         `Budget ${selectedBudget ? "updated" : "added"} successfully`
@@ -209,7 +209,7 @@ const BudgetsOverview = ({ userId }) => {
                       budget.amount > budget.threshold_amount
                         ? "pink.100"
                         : "white"
-                    } // Highlight overages
+                    }
                     p={4}
                     shadow="md"
                     borderWidth="1px"
@@ -279,7 +279,7 @@ const BudgetsOverview = ({ userId }) => {
                         fontWeight="bold"
                         mt={2}
                         textAlign="center"
-                        bg="gray.100" // Make this text stand out
+                        bg="gray.100" 
                         p={1}
                         borderRadius="md"
                       >

@@ -1,6 +1,5 @@
 import React from "react";
-
-import { Icon } from "@chakra-ui/react";
+import { Icon} from "@chakra-ui/react";
 import {
   MdWallet,
   MdHome,
@@ -9,7 +8,7 @@ import{
   GrTransaction,
   GrMoney
 } from "react-icons/gr";
-import { RiBillLine } from "react-icons/ri";
+import { RiBillLine, RiHandCoinFill } from "react-icons/ri";
 import { TbPigMoney, TbCategory } from "react-icons/tb";
 import MainDashboard from "views/user/default";
 import Wallet from "views/user/wallet";
@@ -18,6 +17,7 @@ import Bill from  "views/user/bill"
 import Transactions from "views/user/transaction";
 import Saving from "views/user/saving";
 import Budget from "views/user/budget";
+import Debt from "views/user/debt";
 
 const Routes = [
   {
@@ -69,6 +69,13 @@ const Routes = [
     icon: <Icon as ={RiBillLine} width='20px' height='20px' color='inherit'/>,
     component: Bill,
   },
+  {
+    name : "Debt",
+    layout: "/user",
+    path:"/debt",
+    icon: <Icon as ={RiHandCoinFill} width='20px' height='20px' color='inherit'/>,
+    component: Debt,
+  }
 ];
 
 export default Routes;
