@@ -73,12 +73,14 @@ const UserReports = () => {
     async (walletId) => {
       try {
         const incomeResponse = await axios.get(
-          `/api/transactions/income/users/${userId}/wallets/${walletId}`
+          `/api/transaction/income/users/${userId}/wallets/${walletId}`
         );
         const incomeData = incomeResponse.data;
         const incomeAmount = incomeData.toLocaleString();
 
-        const walletResponse = await axios.get(`/api/allWallets/${walletId}`);
+        const walletResponse = await axios.get(
+          `/api/transaction/users/allWallets/${walletId}`
+        );
         const walletCurrency = walletResponse.data.currency || "VND";
 
         return walletCurrency === "VND"
@@ -101,7 +103,9 @@ const UserReports = () => {
         const expenseData = expenseResponse.data;
         const expenseAmount = expenseData.toLocaleString();
 
-        const walletResponse = await axios.get(`/api/allWallets/${walletId}`);
+        const walletResponse = await axios.get(
+          `/api/transactions/users/allWallets/${walletId}`
+        );
         const walletCurrency = walletResponse.data.currency || "VND";
 
         return walletCurrency === "VND"
