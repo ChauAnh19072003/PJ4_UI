@@ -18,7 +18,7 @@ function PasswordField({ label, name, value, onChange }) {
         onChange={onChange}
       />
       <span className="password-toggle" onClick={togglePasswordVisibility}>
-        {showPassword ? <FaEyeSlash /> : <FaEye />}
+        {showPassword ? <FaEye /> : <FaEyeSlash />}
       </span>
     </div>
   );

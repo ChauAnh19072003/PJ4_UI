@@ -20,7 +20,7 @@ import { ThemeEditor } from "./ThemeEditor";
 import { useHistory } from "react-router-dom";
 import AuthService from "services/auth/auth.service";
 import Notification from "./Notification";
-import UserProfile from "auth/UserProfile";
+import UserProfile from "auth/Profile/UserProfile";
 // import AuthVerify from 'components/navbar/AuthVerify'
 export default function HeaderLinks(props) {
   const { secondary } = props;
