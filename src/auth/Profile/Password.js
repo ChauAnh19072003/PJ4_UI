@@ -19,7 +19,7 @@ import {
 } from "@chakra-ui/react";
 import PasswordField from "./PasswordField";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthService from "services/auth/auth.service";
 
@@ -63,16 +63,7 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
           });
           onPinOpen();
         } else {
-          toast.error(response.data, {
-            position: "top-center",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
+          toast.error(response.data);
         }
       }
     } catch (error) {
@@ -81,31 +72,11 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
         error.response.data &&
         typeof error.response.data === "object"
       ) {
-        toast.error(
-          JSON.stringify(error.response.data, {
-            position: "top-center",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          })
-        );
+        toast.error(JSON.stringify(error.response.data));
       } else if (error.response && typeof error.response.data === "string") {
         const fieldErrors = error.response.data.split("\n");
         fieldErrors.forEach((errorMessage) => {
-          toast.error(errorMessage, {
-            position: "top-center",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
+          toast.error(errorMessage);
         });
       }
     }
@@ -147,7 +118,6 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
       ) {
         toast.error(
           JSON.stringify(error.response.data, {
-            position: "top-center",
             autoClose: 3000,
             hideProgressBar: false,
             closeOnClick: true,
@@ -159,7 +129,6 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
         );
       } else if (error.response && typeof error.response.data === "string") {
         toast.error(error.response.data, {
-          position: "top-center",
           autoClose: 3000,
           hideProgressBar: false,
           closeOnClick: true,
@@ -184,7 +153,7 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
 
   return (
     <>
-      <Modal isOpen={isPinOpen} onClose={handleClosePinModal}>
+      <Modal isOpen={isPinOpen} onClose={handleClosePinModal} isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Enter OTP</ModalHeader>
@@ -193,7 +162,6 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
             <Flex justify="space-evenly">
               <PinInput
                 size="lg"
-                justifyContent="sp"
                 onChange={(value) => setEnteredOTP(value)}
                 onComplete={(value) => setEnteredOTP(value)}
               >
@@ -256,6 +224,7 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
           Cancel
         </Button>
       </ModalFooter>
+      <ToastContainer />
     </>
   );
 }
