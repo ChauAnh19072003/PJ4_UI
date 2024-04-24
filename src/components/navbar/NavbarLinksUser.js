@@ -1,11 +1,11 @@
 import axios from "axios";
 import {
   Avatar,
+  Button,
   Flex,
   Icon,
   Menu,
   MenuButton,
-  MenuItem,
   MenuList,
   Text,
   useColorModeValue,
@@ -35,11 +35,24 @@ export default function HeaderLinks(props) {
     "14px 17px 40px 4px rgba(112, 144, 176, 0.18)",
     "14px 17px 40px 4px rgba(112, 144, 176, 0.06)"
   );
+  const [username, setUsername] = useState("");
   const history = useHistory();
   const logOut = async () => {
     await AuthService.logout();
     history.push("/auth/signin");
   };
+
+  const fetchUser = async () => {
+    if (currentUser) {
+      const response = await axios.get(`/api/auth/${currentUser.id}`);
+      setUsername(response.data.username);
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
   useEffect(() => {
     const isLoggedIn = AuthService.isLoggedIn();
 
@@ -170,12 +183,12 @@ export default function HeaderLinks(props) {
               fontWeight="700"
               color={textColor}
             >
-              👋&nbsp; Hey, {currentUser && currentUser.username}
+              👋&nbsp; Hey, {username}
             </Text>
           </Flex>
           <Flex flexDirection="column" p="10px">
             <UserProfile />
-            <MenuItem
+            <Button
               _hover={{ bg: "none" }}
               _focus={{ bg: "none" }}
               color="red.400"
@@ -184,7 +197,7 @@ export default function HeaderLinks(props) {
               onClick={logOut}
             >
               <Text fontSize="sm">Logout</Text>
-            </MenuItem>
+            </Button>
           </Flex>
         </MenuList>
       </Menu>
