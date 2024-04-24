@@ -27,6 +27,7 @@ import {
   ModalOverlay,
   useDisclosure,
   Progress,
+  Select
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
@@ -39,6 +40,7 @@ const SavingGoalsView = () => {
   const cancelRef = useRef();
   const [savingGoalToDelete, setSavingGoalToDelete] = useState(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [wallets, setWallets] = useState([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const initialSavingGoalState = {
     name: "",
@@ -56,7 +58,23 @@ const SavingGoalsView = () => {
     if (currentUser && currentUser.id) {
       fetchSavingGoalsByUserId(currentUser.id);
     }
+    fetchWallets();
   }, []);
+
+  const fetchWallets = async () => {
+    try {
+      const currentUser = AuthService.getCurrentUser();
+      if (currentUser && currentUser.id) {
+        const response = await axios.get(
+          `/api/wallets/users/${currentUser.id}`
+        );
+        setWallets(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch wallets", error);
+      toast.error("Failed to fetch wallets.");
+    }
+  };
 
   const fetchSavingGoalsByUserId = async (userId) => {
     setLoading(true);
@@ -254,6 +272,22 @@ const SavingGoalsView = () => {
                 }
                 placeholder="Enter target amount"
               />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel>Wallet</FormLabel>
+              <Select
+                placeholder="Select wallet"
+                value={savingGoalForm.walletId}
+                onChange={(e) =>
+                  handleSavingGoalFormChange("walletId", e.target.value)
+                }
+              >
+                {wallets.map((wallet) => (
+                  <option key={wallet.walletId} value={wallet.walletId}>
+                    {wallet.walletName}
+                  </option>
+                ))}
+              </Select>
             </FormControl>
             <FormControl mt={4}>
               <FormLabel>Start Date</FormLabel>
