@@ -2,7 +2,7 @@ import { Icon, Flex, Text, useColorModeValue } from "@chakra-ui/react";
 import { RiBillLine } from "react-icons/ri";
 import React from "react";
 
-export function ItemContent({ info, dueDate }) {
+export function ItemContent({ info, dueDate, timestamp }) {
   const textColor = useColorModeValue("navy.700", "white");
   const rowColor = getRowColor(dueDate);
   let statusText = "";
@@ -12,6 +12,8 @@ export function ItemContent({ info, dueDate }) {
   } else if (rowColor === "yellow.300") {
     statusText = "Bill Due in 3 Days. Please prepare the money to pay the bill.";
   }
+
+  const formattedTimestamp = new Date(timestamp).toLocaleString();
 
   return (
     <>
@@ -46,6 +48,14 @@ export function ItemContent({ info, dueDate }) {
             {statusText}{" "}
           </Text>
         </Flex>
+        <Text
+          fontSize={{ base: "sm", md: "sm" }}
+          lineHeight="100%"
+          color={textColor}
+          mt="5px"
+        >
+          {formattedTimestamp}
+        </Text>
       </Flex>
     </>
   );
