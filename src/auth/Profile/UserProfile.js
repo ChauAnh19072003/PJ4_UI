@@ -45,7 +45,9 @@ function UserProfile() {
 
   const fetchUser = async () => {
     if (currentUser) {
-      const response = await axios.get(`/api/auth/${currentUser.id}`);
+      const response = await axios.get(`/api/auth/users/${currentUser.id}`, {
+        headers: AuthHeader(),
+      });
       setUser(response.data);
       setUserId(response.data.id);
       setUsername(response.data.username);

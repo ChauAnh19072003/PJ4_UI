@@ -45,7 +45,7 @@ export default function HeaderLinks(props) {
 
   const fetchUser = async () => {
     if (currentUser) {
-      const response = await axios.get(`/api/auth/${currentUser.id}`, {
+      const response = await axios.get(`/api/auth/users/${currentUser.id}`, {
         headers: AuthHeader(),
       });
       setUsername(response.data.username);
