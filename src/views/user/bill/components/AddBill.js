@@ -12,15 +12,7 @@ import {
   ModalBody,
   Box,
   Input,
-  Radio,
-  RadioGroup,
-  FormControl,
   useColorModeValue,
-  NumberInputField,
-  NumberDecrementStepper,
-  NumberIncrementStepper,
-  NumberInput,
-  NumberInputStepper,
   Popover,
   PopoverTrigger,
   PopoverContent,
@@ -28,47 +20,75 @@ import {
   PopoverBody,
   PopoverHeader,
   PopoverCloseButton,
-  SimpleGrid,
+  Select,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
 } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Recurrence from "./Recurrence";
 
 function AddBill({
   onCreateModalClose,
   fetchBills,
-  currentTab,
   resetCreateModalData,
-  pagePerTab,
   categories,
+  currentPage,
+  wallets,
   groupedCategories,
 }) {
+  const adjustDateToUTC = (date) => {
+    date.setHours(date.getHours() + 7);
+    date.setUTCHours(0, 0, 0, 0);
+    return date;
+  };
   const inputText = useColorModeValue("gray.700", "gray.100");
-  const [changeBillName, setChangeBillName] = useState("");
-  const [changeAmount, setChangeAmount] = useState("");
-  const [changeDueDate, setChangeDueDate] = useState(() => {
-    const newDate = new Date();
-    newDate.setHours(newDate.getHours() + 7); // UTC+7
-    newDate.setUTCHours(0, 0, 0, 0);
-    return newDate;
-  });
+  const [selectedOption, setSelectedOption] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
-  const [chooseReurrenceType, setChooseRecurrenceType] = useState("DAILY");
-  const [showRecurrenceOptions, setShowRecurrenceOptions] = useState(false);
+  const [changeAmount, setChangeAmount] = useState("");
   const [changeStartDate, setChangeStartDate] = useState(() => {
-    const newDate = new Date();
-    newDate.setHours(newDate.getHours() + 7); // UTC+7
-    newDate.setUTCHours(0, 0, 0, 0);
-    return newDate;
+    adjustDateToUTC(new Date());
   });
-  const [changeEndDate, setChangeEndDate] = useState(() => {
-    const newDate = new Date();
-    newDate.setHours(newDate.getHours() + 7); // UTC+7
-    newDate.setUTCHours(0, 0, 0, 0);
-    return newDate;
-  });
-  const [chooseIntervalAmount, setChooseIntervalAmount] = useState(1);
+  const [untilDate, setUntilDate] = useState(adjustDateToUTC(new Date()));
+  const [changeWallet, setChangeWallet] = useState("");
+  const recId = null;
+  const [times, setTimes] = useState(null);
+  const [selectedFrequency, setSelectedFrequency] = useState("");
+  const [selectedMonthOption, setSelectedMonthOption] = useState("");
+  const [selectedMonthWeek, setSelectedMonthWeek] = useState("");
+  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState("MONDAY");
+  const [selectedMonthDay, setSelectedMonthDay] = useState("");
+  const [selectedFrequencyValue, setSelectedFrequencyValue] = useState("");
+
+  useEffect(() => {
+    if (resetCreateModalData) {
+      setChangeAmount("");
+      setChangeStartDate(adjustDateToUTC(new Date()));
+      setChangeWallet("");
+    }
+  }, [resetCreateModalData]);
+
+  const handleUntilDateChange = (dateString) => {
+    setUntilDate(adjustDateToUTC(new Date(dateString)));
+  };
 
   const validateForm = useCallback(() => {
+    // if (!changeWallet) {
+    //   toast.error("Please select wallet!", {
+    //     position: "top-center",
+    //     autoClose: 3000,
+    //     hideProgressBar: false,
+    //     closeOnClick: true,
+    //     pauseOnHover: true,
+    //     draggable: true,
+    //     progress: undefined,
+    //     theme: "light",
+    //   });
+    //   return false;
+    // }
     if (!changeCategory) {
       toast.error("Please select category!", {
         position: "top-center",
@@ -83,38 +103,48 @@ function AddBill({
       return false;
     }
     return true;
-  }, [changeCategory]);
-
-  useEffect(() => {
-    if (resetCreateModalData) {
-      setChangeBillName("");
-      setChangeAmount("");
-      setChangeDueDate(() => {
-        const newDate = new Date();
-        newDate.setHours(newDate.getHours() + 7); // UTC+7
-        newDate.setUTCHours(0, 0, 0, 0);
-        return newDate;
-      });
-      setChooseRecurrenceType();
-      setChangeStartDate();
-      setChangeEndDate();
-      setChooseIntervalAmount(1);
-    }
-  }, [resetCreateModalData]);
-
+  }, [changeWallet, changeCategory]);
   const handleCreateBill = useCallback(async () => {
-    if (!validateForm()) {
-      return;
-    }
+    // if (!validateForm()) {
+    //   return;
+    // }
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
+        const walletData = wallets.find(
+          (wallet) => wallet.walletName === changeWallet
+        );
         const categoryData = categories.find(
           (cat) => cat.id === parseInt(changeCategory)
         );
-        const requestData = {
+
+        const billData = {
           user: {
             id: currentUser.id,
+          },
+          amount: changeAmount,
+          recurrence: {
+            user: {
+              id: currentUser.id,
+            },
+            frequency: selectedFrequency,
+            every: selectedFrequencyValue,
+            dayOfWeek: selectedDayOfWeek,
+            monthOption: selectedMonthOption,
+            endType: selectedOption,
+            endDate: untilDate,
+            times: times,
+            startDate: changeStartDate,
+          },
+          wallet: {
+            walletId: walletData.walletId,
+            userId: currentUser.id,
+            walletName: changeWallet,
+            balance: walletData.balance,
+            bankName: walletData.bankName,
+            bankAccountNum: walletData.bankAccountNum,
+            walletType: walletData.walletType,
+            currency: walletData.currency,
           },
           category: {
             id: categoryData.id,
@@ -126,26 +156,10 @@ function AddBill({
             },
             userId: currentUser.id,
           },
-          billName: changeBillName,
-          amount: changeAmount,
-          dueDate: changeDueDate,
         };
-        if (
-          chooseReurrenceType &&
-          chooseReurrenceType !== "N/A" &&
-          changeStartDate &&
-          changeEndDate
-        ) {
-          requestData.recurrence = {
-            recurrenceType: chooseReurrenceType,
-            startDate: changeStartDate,
-            endDate: changeEndDate,
-            intervalAmount: chooseIntervalAmount,
-          };
-        }
 
-        await axios.post("/api/bills/create", requestData);
-        fetchBills(pagePerTab[currentTab]);
+        await axios.post("/api/bills/create", billData);
+        fetchBills(currentPage);
         onCreateModalClose();
         toast.success("Create Successfull!", {
           position: "top-center",
@@ -192,64 +206,36 @@ function AddBill({
         }
       }
     }
-  }, [
-    changeAmount,
-    changeCategory,
-    changeDueDate,
-    changeEndDate,
-    changeStartDate,
-    chooseIntervalAmount,
-    chooseReurrenceType,
-    fetchBills,
-    categories,
-    onCreateModalClose,
-    validateForm,
-    changeBillName,
-    currentTab,
-    pagePerTab,
-  ]);
-
-  const handleIntervalChange = (value) => {
-    setChooseIntervalAmount(value);
-  };
-
-  useEffect(() => {
-    if (chooseReurrenceType && chooseReurrenceType !== "N/A") {
-      setShowRecurrenceOptions(true);
-    } else {
-      setShowRecurrenceOptions(false);
-    }
-  }, [chooseReurrenceType]);
+  }, [fetchBills, categories, onCreateModalClose, currentPage]);
 
   const categoryOptions = useMemo(() => {
     return Object.keys(groupedCategories).map((type) => (
       <Box key={type} mb={2}>
         <Text fontWeight="bold" mb={2}>
-          {type === "EXPENSE"}
+          {type === "EXPENSE" ? "Expense" : type === "DEBT" ? "Debt" : "Income"}
         </Text>
-        <SimpleGrid columns={5} spacing={2}>
-          {groupedCategories[type].map((category) => (
-            <Button
-              key={category.id}
-              variant="ghost"
-              w="100%"
-              textAlign="left"
-              justifyContent="start"
-              alignItems="center"
-              onClick={() => {
-                setChangeCategory(category.id.toString());
-              }}
-            >
-              <img
-                src={`/assets/img/icons/${category.icon.path}`}
-                alt={category.name}
-                width="40"
-                height="40"
-                style={{ marginRight: "8px" }}
-              />
-            </Button>
-          ))}
-        </SimpleGrid>
+        {groupedCategories[type].map((category) => (
+          <Button
+            key={category.id}
+            variant="ghost"
+            w="100%"
+            textAlign="left"
+            justifyContent="start"
+            alignItems="center"
+            onClick={() => {
+              setChangeCategory(category.id.toString());
+            }}
+          >
+            <img
+              src={`/assets/img/icons/${category.icon.path}`}
+              alt={category.name}
+              width="20"
+              height="20"
+              style={{ marginRight: "8px" }}
+            />
+            {category.name}
+          </Button>
+        ))}
       </Box>
     ));
   }, [groupedCategories]);
@@ -258,36 +244,13 @@ function AddBill({
     <>
       <ModalBody>
         <Flex direction="column">
-          <Flex mb={4} alignItems="center">
-            <Text flex={1} mb={2} mr={2}>
-              Bill Name:
-            </Text>
-            <Box flex={1} mr={2}>
-              <Input
-                value={changeBillName}
-                onChange={(e) => setChangeBillName(e.target.value)}
-                color={inputText}
-                placeholder="Bill Name"
-                w="120px"
-              />
-            </Box>
-            <Text flex={1} mb={2} mr={2} textAlign="right">
-              {" "}
-              Category:
-            </Text>
-            <Box flex={1}>
-              <Popover placement="right-start">
-                <PopoverTrigger>
-                  <Button
-                    variant="ghost"
-                    w="100%"
-                    textAlign="left"
-                    justifyContent="start"
-                    alignItems="center"
-                    padding="0"
-                    height="auto"
-                  >
-                    {changeCategory ? (
+          <Box mb={4}>
+            <Text mb={2}>Category:</Text>
+            <Popover placement="right-start">
+              <PopoverTrigger>
+                <Button color={inputText} textAlign="left" w="100%">
+                  {changeCategory ? (
+                    <Flex alignItems="center">
                       <img
                         src={`/assets/img/icons/${
                           categories.find(
@@ -299,39 +262,29 @@ function AddBill({
                             (cat) => cat.id === parseInt(changeCategory)
                           ).name
                         }
-                        width="40"
-                        height="40"
+                        width="20"
+                        height="20"
                         style={{ marginRight: "8px" }}
                       />
-                    ) : (
-                      <Text
-                        w="100%"
-                        textAlign="center"
-                        justifyContent="start"
-                        alignItems="center"
-                        mb="5px"
-                        fontSize="15px"
-                      >
-                        {" "}
-                        Select Category
-                      </Text>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  overflowY="auto"
-                  maxHeight="450px"
-                  minWidth="400px"
-                  maxWidth="500px"
-                >
-                  <PopoverArrow />
-                  <PopoverCloseButton />
-                  <PopoverHeader>Select Category</PopoverHeader>
-                  <PopoverBody>{categoryOptions} </PopoverBody>
-                </PopoverContent>
-              </Popover>
-            </Box>
-          </Flex>
+                      {
+                        categories.find(
+                          (cat) => cat.id === parseInt(changeCategory)
+                        ).name
+                      }
+                    </Flex>
+                  ) : (
+                    "Select Category"
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent overflowY="auto" maxHeight="450px">
+                <PopoverArrow />
+                <PopoverCloseButton />
+                <PopoverHeader>Select Category</PopoverHeader>
+                <PopoverBody>{categoryOptions}</PopoverBody>
+              </PopoverContent>
+            </Popover>
+          </Box>
 
           <Box mb={4}>
             <Text mb={2}>Amount:</Text>
@@ -343,73 +296,190 @@ function AddBill({
               color={inputText}
             />
           </Box>
-          <Box mb={4}>
-            <FormControl>
-              <Text mb={2}>Due Date:</Text>
-              <DatePickerStyle>
-                <DatePicker
-                  selected={changeDueDate}
-                  onChange={(date) => setChangeDueDate(date)}
-                  dateFormat="yyyy-MM-dd"
-                  customInput={<Input color={inputText} />}
-                  wrapperClassName="custom-datepicker"
-                  placeholderText="YYYY/MM/DD"
-                />
-              </DatePickerStyle>
-            </FormControl>
-          </Box>
-          {showRecurrenceOptions && (
-            <>
-              <Box
-                mb={4}
-                display="flex"
-                flexDirection={{ base: "column", md: "row" }}
-                alignItems="center"
+          <Box mr={4}>
+            <Text mb={2}>Wallet:</Text>
+            {wallets && wallets.length > 0 ? (
+              <Select
+                w="385px"
+                color={inputText}
+                placeholder="Select Wallet"
+                value={changeWallet}
+                onChange={(e) => setChangeWallet(e.target.value)}
               >
-                <FormControl mr={{ base: 0, md: 4 }}>
-                  <Text mb={2}>Start Date:</Text>
-                  <DatePicker
-                    selected={changeStartDate}
-                    onChange={(date) => setChangeStartDate(date)}
-                    dateFormat="yyyy-MM-dd"
-                    customInput={<Input color={inputText} />}
-                    wrapperClassName="custom-datepicker"
-                    placeholderText="YYYY/MM/DD"
-                  />
-                </FormControl>
-                <FormControl>
-                  <Text mb={2}>End Date:</Text>
-                  <DatePicker
-                    selected={changeEndDate}
-                    onChange={(date) => setChangeEndDate(date)}
-                    dateFormat="yyyy-MM-dd"
-                    customInput={<Input color={inputText} />}
-                    wrapperClassName="custom-datepicker"
-                    placeholderText="YYYY/MM/DD"
-                  />
-                </FormControl>
-              </Box>
-
-              <Box mb={4}>
-                <RadioGroup
-                  onChange={(value) => setChooseRecurrenceType(value)}
-                  value={chooseReurrenceType}
+                {wallets.map((wallet) => (
+                  <option key={wallet.walletId} value={wallet.walletName}>
+                    {wallet.walletName}
+                  </option>
+                ))}
+              </Select>
+            ) : (
+              <Text color="red.500">
+                No wallets available. Please create a wallet first.
+              </Text>
+            )}
+          </Box>
+          <Box mb={4} mt={3}>
+            <Text mb={2}>Frequency:</Text>
+            <Select
+              value={selectedFrequency}
+              onChange={(e) => setSelectedFrequency(e.target.value)}
+              color={inputText}
+            >
+              <option value="repeat daily">Repeat Daily</option>
+              <option value="repeat weekly">Repeat Weekly</option>
+              <option value="repeat monthly">Repeat Monthly</option>
+              <option value="repeat yearly">Repeat Yearly</option>
+            </Select>
+          </Box>
+          <Box mb={4}>
+            <Text mb={2}>Every:</Text>
+            {selectedFrequency && (
+              <Select
+                color={inputText}
+                value={selectedFrequencyValue}
+                onChange={(e) => setSelectedFrequencyValue(e.target.value)}
+              >
+                {[...Array(30).keys()].map((day) => (
+                  <option key={day} value={day + 1}>
+                    {`${day + 1} ${
+                      selectedFrequency === "repeat weekly"
+                        ? "weeks"
+                        : selectedFrequency === "repeat monthly"
+                        ? "months"
+                        : "days"
+                    }`}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Box>
+          <Box mb={4}>
+            {selectedFrequency === "repeat weekly" && (
+              <>
+                <Text mb={2}>Select Day:</Text>
+                <Select
+                  value={selectedDayOfWeek}
+                  onChange={(e) => setSelectedDayOfWeek(e.target.value)}
+                  color={inputText}
                 >
-                  <Text mb={2}>Recurrence:</Text>
-                  <Flex direction="row" justify="space-between">
-                    <Radio value="DAILY">Daily</Radio>
-                    <Radio value="WEEKLY">Weekly</Radio>
-                    <Radio value="MONTHLY">Monthly</Radio>
-                    <Radio value="ANNUALLY">Annually</Radio>
-                  </Flex>
-                </RadioGroup>
-              </Box>
-              <Box mb={4}>
-                <Text mb={2}>Interval Amount:</Text>
+                  {[
+                    { label: "Monday", value: "MONDAY" },
+                    { label: "Tuesday", value: "TUESDAY" },
+                    { label: "Wednesday", value: "WEDNESDAY" },
+                    { label: "Thursday", value: "THURSDAY" },
+                    { label: "Friday", value: "FRIDAY" },
+                    { label: "Saturday", value: "SATURDAY" },
+                    { label: "Sunday", value: "SUNDAY" },
+                  ].map((day) => (
+                    <option key={day.value} value={day.value}>
+                      {day.label}
+                    </option>
+                  ))}
+                </Select>
+              </>
+            )}
+          </Box>
+          {selectedFrequency === "repeat monthly" && (
+            <Box mb={4}>
+              <Text mb={2}>Monthly Repeat Options:</Text>
+              <>
+                <Select
+                  value={selectedMonthOption}
+                  onChange={(e) => setSelectedMonthOption(e.target.value)}
+                  color={inputText}
+                >
+                  <option value="sameday">
+                    On the same day of each month (start day)
+                  </option>
+                  <option value="weekday">On every weekday of month</option>
+                </Select>
+                {selectedMonthOption === "weekday" && (
+                  <>
+                    <Text mb={2}>Select Week:</Text>
+                    <Select
+                      value={selectedMonthWeek}
+                      onChange={(e) => setSelectedMonthWeek(e.target.value)}
+                      color={inputText}
+                    ></Select>
+                    <Text mb={2}>Select Day:</Text>
+                    <Select
+                      value={selectedMonthDay}
+                      onChange={(e) => setSelectedMonthDay(e.target.value)}
+                      color={inputText}
+                    ></Select>
+                  </>
+                )}
+              </>
+            </Box>
+          )}
+
+          <Box mb={4}>
+            <Text mb={2}>From:</Text>
+            <DatePickerStyle>
+              <DatePicker
+                selected={changeStartDate}
+                onChange={(date) => setChangeStartDate(date)}
+                dateFormat="yyyy-MM-dd"
+                customInput={<Input color={inputText} />}
+                wrapperClassName="custom-datepicker"
+                color={inputText}
+              />
+            </DatePickerStyle>
+          </Box>
+          <Box mb={4}>
+            <Button
+              onClick={() => setSelectedOption("forever")}
+              backgroundColor={
+                selectedOption === "forever" ? "gray.200" : undefined
+              }
+              w="100%"
+            >
+              Forever
+            </Button>
+          </Box>
+          <Box mb={4}>
+            <Button
+              onClick={() => setSelectedOption("until")}
+              backgroundColor={
+                selectedOption === "until" ? "gray.200" : undefined
+              }
+              w="100%"
+            >
+              Until
+            </Button>
+            {selectedOption === "until" && (
+              <>
+                <Text mb={2}>Until Date:</Text>
+                <Input
+                  type="date"
+                  value={untilDate}
+                  onChange={(e) => handleUntilDateChange(e.target.value)}
+                  color="gray.700"
+                  mt={2}
+                />
+              </>
+            )}
+          </Box>
+          <Box mb={4}>
+            <Button
+              onClick={() => setSelectedOption("for")}
+              backgroundColor={
+                selectedOption === "for" ? "gray.200" : undefined
+              }
+              w="100%"
+            >
+              For
+            </Button>
+            {selectedOption === "for" && (
+              <Flex alignItems="center" justifyContent="center" mt={2}>
+                <Text mb={2} mr={2}>
+                  Times:
+                </Text>
                 <NumberInput
-                  value={chooseIntervalAmount}
-                  onChange={handleIntervalChange}
-                  min={0}
+                  value={times}
+                  onChange={(e) => setTimes(e.target.value)}
+                  color="gray.700"
+                  w={200}
                 >
                   <NumberInputField color={inputText} />
                   <NumberInputStepper>
@@ -417,29 +487,9 @@ function AddBill({
                     <NumberDecrementStepper />
                   </NumberInputStepper>
                 </NumberInput>
-              </Box>
-            </>
-          )}
-          {!showRecurrenceOptions ? (
-            <Button
-              onClick={() => setShowRecurrenceOptions(true)}
-              variant="outline"
-              colorScheme="blue"
-              mb={4}
-              width="100%"
-            >
-              Show more choose recurrence
-            </Button>
-          ) : (
-            <Button
-              backgroundColor="red.300"
-              onClick={() => setShowRecurrenceOptions(false)}
-              mb={4}
-              width="100%"
-            >
-              Hide
-            </Button>
-          )}
+              </Flex>
+            )}
+          </Box>
         </Flex>
       </ModalBody>
       <ModalFooter justifyContent="center">

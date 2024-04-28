@@ -16,6 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { MdNotificationsNone } from "react-icons/md";
 import { ItemContent } from "components/menu/ItemContent";
+import AuthHeader from "services/auth/authHeader";
 
 function Notification() {
   const textColorBrand = useColorModeValue("brand.700", "brand.400");
@@ -32,9 +33,16 @@ function Notification() {
     const currentUser = AuthService.getCurrentUser();
     const fetchUnreadNotifications = async () => {
       try {
-        const response = await axios.get(`/api/notifications/user/${currentUser.id}`);
+        const response = await axios.get(
+          `/api/notifications/user/${currentUser.id}`,
+          {
+            headers: AuthHeader(),
+          }
+        );
         setNotifications(response.data);
-        setUnreadCount(response.data.filter(notification => !notification.read).length);
+        setUnreadCount(
+          response.data.filter((notification) => !notification.read).length
+        );
       } catch (error) {
         console.error("Error fetching unread notifications:", error);
       }
@@ -75,13 +83,15 @@ function Notification() {
   const markAllAsRead = async () => {
     try {
       await Promise.all(
-        notifications.filter(notification => !notification.read).map(async notification => {
-          await axios.put(`/api/notifications/update/${notification.id}`, {
-            ...notification,
-            is_read: true,
-            read: true,
-          });
-        })
+        notifications
+          .filter((notification) => !notification.read)
+          .map(async (notification) => {
+            await axios.put(`/api/notifications/update/${notification.id}`, {
+              ...notification,
+              is_read: true,
+              read: true,
+            });
+          })
       );
 
       // Fetch updated notifications or clear them locally

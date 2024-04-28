@@ -8,11 +8,6 @@ import { SearchBar } from "components/navbar/searchBar/SearchBar";
 import DeleteConfirmationAlert from "./Delete";
 import {
   Text,
-  Tabs,
-  Tab,
-  TabPanels,
-  TabPanel,
-  TabList,
   Flex,
   Button,
   Modal,
@@ -24,22 +19,20 @@ import {
   Box,
   Input,
   useColorModeValue,
-  Image,
+  Center,
+  Spinner,
 } from "@chakra-ui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AddBill from "./AddBill";
 import UpdateBill from "./UpdateBill";
+import AuthHeader from "services/auth/authHeader";
 
 function BillList() {
-  const [bills, setBills] = useState({
-    overdueBills: [],
-    dueIn3DaysBills: [],
-    futureDueBills: [],
-  });
-  const billsPerPage = 10;
-  const [currentTab, setCurrentTab] = useState(0);
-  const [pagePerTab, setPagePerTab] = useState([0, 0, 0]);
+  const [isDataLoaded, setDataLoaded] = useState(false);
+  const [bills, setBills] = useState({ content: [] });
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [chooseBillId, setChooseBillId] = useState(null);
   const {
     isOpen: isUpdateModalOpen,
@@ -59,80 +52,37 @@ function BillList() {
   const isFetchingRef = useRef(false);
   const [categories, setCategories] = useState([]);
   const [groupedCategories, setGroupedCategories] = useState({});
+  const [wallets, setWallets] = useState([]);
 
-  const fetchBills = useCallback(
-    async (currentPage) => {
-      const currentUser = AuthService.getCurrentUser();
-      if (currentUser) {
-        try {
-          isFetchingRef.current = true;
-          const response = await axios.get(
-            `/api/bills/users/${currentUser.id}/bills?page=${currentPage}&size=${billsPerPage}`
-          );
-          const { overdueBills, dueIn3DaysBills, futureDueBills } =
-            response.data;
-          setBills((prevBills) => ({
-            ...prevBills,
-            overdueBills:
-              currentPage === 0
-                ? overdueBills
-                : [...prevBills.overdueBills, ...overdueBills],
-            dueIn3DaysBills:
-              currentPage === 0
-                ? dueIn3DaysBills
-                : [...prevBills.dueIn3DaysBills, ...dueIn3DaysBills],
-            futureDueBills:
-              currentPage === 0
-                ? futureDueBills
-                : [...prevBills.futureDueBills, ...futureDueBills],
-          }));
-        } catch (error) {
-          console.error("Error fetching bills:", error);
-        } finally {
-          isFetchingRef.current = false;
-        }
+  const fetchBills = useCallback(async (page) => {
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      try {
+        isFetchingRef.current = true;
+        const response = await axios.get(
+          `/api/bills/users/${currentUser.id}?page=${page}&size=10`,
+          {
+            headers: AuthHeader(),
+          }
+        );
+        setBills(response.data);
+        setTotalPages(response.data.totalPages);
+      } catch (error) {
+        console.error("Error fetching bills:", error);
+      } finally {
+        isFetchingRef.current = false;
       }
-    },
-    [billsPerPage]
-  );
+    }
+  }, []);
 
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     if (isInitialLoad) {
-      fetchBills(pagePerTab[currentTab]);
+      fetchBills(currentPage);
       setIsInitialLoad(false);
     }
-  }, [currentTab, pagePerTab, fetchBills, isInitialLoad]);
-
-  const getRowColor = (dueDate) => {
-    const currentDate = new Date();
-    currentDate.setHours(currentDate.getHours() + 7); // UTC+7
-    currentDate.setUTCHours(0, 0, 0, 0);
-
-    const dueDateObj = new Date(dueDate);
-    dueDateObj.setHours(dueDateObj.getHours() + 7); // UTC+7
-    dueDateObj.setUTCHours(0, 0, 0, 0);
-
-    const threeDaysFromDueDate = new Date(dueDateObj);
-    threeDaysFromDueDate.setDate(threeDaysFromDueDate.getDate() - 3); // 3 days before dueDate
-    threeDaysFromDueDate.setUTCHours(0, 0, 0, 0);
-
-    const overDueDate = new Date(dueDateObj);
-    overDueDate.setDate(overDueDate.getDate() - 1); // 1 day before dueDate
-    overDueDate.setUTCHours(0, 0, 0, 0);
-
-    if (currentDate > dueDateObj) {
-      return "red.200"; // overdue
-    } else if (
-      currentDate >= threeDaysFromDueDate &&
-      currentDate <= dueDateObj
-    ) {
-      return "yellow.200"; // within 3 days to dueDate
-    } else {
-      return "green.100"; // more than 3 days to dueDate
-    }
-  };
+  }, [currentPage, fetchBills, isInitialLoad, isFetchingRef]);
 
   const resetCreateModalData = () => {};
 
@@ -142,12 +92,8 @@ function BillList() {
     onUpdateModalOpen();
   };
 
-  const handlePageChange = (newPageNumber) => {
-    setPagePerTab((prevPages) => {
-      const newPages = [...prevPages];
-      newPages[currentTab] = newPageNumber;
-      return newPages;
-    });
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
   };
 
   const handleDeleteBill = async (billId) => {
@@ -165,7 +111,7 @@ function BillList() {
         progress: undefined,
         theme: "light",
       });
-      fetchBills(pagePerTab[currentTab]);
+      fetchBills(currentPage);
     } catch (error) {
       console.error("Error deleting bill:", error);
     }
@@ -186,8 +132,13 @@ function BillList() {
       const currentUser = AuthService.getCurrentUser();
       if (currentUser) {
         try {
-          const [categoriesResponse] = await Promise.all([
-            axios.get(`/api/categories/user/${currentUser.id}`),
+          const [categoriesResponse, walletsResponse] = await Promise.all([
+            axios.get(`/api/categories/user/${currentUser.id}`, {
+              headers: AuthHeader(),
+            }),
+            axios.get(`/api/wallets/users/${currentUser.id}`, {
+              headers: AuthHeader(),
+            }),
           ]);
           const grouped = categoriesResponse.data.reduce((acc, category) => {
             const { type } = category;
@@ -199,6 +150,8 @@ function BillList() {
           }, {});
           setCategories(categoriesResponse.data);
           setGroupedCategories(grouped);
+          setWallets(walletsResponse.data);
+          setDataLoaded(true);
         } catch (error) {
           console.error("Error fetching data:", error);
         }
@@ -261,7 +214,11 @@ function BillList() {
         </Button>
       </Flex>
       {/* CREATE */}
-      <Modal isOpen={isCreateModalOpen} onClose={onCreateModalClose}>
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={onCreateModalClose}
+        scrollBehavior="inside"
+      >
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Add Bill</ModalHeader>
@@ -269,11 +226,11 @@ function BillList() {
           <AddBill
             onCreateModalClose={onCreateModalClose}
             fetchBills={fetchBills}
-            currentTab={currentTab}
+            currentPage={currentPage}
             resetCreateModalData={resetCreateModalData}
-            pagePerTab={pagePerTab}
             categories={categories}
             groupedCategories={groupedCategories}
+            wallets={wallets}
           />
         </ModalContent>
       </Modal>
@@ -286,8 +243,7 @@ function BillList() {
           <UpdateBill
             onUpdateModalClose={onUpdateModalClose}
             fetchBills={fetchBills}
-            currentTab={currentTab}
-            pagePerTab={pagePerTab}
+            currentPage={currentPage}
             chooseBillId={chooseBillId}
             setChooseBillId={setChooseBillId}
             setDeleteAlertOpen={setDeleteAlertOpen}
@@ -310,217 +266,148 @@ function BillList() {
         }}
       />
       {/* LIST DATA */}
-      <Tabs
-        colorScheme="teal"
-        marginTop={5}
-        onChange={(index) => setCurrentTab(index)}
-      >
-        <TabList justifyContent="center">
-          <Tab>Overdue</Tab>
-          <Tab>Due in 3 Days</Tab>
-          <Tab>Future Due</Tab>
-        </TabList>
-        <TabPanels>
-          {Object.entries(bills).map(([tabTitle, tabData], index) => (
-            <TabPanel key={tabTitle}>
-              <Flex direction="column">
-                <Flex
-                  fontWeight="bold"
-                  borderBottomWidth="1px"
-                  borderColor="gray.200"
-                  py="2"
-                  px={{ base: 0, md: 8, xl: 8 }}
-                  fontSize={{ sm: "10px", lg: "12px" }}
-                  color="gray.400"
-                  textAlign={"center"}
+      <Flex direction="column">
+        <Flex
+          fontWeight="bold"
+          borderBottomWidth="1px"
+          borderColor="gray.200"
+          py="2"
+          px="8"
+          fontSize={{ sm: "10px", lg: "12px" }}
+          color="gray.400"
+        >
+          <Text flex="1" cursor={"pointer"} onClick={() => sortBy("id")}>
+            Id
+          </Text>
+          <Text flex="2">Category</Text>
+          <Text flex="2" cursor={"pointer"} onClick={() => sortBy("amount")}>
+            Amount
+          </Text>
+          <Text flex="2" cursor={"pointer"} onClick={() => sortBy("dueDate")}>
+            Due Date
+          </Text>
+        </Flex>
+
+        {!isDataLoaded ? (
+          <Center>
+            <Spinner my="20px" />
+          </Center>
+        ) : wallets && wallets.length === 0 ? (
+          <Text textAlign="center" fontSize="xl" mt={5}>
+            You need to create wallet before create bill
+          </Text>
+        ) : (
+          bills &&
+          bills.content &&
+          bills.content
+            .filter((bill) => {
+              if (searchDate) {
+                const formattedDate = format(
+                  new Date(bill.recurrence.dueDate),
+                  "yyyy-MM-dd"
+                );
+                const formattedSearchDate = format(searchDate, "yyyy-MM-dd");
+                return formattedDate === formattedSearchDate;
+              } else {
+                return true;
+              }
+            })
+            .slice()
+            .sort((a, b) => {
+              if (sortConfig.key) {
+                if (a[sortConfig.key] < b[sortConfig.key]) {
+                  return sortConfig.direction === "asc" ? -1 : 1;
+                }
+                if (a[sortConfig.key] > b[sortConfig.key]) {
+                  return sortConfig.direction === "asc" ? 1 : -1;
+                }
+              }
+              return 0;
+            })
+            .map((bill, contentIndex) => {
+              const startIndex = currentPage * 10 + contentIndex + 1;
+              const category = categories.find(
+                (cat) => cat.id === parseInt(bill.category.id)
+              );
+              const iconPath = category ? category.icon.path : "";
+              const categoryName = category ? category.name : "";
+
+              return (
+                <Box
+                  key={bill.billId}
                   alignItems="center"
+                  onClick={() => handleOpenUpdateModal(bill)}
+                  cursor="pointer"
+                  position="relative"
+                  borderRadius={8}
+                  mb={1}
+                  py="2"
+                  px="4"
+                  fontSize={{ sm: "10px", lg: "sm" }}
+                  _hover={{
+                    boxShadow:
+                      "20px rgba(0, 0, 0, 0.1), 0 0 20px -20px rgba(0, 0, 0, 0.1), 20px 0 20px -20px rgba(0, 0, 0, 0.5), 0 20px 20px -20px rgba(0, 0, 0, 0.5)",
+                  }}
                 >
-                  <Text
-                    flex="1"
-                    cursor={"pointer"}
-                    onClick={() => sortBy("id")}
-                  >
-                    Id
-                  </Text>
-                  <Text
-                    flex="2"
-                    cursor={"pointer"}
-                    onClick={() => sortBy("billName")}
-                  >
-                    Bill Name
-                  </Text>
-                  <Text
-                    flex="1"
-                    cursor={"pointer"}
-                    onClick={() => sortBy("amount")}
-                  >
-                    Amount
-                  </Text>
-                  <Text
-                    flex="2"
-                    cursor={"pointer"}
-                    onClick={() => sortBy("startDate")}
-                  >
-                    Start Date
-                  </Text>
-                  <Text
-                    flex="2"
-                    cursor={"pointer"}
-                    onClick={() => sortBy("dueDate")}
-                  >
-                    Due Date
-                  </Text>
-                </Flex>
+                  <Flex key={bill.billId} py="2" px="4">
+                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
+                      {startIndex}
+                    </Box>
+                    <Box flex="2" color="secondaryGray.900" fontWeight="bold">
+                      <Flex alignItems="center">
+                        <img
+                          src={`/assets/img/icons/${iconPath}`}
+                          alt={categoryName}
+                          width="20"
+                          height="20"
+                          style={{ marginRight: "8px" }}
+                        />
+                        {categoryName}
+                      </Flex>
+                    </Box>
+                    <Box flex="2" color="secondaryGray.900" fontWeight="bold">
+                      {bill.amount}
+                    </Box>
+                    <Box flex="2" color="secondaryGray.900" fontWeight="bold">
+                      {bill.recurrence.dueDate}
+                    </Box>
+                  </Flex>
+                </Box>
+              );
+            })
+        )}
+      </Flex>
+      <Flex justifyContent="center" mt={4}>
+        {/* Previous page button */}
+        <Button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+          mr={2}
+        >
+          Previous
+        </Button>
 
-                {tabData &&
-                  tabData.content &&
-                  tabData.content
-                    .filter((bill) =>
-                      bill.billName
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase())
-                    )
-                    .filter((bill) => {
-                      if (searchDate) {
-                        const formattedDueDate = format(
-                          new Date(bill.dueDate),
-                          "yyyy-MM-dd"
-                        );
-                        const formattedSearchDate = format(
-                          searchDate,
-                          "yyyy-MM-dd"
-                        );
-                        return formattedDueDate === formattedSearchDate;
-                      } else {
-                        return true;
-                      }
-                    })
-                    .slice()
-                    .sort((a, b) => {
-                      if (sortConfig.key) {
-                        if (a[sortConfig.key] < b[sortConfig.key]) {
-                          return sortConfig.direction === "asc" ? -1 : 1;
-                        }
-                        if (a[sortConfig.key] > b[sortConfig.key]) {
-                          return sortConfig.direction === "asc" ? 1 : -1;
-                        }
-                      }
-                      return 0;
-                    })
-                    .map((bill, contentIndex) => {
-                      const startIndex =
-                        pagePerTab[index] * billsPerPage + contentIndex + 1;
-                      const category = categories.find(
-                        (cat) => cat.id === parseInt(bill.category.id)
-                      );
-                      const iconPath = category ? category.icon.path : "";
-                      const categoryName = category ? category.name : "";
-                      return (
-                        <Box
-                          key={bill.billId}
-                          alignItems="center"
-                          onClick={() => handleOpenUpdateModal(bill)}
-                          cursor="pointer"
-                          position="relative"
-                          borderRadius={8}
-                          background={getRowColor(bill.dueDate)}
-                          mb={1}
-                          py="2"
-                          px={{ base: 0, md: 2, xl: 2 }}
-                          fontSize={{ sm: "10px", lg: "sm" }}
-                          _hover={{
-                            boxShadow:
-                              "20px 20px 20px -20px rgba(0, 0, 0, 0.4), -20px -20px 20px -20px rgba(0, 0, 0, 0.1), 0 0 20px -20px rgba(0, 0, 0, 0.1), 20px 0 20px -20px rgba(0, 0, 0, 0.5), 0 20px 20px -20px rgba(0, 0, 0, 0.5)",
-                          }}
-                        >
-                          <Flex
-                            key={bill.billId}
-                            py="2"
-                            px={{ base: 0, md: 6, xl: 6 }}
-                            textAlign={"center"}
-                            alignItems={"center"}
-                          >
-                            <Box
-                              flex="1"
-                              color="secondaryGray.900"
-                              fontWeight="bold"
-                            >
-                              {startIndex}
-                            </Box>
-                            <Box flex="2">
-                              <Box
-                                ml={{ base: 0, md: 10, xl: 10 }}
-                                color="secondaryGray.900"
-                                fontWeight="bold"
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <Image
-                                  src={`/assets/img/icons/${iconPath}`}
-                                  alt={categoryName}
-                                  width="8"
-                                  height="8"
-                                  mr={2}
-                                />
-                                {bill.billName}
-                              </Box>
-                            </Box>
+        {/* Page numbers */}
+        {[...Array(totalPages).keys()].map((pageNumber) => (
+          <Button
+            key={pageNumber}
+            onClick={() => handlePageChange(pageNumber)}
+            variant={currentPage === pageNumber ? "solid" : "outline"}
+            colorScheme="teal"
+            mr={2}
+          >
+            {pageNumber + 1}
+          </Button>
+        ))}
 
-                            <Box
-                              flex="1"
-                              color="secondaryGray.900"
-                              fontWeight="bold"
-                            >
-                              {bill.amount}
-                            </Box>
-                            <Box
-                              flex="2"
-                              color="secondaryGray.900"
-                              fontWeight="bold"
-                              textAlign={"center"}
-                            >
-                              {bill.recurrence && bill.recurrence.startDate
-                                ? bill.recurrence.startDate
-                                : "N/A"}
-                            </Box>
-                            <Box
-                              flex="2"
-                              color="secondaryGray.900"
-                              fontWeight="bold"
-                            >
-                              {bill.dueDate}
-                            </Box>
-                          </Flex>
-                        </Box>
-                      );
-                    })}
-              </Flex>
-              <Flex justifyContent="center" mt={4}>
-                <Button
-                  onClick={() => handlePageChange(pagePerTab[currentTab] - 1)}
-                  disabled={pagePerTab[currentTab] === 0}
-                  mr={2}
-                >
-                  Previous
-                </Button>
-                <Button
-                  onClick={() => handlePageChange(pagePerTab[currentTab] + 1)}
-                  disabled={
-                    tabData &&
-                    tabData.totalElements &&
-                    pagePerTab[currentTab] ===
-                      Math.ceil(tabData.totalElements / billsPerPage) - 1
-                  }
-                >
-                  Next
-                </Button>
-              </Flex>
-            </TabPanel>
-          ))}
-        </TabPanels>
-      </Tabs>
+        {/* Next page button */}
+        <Button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages - 1}
+        >
+          Next
+        </Button>
+      </Flex>
     </>
   );
 }

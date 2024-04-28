@@ -40,6 +40,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthService from "services/auth/auth.service";
 import { DeleteIcon, AddIcon, EditIcon } from "@chakra-ui/icons";
+import AuthHeader from "services/auth/authHeader";
 
 const DebtsOverview = () => {
   const [debts, setDebts] = useState([]);
@@ -70,7 +71,8 @@ const DebtsOverview = () => {
     const currentUser = AuthService.getCurrentUser();
     try {
       const response = await axios.get(
-        `/api/categories/user/${currentUser.id}`
+        `/api/categories/user/${currentUser.id}`,
+        { headers: AuthHeader() }
       );
       setCategories(response.data);
     } catch (error) {
@@ -83,7 +85,9 @@ const DebtsOverview = () => {
     const currentUser = AuthService.getCurrentUser();
     const userId = currentUser.id;
     try {
-      const response = await axios.get(`/api/debts/user/${userId}`);
+      const response = await axios.get(`/api/debts/user/${userId}`, {
+        headers: AuthHeader(),
+      });
       setDebts(response.data);
     } catch (error) {
       if (error.response && error.response.status === 404) {

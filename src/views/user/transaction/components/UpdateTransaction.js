@@ -58,26 +58,6 @@ const UpdateTransaction = ({
   const [changeWallet, setChangeWallet] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
-  const [chooseReurrenceType, setChooseRecurrenceType] = useState("DAILY");
-  const [selectedWalletCurrency, setSelectedWalletCurrency] = useState("");
-  const [changeStartDate, setChangeStartDate] = useState(
-    adjustDateToUTC(new Date())
-  );
-  const [changeEndDate, setChangeEndDate] = useState(
-    adjustDateToUTC(new Date())
-  );
-  const [chooseIntervalAmount, setChooseIntervalAmount] = useState(1);
-
-  const handleChangeWallet = useCallback(
-    (value) => {
-      setChangeWallet(value);
-      const selectedWallet = wallets.find(
-        (wallet) => wallet.walletName === value
-      );
-      setSelectedWalletCurrency(selectedWallet ? selectedWallet.currency : "");
-    },
-    [wallets]
-  );
 
   const handleUpdateTransaction = useCallback(async () => {
     const currentUser = AuthService.getCurrentUser();
@@ -200,7 +180,6 @@ const UpdateTransaction = ({
       setChooseTransactionId(selectedTransaction.transactionId);
       setChangeWallet(selectedTransaction.wallet.walletName);
       setChangeAmount(selectedTransaction.amount.toString());
-      setSelectedWalletCurrency(selectedTransaction.wallet.currency);
 
       const selectedCategory = selectedTransaction.category
         ? selectedTransaction.category.id.toString()
@@ -212,89 +191,12 @@ const UpdateTransaction = ({
       });
 
       setChangeNotes(selectedTransaction.notes);
-
-      if (selectedTransaction.recurrence) {
-        setChooseRecurrenceType(selectedTransaction.recurrence.recurrenceType);
-        setChangeStartDate(() => {
-          return adjustDateToUTC(
-            new Date(selectedTransaction.recurrence.startDate)
-          );
-        });
-        setChangeEndDate(() => {
-          return adjustDateToUTC(
-            new Date(selectedTransaction.recurrence.endDate)
-          );
-        });
-        setChooseIntervalAmount(selectedTransaction.recurrence.intervalAmount);
-      } else {
-        setChooseRecurrenceType(null);
-        setChangeStartDate(null);
-        setChangeEndDate(null);
-        setChooseIntervalAmount(0);
-      }
     }
   }, [selectedTransaction, setChooseTransactionId, wallets, categories]);
 
   return (
     <>
       <ModalBody>
-        <Box mb={4}>
-          <Text mb={2}>Wallet:</Text>
-          <Select
-            value={changeWallet}
-            onChange={(e) => handleChangeWallet(e.target.value)}
-            color={inputText}
-            placeholder="Select Wallet"
-          >
-            {wallets.map((wallet) => (
-              <option key={wallet.walletId} value={wallet.walletName}>
-                {wallet.walletName}
-              </option>
-            ))}
-          </Select>
-        </Box>
-        <Box
-          mb={4}
-          display="flex"
-          flexDirection={{ base: "column", md: "row" }}
-          alignItems="center"
-        >
-          <FormControl mr={{ base: 0, md: 4 }}>
-            <Text mb={2}>Amount:</Text>
-            <Input
-              type="number"
-              value={changeAmount}
-              onChange={(e) => setChangeAmount(e.target.value)}
-              placeholder="00.0"
-              color={inputText}
-            />
-          </FormControl>
-          <FormControl>
-            <Text mb={2}>Currency:</Text>
-            <Input
-              type="text"
-              placeholder="Currency"
-              value={selectedWalletCurrency}
-              color={inputText}
-              disabled
-            />
-          </FormControl>
-        </Box>
-        <Box mb={4}>
-          <FormControl>
-            <Text mb={2}>Date:</Text>
-            <DatePickerStyle>
-              <DatePicker
-                selected={changeDate}
-                onChange={(date) => setChangeDate(date)}
-                dateFormat="yyyy-MM-dd"
-                customInput={<Input color={inputText} />}
-                wrapperClassName="custom-datepicker"
-                color={inputText}
-              />
-            </DatePickerStyle>
-          </FormControl>
-        </Box>
         <Box mb={4}>
           <Text mb={2}>Category:</Text>
           <Popover placement="right-start">
@@ -372,36 +274,19 @@ const UpdateTransaction = ({
           </Popover>
         </Box>
         <Box mb={4}>
-          <Text mb={2}>Notes:</Text>
-          <Input
-            type="text"
-            value={changeNotes}
-            onChange={(e) => setChangeNotes(e.target.value)}
-            placeholder="Notes"
+          <Text mb={2}>Wallet:</Text>
+          <Select
+            value={changeWallet}
+            onChange={(e) => setChangeWallet(e.target.value)}
             color={inputText}
-          />
-        </Box>
-        <Box mb={4}>
-          <Text mb={2}>Recurrence:</Text>
-          <RadioGroup
-            value={chooseReurrenceType}
-            onChange={(value) => setChooseRecurrenceType(value)}
+            placeholder="Select Wallet"
           >
-            <Flex direction="row" justify="space-between">
-              <Radio value="DAILY" isDisabled>
-                Daily
-              </Radio>
-              <Radio value="WEEKLY" isDisabled>
-                Weekly
-              </Radio>
-              <Radio value="MONTHLY" isDisabled>
-                Monthly
-              </Radio>
-              <Radio value="ANNUALLY" isDisabled>
-                Annually
-              </Radio>
-            </Flex>
-          </RadioGroup>
+            {wallets.map((wallet) => (
+              <option key={wallet.walletId} value={wallet.walletName}>
+                {wallet.walletName}
+              </option>
+            ))}
+          </Select>
         </Box>
         <Box
           mb={4}
@@ -410,46 +295,40 @@ const UpdateTransaction = ({
           alignItems="center"
         >
           <FormControl mr={{ base: 0, md: 4 }}>
-            <Text mb={2}>Start Date:</Text>
-            <DatePicker
-              selected={changeStartDate}
-              onChange={(date) => setChangeStartDate(date)}
-              dateFormat="yyyy-MM-dd"
-              customInput={<Input color={inputText} />}
-              wrapperClassName="custom-datepicker"
-              placeholderText="YYYY/MM/DD"
-              disabled
-              color={inputText}
-            />
-          </FormControl>
-          <FormControl>
-            <Text mb={2}>End Date:</Text>
-            <DatePicker
-              selected={changeEndDate}
-              onChange={(date) => setChangeEndDate(date)}
-              dateFormat="yyyy-MM-dd"
-              customInput={<Input color={inputText} />}
-              wrapperClassName="custom-datepicker"
-              placeholderText="YYYY/MM/DD"
-              disabled
+            <Text mb={2}>Amount:</Text>
+            <Input
+              type="number"
+              value={changeAmount}
+              onChange={(e) => setChangeAmount(e.target.value)}
+              placeholder="00.0"
               color={inputText}
             />
           </FormControl>
         </Box>
         <Box mb={4}>
-          <Text mb={2}>Interval Amount:</Text>
-          <NumberInput
-            value={chooseIntervalAmount}
-            onChange={(value) => setChooseIntervalAmount(value)}
-            min={0}
-            disabled
-          >
-            <NumberInputField color={inputText} />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
+          <FormControl>
+            <Text mb={2}>Date:</Text>
+            <DatePickerStyle>
+              <DatePicker
+                selected={changeDate}
+                onChange={(date) => setChangeDate(date)}
+                dateFormat="yyyy-MM-dd"
+                customInput={<Input color={inputText} />}
+                wrapperClassName="custom-datepicker"
+                color={inputText}
+              />
+            </DatePickerStyle>
+          </FormControl>
+        </Box>
+        <Box mb={4}>
+          <Text mb={2}>Notes:</Text>
+          <Input
+            type="text"
+            value={changeNotes}
+            onChange={(e) => setChangeNotes(e.target.value)}
+            placeholder="Notes"
+            color={inputText}
+          />
         </Box>
       </ModalBody>
       <ModalFooter justifyContent="center">

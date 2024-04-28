@@ -19,6 +19,7 @@ import routes from "routes.js";
 import { ThemeEditor } from "./ThemeEditor";
 import { useHistory } from "react-router-dom";
 import AuthService from "services/auth/auth.service";
+import AuthHeader from "services/auth/authHeader";
 import Notification from "./Notification";
 import UserProfile from "auth/Profile/UserProfile";
 // import AuthVerify from 'components/navbar/AuthVerify'
@@ -44,7 +45,9 @@ export default function HeaderLinks(props) {
 
   const fetchUser = async () => {
     if (currentUser) {
-      const response = await axios.get(`/api/auth/${currentUser.id}`);
+      const response = await axios.get(`/api/auth/${currentUser.id}`, {
+        headers: AuthHeader(),
+      });
       setUsername(response.data.username);
     }
   };
@@ -62,34 +65,6 @@ export default function HeaderLinks(props) {
   }, [history]);
   const currentUser = AuthService.getCurrentUser();
   console.log("User after login:", currentUser);
-
-  // BILLLLLLLLLLLLLLLLLLLLL
-  const [bills, setBills] = useState({
-    overdueBills: [],
-    dueIn3DaysBills: [],
-    futureDueBills: [],
-  });
-  const billsPerPage = 10;
-  const [currentTab] = useState(0);
-  const [pagePerTab] = useState([0, 0, 0]);
-  const fetchBills = useCallback(async () => {
-    const currentUser = AuthService.getCurrentUser();
-    if (currentUser) {
-      try {
-        const response = await axios.get(
-          `/api/bills/users/${currentUser.id}/bills?page=${pagePerTab[currentTab]}&size=${billsPerPage}`
-        );
-        const { overdueBills, dueIn3DaysBills, futureDueBills } = response.data;
-        setBills({ overdueBills, dueIn3DaysBills, futureDueBills });
-      } catch (error) {
-        console.error("Error fetching bills:", error);
-      }
-    }
-  }, [pagePerTab, currentTab, billsPerPage]);
-
-  useEffect(() => {
-    fetchBills();
-  }, [fetchBills]);
 
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -146,7 +121,6 @@ export default function HeaderLinks(props) {
       <SidebarResponsive routes={routes} />
       <ThemeEditor navbarIcon={navbarIcon} />
       <Notification
-        bills={bills}
         setUnreadCount={setUnreadCount}
         unreadCount={unreadCount}
         scrollBehavior="inside"

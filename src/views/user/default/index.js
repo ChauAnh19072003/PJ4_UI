@@ -22,6 +22,7 @@ import axios from "axios";
 import Card from "components/card/Card";
 import TransactionHistory from "./components/TransactionHistory";
 import { Button } from "@chakra-ui/react/dist/chakra-ui-react.cjs";
+import AuthHeader from "services/auth/authHeader";
 
 const initialState = {
   loading: false,
@@ -110,12 +111,13 @@ const calculateTotalBalance = (
 
     let convertedBalance = walletBalance;
 
-    if (walletCurrency === "USD" && currency === "VND") {
-      convertedBalance = walletBalance * exchangeRate;
-    } else if (walletCurrency === "VND" && currency === "USD") {
-      convertedBalance = walletBalance / exchangeRate;
+    if (walletCurrency !== currency) {
+      if (walletCurrency === "USD" && currency === "VND") {
+        convertedBalance = walletBalance * exchangeRate;
+      } else if (walletCurrency === "VND" && currency === "USD") {
+        convertedBalance = walletBalance / exchangeRate;
+      }
     }
-
     return (
       acc +
       (selectedWallet === "" || selectedWallet === wallet.walletId
@@ -131,7 +133,7 @@ const calculateTotalBalance = (
 
 const calculateTotalForWallet = (transactions, exchangeRate, currency) => {
   if (!Array.isArray(transactions)) {
-    currency = "VND" ? "0VND" : "$0USD";
+    return currency === "VND" ? "0VND" : "$0USD";
   }
 
   const totalBalance = transactions.reduce((acc, transaction) => {
@@ -244,7 +246,9 @@ const UserReports = () => {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      if (walletId) {
+      if (walletId == "") {
+        fetchAllData();
+      } else if (walletId) {
         const [
           selectedWalletResponse,
           transactionsResponse,
@@ -252,12 +256,20 @@ const UserReports = () => {
           incomeResponse,
         ] = await Promise.all([
           axios.get(`/api/wallets/${walletId}`),
-          axios.get(`/api/transactions/users/${userId}/wallets/${walletId}`),
+          axios.get(`/api/transactions/users/${userId}/wallets/${walletId}`, {
+            headers: AuthHeader(),
+          }),
           axios.get(
-            `/api/transactions/expense/users/${userId}/wallets/${walletId}`
+            `/api/transactions/expense/users/${userId}/wallets/${walletId}`,
+            {
+              headers: AuthHeader(),
+            }
           ),
           axios.get(
-            `/api/transactions/income/users/${userId}/wallets/${walletId}`
+            `/api/transactions/income/users/${userId}/wallets/${walletId}`,
+            {
+              headers: AuthHeader(),
+            }
           ),
         ]);
 
@@ -301,17 +313,23 @@ const UserReports = () => {
   const fetchAllData = useCallback(async () => {
     dispatch({ type: "SET_LOADING", payload: true });
     try {
-      if (!state.selectedWallet || state.selectedWallet === "") {
+      if (state.selectedWallet === "") {
         const [
           walletResponse,
           incomeResponse,
           expenseResponse,
           transactionsResponse,
         ] = await Promise.all([
-          axios.get(`/api/wallets/users/${userId}`),
-          axios.get(`/api/transactions/allIncome/users/${userId}`),
-          axios.get(`/api/transactions/allExpense/users/${userId}`),
-          axios.get(`/api/transactions/users/allWallets/${userId}`),
+          axios.get(`/api/wallets/users/${userId}`, { headers: AuthHeader() }),
+          axios.get(`/api/transactions/allIncome/users/${userId}`, {
+            headers: AuthHeader(),
+          }),
+          axios.get(`/api/transactions/allExpense/users/${userId}`, {
+            headers: AuthHeader(),
+          }),
+          axios.get(`/api/transactions/allWallets/users/${userId}`, {
+            headers: AuthHeader(),
+          }),
         ]);
         dispatch(setWallets(walletResponse.data));
         const totalIncome = calculateTotalForWallet(
@@ -393,12 +411,15 @@ const UserReports = () => {
             onChange={handleWalletChange}
             fontSize={{ base: "13px" }}
           >
-            <option value="">All Wallets</option>
-            {wallets.map((wallet) => (
-              <option key={wallet.walletId} value={wallet.walletId}>
-                {wallet.walletName}
-              </option>
-            ))}
+            {Array.isArray(wallets) && wallets.length > 0 ? (
+              wallets.map((wallet) => (
+                <option key={wallet.walletId} value={wallet.walletId}>
+                  {wallet.walletName}
+                </option>
+              ))
+            ) : (
+              <option hidden>Wallet not found</option>
+            )}
           </Select>
 
           {selectedWalletDetails ? (
@@ -518,13 +539,15 @@ const UserReports = () => {
                 handleWalletChange(e);
               }}
             >
-              {Array.isArray(wallets) &&
-                wallets.length > 0 &&
+              {Array.isArray(wallets) && wallets.length > 0 ? (
                 wallets.map((wallet) => (
                   <option key={wallet.walletId} value={wallet.walletId}>
                     {wallet.walletName}
                   </option>
-                ))}
+                ))
+              ) : (
+                <option hidden>Wallet not found</option>
+              )}
             </Select>
             {selectedWalletDetails ? (
               <Card mt={2} w="100%" backgroundColor={["yellow.200"]}>

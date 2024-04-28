@@ -6,16 +6,15 @@ const register = (username, email, password, confirmPassword) => {
     username,
     email,
     password,
-    confirmPassword
+    confirmPassword,
   });
 };
 
 const login = async (email, password) => {
-  const response = await axios
-    .post(API_URL + "signin", {
-      email,
-      password,
-    });
+  const response = await axios.post(API_URL + "signin", {
+    email,
+    password,
+  });
   if (response.data.accessToken) {
     localStorage.setItem("user", JSON.stringify(response.data));
   }
@@ -23,22 +22,23 @@ const login = async (email, password) => {
 };
 
 const forgotPassword = async (email) => {
-  const response = await axios
-    .post(API_URL + "forgot-password", {
-      email
-    });
+  const response = await axios.post(API_URL + "forgot-password", {
+    email,
+  });
   return response.data;
-}
+};
 
 const resetPassword = async (token, password, confirmPassword) => {
   console.log("Token before API call:", token);
 
-  const response = await axios.put(API_URL + "reset-password",
-    {token, password, confirmPassword}
-  );
+  const response = await axios.put(API_URL + "reset-password", {
+    token,
+    password,
+    confirmPassword,
+  });
 
   return response.data;
-}
+};
 
 const logout = async () => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -53,7 +53,7 @@ const getCurrentUser = () => {
 };
 
 const isLoggedIn = () => {
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = JSON.parse(localStorage.getItem("user"));
   return user && user.accessToken;
 };
 const AuthService = {
@@ -64,8 +64,6 @@ const AuthService = {
   isLoggedIn,
   forgotPassword,
   resetPassword,
-}
+};
 
 export default AuthService;
-
-

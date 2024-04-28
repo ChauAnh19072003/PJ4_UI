@@ -33,6 +33,7 @@ import AuthService from "services/auth/auth.service";
 //import Card from "components/card/Card";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import AuthHeader from "services/auth/authHeader";
 
 const WalletsOverview = () => {
   const [wallets, setWallets] = useState([]);
@@ -65,7 +66,10 @@ const WalletsOverview = () => {
     if (currentUser && currentUser.id) {
       try {
         const response = await axios.get(
-          `/api/wallets/users/${currentUser.id}`
+          `/api/wallets/users/${currentUser.id}`,
+          {
+            headers: AuthHeader(),
+          }
         );
 
         // Debugging: Log the response data

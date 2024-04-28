@@ -27,6 +27,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useDataTransaction } from "../DataContext/DataContextTransaction";
+import AuthHeader from "services/auth/authHeader";
 
 function ListData() {
   const inputText = useColorModeValue("gray.700", "gray.100");
@@ -63,7 +64,8 @@ function ListData() {
       if (currentUser) {
         try {
           let response = await axios.get(
-            `/api/transactions/users/${currentUser.id}?page=${page}&size=10`
+            `/api/transactions/users/${currentUser.id}?page=${page}&size=10`,
+            { headers: AuthHeader() }
           );
           if (isMounted.current) {
             setTransaction(response.data);
@@ -143,8 +145,12 @@ function ListData() {
       if (currentUser) {
         try {
           const [categoriesResponse, walletsResponse] = await Promise.all([
-            axios.get(`/api/categories/user/${currentUser.id}`),
-            axios.get(`/api/wallets/users/${currentUser.id}`),
+            axios.get(`/api/categories/user/${currentUser.id}`, {
+              headers: AuthHeader(),
+            }),
+            axios.get(`/api/wallets/users/${currentUser.id}`, {
+              headers: AuthHeader(),
+            }),
           ]);
           const grouped = categoriesResponse.data.reduce((acc, category) => {
             const { type } = category;

@@ -22,6 +22,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Password from "./Password";
 import { TfiWrite } from "react-icons/tfi";
 import { FaAngleRight } from "react-icons/fa";
+import AuthHeader from "services/auth/authHeader";
 
 function UserProfile() {
   const inputText = useColorModeValue("gray.700", "gray.100");
@@ -61,6 +62,7 @@ function UserProfile() {
       const response = await axios.put(
         `/api/auth/updateEmailUsernameProfile/${userId}`,
         {
+          headers: AuthHeader(),
           email: email,
           username: username,
         }

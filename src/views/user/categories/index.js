@@ -24,6 +24,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AddCategory from "./AddCategory";
 import UpdateCategory from "./UpdateCategory";
+import AuthHeader from "services/auth/authHeader";
 
 const DataContext = React.createContext();
 
@@ -52,7 +53,10 @@ const CategoryList = () => {
     if (currentUser) {
       try {
         const response = await axios.get(
-          `/api/categories/user/${currentUser.id}`
+          `/api/categories/user/${currentUser.id}`,
+          {
+            headers: AuthHeader(),
+          }
         );
         setCategories(response.data);
       } catch (error) {

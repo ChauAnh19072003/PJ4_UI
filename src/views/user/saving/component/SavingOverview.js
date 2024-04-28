@@ -27,12 +27,13 @@ import {
   ModalOverlay,
   useDisclosure,
   Progress,
-  Select
+  Select,
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import AuthHeader from "services/auth/authHeader";
 
 const SavingGoalsView = () => {
   const [savingGoals, setSavingGoals] = useState([]);
@@ -66,7 +67,10 @@ const SavingGoalsView = () => {
       const currentUser = AuthService.getCurrentUser();
       if (currentUser && currentUser.id) {
         const response = await axios.get(
-          `/api/wallets/users/${currentUser.id}`
+          `/api/wallets/users/${currentUser.id}`,
+          {
+            headers: AuthHeader(),
+          }
         );
         setWallets(response.data);
       }
@@ -79,7 +83,9 @@ const SavingGoalsView = () => {
   const fetchSavingGoalsByUserId = async (userId) => {
     setLoading(true);
     try {
-      const response = await axios.get(`/api/savinggoals/user/${userId}`);
+      const response = await axios.get(`/api/savinggoals/user/${userId}`, {
+        headers: AuthHeader(),
+      });
       setSavingGoals(response.data);
       if (response.data.length === 0) {
         toast.info("No saving goals found.");

@@ -44,6 +44,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthService from "services/auth/auth.service";
 import axios from "axios";
+import AuthHeader from "services/auth/authHeader";
 
 const BudgetsOverview = ({ userId }) => {
   const [budgets, setBudgets] = useState([]);
@@ -76,7 +77,10 @@ const BudgetsOverview = ({ userId }) => {
     const currentUser = AuthService.getCurrentUser();
     try {
       const response = await axios.get(
-        `/api/categories/user/${currentUser.id}`
+        `/api/categories/user/${currentUser.id}`,
+        {
+          headers: AuthHeader(),
+        }
       );
       setCategories(response.data);
     } catch (error) {
@@ -90,7 +94,10 @@ const BudgetsOverview = ({ userId }) => {
       const currentUser = AuthService.getCurrentUser();
       if (currentUser && currentUser.id) {
         const response = await axios.get(
-          `/api/budgets/users/${currentUser.id}`
+          `/api/budgets/users/${currentUser.id}`,
+          {
+            headers: AuthHeader(),
+          }
         );
         setBudgets(response.data);
       }
@@ -118,15 +125,15 @@ const BudgetsOverview = ({ userId }) => {
   };
 
   const openModalToAdd = () => {
-    setBudgetForm(initialBudgetState); 
-    setIsEditing(false); 
-    onOpen(); 
+    setBudgetForm(initialBudgetState);
+    setIsEditing(false);
+    onOpen();
   };
 
   const openModalToEdit = (budget) => {
     setBudgetForm(budget);
-    setIsEditing(true); 
-    onOpen(); 
+    setIsEditing(true);
+    onOpen();
   };
 
   const handleBudgetFormChange = (field, value) => {
@@ -148,7 +155,10 @@ const BudgetsOverview = ({ userId }) => {
 
     try {
       if (selectedBudget) {
-        await axios.put(`/api/budgets/update/${selectedBudget.budgetId}`, budgetData);
+        await axios.put(
+          `/api/budgets/update/${selectedBudget.budgetId}`,
+          budgetData
+        );
       } else {
         await axios.post(`/api/budgets/create`, budgetData);
       }
@@ -279,7 +289,7 @@ const BudgetsOverview = ({ userId }) => {
                         fontWeight="bold"
                         mt={2}
                         textAlign="center"
-                        bg="gray.100" 
+                        bg="gray.100"
                         p={1}
                         borderRadius="md"
                       >

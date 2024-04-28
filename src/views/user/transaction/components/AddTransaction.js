@@ -49,23 +49,10 @@ const AddTransaction = ({
   };
 
   const [changeAmount, setChangeAmount] = useState("");
-  const [changeDate, setChangeDate] = useState(() => {
-    adjustDateToUTC(new Date());
-  });
   const [changeWallet, setChangeWallet] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
-  const [chooseReurrenceType, setChooseRecurrenceType] = useState("DAILY");
-  const [showRecurrenceOptions, setShowRecurrenceOptions] = useState(false);
-  const [selectedWalletCurrency, setSelectedWalletCurrency] = useState("");
-  const [changeStartDate, setChangeStartDate] = useState(
-    adjustDateToUTC(new Date())
-  );
-  const [changeEndDate, setChangeEndDate] = useState(
-    adjustDateToUTC(new Date())
-  );
-  const [chooseIntervalAmount, setChooseIntervalAmount] = useState(1);
-
+  const [changeDate, setChangeDate] = useState(adjustDateToUTC(new Date()));
   const validateForm = useCallback(() => {
     if (!changeWallet) {
       toast.error("Please select wallet!", {
@@ -96,29 +83,12 @@ const AddTransaction = ({
     return true;
   }, [changeWallet, changeCategory]);
 
-  const handleChangeWallet = useCallback(
-    (value) => {
-      setChangeWallet(value);
-      const selectedWallet = wallets.find(
-        (wallet) => wallet.walletName === value
-      );
-      setSelectedWalletCurrency(selectedWallet ? selectedWallet.currency : "");
-    },
-    [wallets]
-  );
-
   useEffect(() => {
     if (resetCreateModalData) {
       setChangeAmount("");
       setChangeDate(adjustDateToUTC(new Date()));
       setChangeWallet("");
       setChangeNotes("");
-      setSelectedWalletCurrency("");
-      setChangeStartDate();
-      setChangeEndDate();
-      setChooseRecurrenceType();
-      setChooseIntervalAmount(1);
-      setChangeWallet();
     }
   }, [resetCreateModalData]);
 
@@ -150,7 +120,7 @@ const AddTransaction = ({
             bankName: walletData.bankName,
             bankAccountNum: walletData.bankAccountNum,
             walletType: walletData.walletType,
-            currency: selectedWalletCurrency,
+            currency: walletData.currency,
           },
           category: {
             id: categoryData.id,
@@ -164,20 +134,6 @@ const AddTransaction = ({
           },
           notes: changeNotes,
         };
-
-        if (
-          chooseReurrenceType &&
-          chooseReurrenceType !== "N/A" &&
-          changeStartDate &&
-          changeEndDate
-        ) {
-          requestData.recurrence = {
-            recurrenceType: chooseReurrenceType,
-            startDate: changeStartDate,
-            endDate: changeEndDate,
-            intervalAmount: chooseIntervalAmount,
-          };
-        }
 
         const response = await axios.post(
           "/api/transactions/create",
@@ -239,32 +195,15 @@ const AddTransaction = ({
     changeAmount,
     changeCategory,
     changeDate,
-    changeEndDate,
     changeNotes,
-    changeStartDate,
     changeWallet,
-    chooseIntervalAmount,
-    chooseReurrenceType,
     currentPage,
     fetchTransaction,
     wallets,
     categories,
     onCreateModalClose,
     validateForm,
-    selectedWalletCurrency,
   ]);
-
-  const handleIntervalChange = useCallback((value) => {
-    setChooseIntervalAmount(value);
-  }, []);
-
-  useEffect(() => {
-    if (chooseReurrenceType && chooseReurrenceType !== "N/A") {
-      setShowRecurrenceOptions(true);
-    } else {
-      setShowRecurrenceOptions(false);
-    }
-  }, [chooseReurrenceType]);
 
   const categoryOptions = useMemo(() => {
     return Object.keys(groupedCategories).map((type) => (
@@ -301,68 +240,6 @@ const AddTransaction = ({
   return (
     <>
       <ModalBody>
-        <Box mr={4}>
-          {wallets && wallets.length > 0 ? (
-            <Select
-              placeholder="Select Wallet"
-              value={changeWallet}
-              onChange={(e) => handleChangeWallet(e.target.value)}
-            >
-              {wallets.map((wallet) => (
-                <option key={wallet.walletId} value={wallet.walletName}>
-                  {wallet.walletName}
-                </option>
-              ))}
-            </Select>
-          ) : (
-            <Text color="red.500">
-              No wallets available. Please create a wallet first.
-            </Text>
-          )}
-        </Box>
-
-        <Box
-          mb={4}
-          display="flex"
-          flexDirection={{ base: "column", md: "row" }}
-          alignItems="center"
-        >
-          <FormControl mr={{ base: 0, md: 4 }}>
-            <Text mb={2}>Amount:</Text>
-            <Input
-              type="number"
-              value={changeAmount}
-              onChange={(e) => setChangeAmount(e.target.value)}
-              placeholder="00.0"
-              color={inputText}
-            />
-          </FormControl>
-          <FormControl>
-            <Text mb={2}>Currency:</Text>
-            <Input
-              type="text"
-              placeholder="Currency"
-              value={selectedWalletCurrency}
-              color={inputText}
-              disabled
-            />
-          </FormControl>
-        </Box>
-        <Box mb={4}>
-          <FormControl>
-            <Text mb={2}>Date:</Text>
-            <DatePickerStyle>
-              <DatePicker
-                selected={changeDate}
-                onChange={(date) => setChangeDate(date)}
-                dateFormat="yyyy-MM-dd"
-                customInput={<Input color={inputText} />}
-                wrapperClassName="custom-datepicker"
-                placeholderText="YYYY/MM/DD"
-              />
-            </DatePickerStyle>
-          </FormControl>
-        </Box>
         <Box mb={4}>
           <Text mb={2}>Category:</Text>
           <Popover placement="right-start">
@@ -404,6 +281,58 @@ const AddTransaction = ({
             </PopoverContent>
           </Popover>
         </Box>
+        <Box mr={4}>
+          <Text mb={2}>Wallet:</Text>
+          {wallets && wallets.length > 0 ? (
+            <Select
+              placeholder="Select Wallet"
+              value={changeWallet}
+              onChange={(e) => setChangeWallet(e.target.value)}
+            >
+              {wallets.map((wallet) => (
+                <option key={wallet.walletId} value={wallet.walletName}>
+                  {wallet.walletName}
+                </option>
+              ))}
+            </Select>
+          ) : (
+            <Text color="red.500">
+              No wallets available. Please create a wallet first.
+            </Text>
+          )}
+        </Box>
+        <Box
+          mb={4}
+          display="flex"
+          flexDirection={{ base: "column", md: "row" }}
+          alignItems="center"
+        >
+          <FormControl mr={{ base: 0, md: 4 }}>
+            <Text mb={2}>Amount:</Text>
+            <Input
+              type="number"
+              value={changeAmount}
+              onChange={(e) => setChangeAmount(e.target.value)}
+              placeholder="00.0"
+              color={inputText}
+            />
+          </FormControl>
+        </Box>
+        <Box mb={4}>
+          <FormControl>
+            <Text mb={2}>Date:</Text>
+            <DatePickerStyle>
+              <DatePicker
+                selected={changeDate}
+                onChange={(date) => setChangeDate(date)}
+                dateFormat="yyyy-MM-dd"
+                customInput={<Input color={inputText} />}
+                wrapperClassName="custom-datepicker"
+                placeholderText="YYYY/MM/DD"
+              />
+            </DatePickerStyle>
+          </FormControl>
+        </Box>
         <Box mb={4}>
           <Text mb={2}>Notes:</Text>
           <Input
@@ -414,87 +343,6 @@ const AddTransaction = ({
             color={inputText}
           />
         </Box>
-        {showRecurrenceOptions && (
-          <>
-            <Box mb={4}>
-              <RadioGroup
-                onChange={(value) => setChooseRecurrenceType(value)}
-                value={chooseReurrenceType}
-              >
-                <Text mb={2}>Recurrence:</Text>
-                <Flex direction="row" justify="space-between">
-                  <Radio value="DAILY">Daily</Radio>
-                  <Radio value="WEEKLY">Weekly</Radio>
-                  <Radio value="MONTHLY">Monthly</Radio>
-                  <Radio value="ANNUALLY">Annually</Radio>
-                </Flex>
-              </RadioGroup>
-            </Box>
-            <Box
-              mb={4}
-              display="flex"
-              flexDirection={{ base: "column", md: "row" }}
-              alignItems="center"
-            >
-              <FormControl mr={{ base: 0, md: 4 }}>
-                <Text mb={2}>Start Date:</Text>
-                <DatePicker
-                  selected={changeStartDate}
-                  onChange={(date) => setChangeStartDate(date)}
-                  dateFormat="yyyy-MM-dd"
-                  customInput={<Input color={inputText} />}
-                  wrapperClassName="custom-datepicker"
-                  placeholderText="YYYY/MM/DD"
-                />
-              </FormControl>
-              <FormControl>
-                <Text mb={2}>End Date:</Text>
-                <DatePicker
-                  selected={changeEndDate}
-                  onChange={(date) => setChangeEndDate(date)}
-                  dateFormat="yyyy-MM-dd"
-                  customInput={<Input color={inputText} />}
-                  wrapperClassName="custom-datepicker"
-                  placeholderText="YYYY/MM/DD"
-                />
-              </FormControl>
-            </Box>
-            <Box mb={4}>
-              <Text mb={2}>Interval Amount:</Text>
-              <NumberInput
-                value={chooseIntervalAmount}
-                onChange={handleIntervalChange}
-                min={0}
-              >
-                <NumberInputField color={inputText} />
-                <NumberInputStepper>
-                  <NumberIncrementStepper />
-                  <NumberDecrementStepper />
-                </NumberInputStepper>
-              </NumberInput>
-            </Box>
-          </>
-        )}
-        {!showRecurrenceOptions ? (
-          <Button
-            onClick={() => setShowRecurrenceOptions(true)}
-            variant="outline"
-            colorScheme="blue"
-            mb={4}
-            width="100%"
-          >
-            Show more choose recurrence
-          </Button>
-        ) : (
-          <Button
-            backgroundColor="red.300"
-            onClick={() => setShowRecurrenceOptions(false)}
-            mb={4}
-            width="100%"
-          >
-            Hide
-          </Button>
-        )}
       </ModalBody>
       <ModalFooter justifyContent="center">
         <Button colorScheme="blue" mr={3} onClick={handleCreateBill}>
