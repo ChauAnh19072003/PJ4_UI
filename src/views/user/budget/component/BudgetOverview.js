@@ -112,7 +112,9 @@ const BudgetsOverview = ({ userId }) => {
   const handleDeleteBudget = async () => {
     if (budgetToDelete) {
       try {
-        await axios.delete(`/api/budgets/delete/${budgetToDelete}`);
+        await axios.delete(`/api/budgets/delete/${budgetToDelete}`, {
+          headers: AuthHeader(),
+        });
         toast.success("Budget successfully deleted");
         fetchBudgets();
         setBudgetToDelete(null);

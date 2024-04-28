@@ -105,7 +105,9 @@ const DebtsOverview = () => {
     setDebts(newDebts);
 
     try {
-      await axios.delete(`/api/debts/delete/${debtToDelete}`);
+      await axios.delete(`/api/debts/delete/${debtToDelete}`, {
+        headers: AuthHeader(),
+      });
       toast.success("Debt successfully deleted");
     } catch (error) {
       fetchDebts();

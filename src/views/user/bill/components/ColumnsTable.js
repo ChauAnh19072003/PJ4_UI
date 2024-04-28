@@ -92,7 +92,9 @@ function BillList() {
 
   const handleDeleteBill = async (billId) => {
     try {
-      await axios.delete(`/api/bills/delete/${billId}`);
+      await axios.delete(`/api/bills/delete/${billId}`, {
+        headers: AuthHeader(),
+      });
       setDeleteAlertOpen(false);
       onUpdateModalClose();
       toast.success("Delete Bill Successfull", {

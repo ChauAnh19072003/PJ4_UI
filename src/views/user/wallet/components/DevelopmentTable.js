@@ -113,7 +113,9 @@ const WalletsOverview = () => {
 
   const handleDeleteWallet = async () => {
     try {
-      await axios.delete(`/api/wallets/delete/${walletToDelete}`);
+      await axios.delete(`/api/wallets/delete/${walletToDelete}`, {
+        headers: AuthHeader(),
+      });
       toast.success("Wallet successfully deleted");
       fetchWallets();
     } catch (error) {

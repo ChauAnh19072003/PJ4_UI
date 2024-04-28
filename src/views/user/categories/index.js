@@ -99,7 +99,9 @@ const CategoryList = () => {
   // DELETE
   const handleDeleteCategory = async (categoryId) => {
     try {
-      await axios.delete(`/api/categories/delete/${categoryId}`);
+      await axios.delete(`/api/categories/delete/${categoryId}`, {
+        headers: AuthHeader(),
+      });
       const updatedCategories = categories.filter(
         (category) => category.id !== categoryIdToDelete
       );

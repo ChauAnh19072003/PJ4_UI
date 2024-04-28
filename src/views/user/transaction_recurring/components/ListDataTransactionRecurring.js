@@ -345,6 +345,11 @@ function ListDataTransactionRecurring() {
                   mb={1}
                   py="2"
                   px="4"
+                  backgroundColor={
+                    transaction.category.type === "INCOME"
+                      ? "green.200"
+                      : "red.200"
+                  }
                   fontSize={{ sm: "10px", lg: "sm" }}
                   _hover={{
                     boxShadow:
