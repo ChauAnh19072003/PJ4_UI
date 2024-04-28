@@ -160,10 +160,14 @@ const DebtsOverview = () => {
 
     try {
       if (currentDebt) {
-        await axios.put(`/api/debts/update/${currentDebt.id}`, debtData);
+        await axios.put(`/api/debts/update/${currentDebt.id}`, debtData, {
+          headers: AuthHeader(),
+        });
         toast.success("Debt updated successfully");
       } else {
-        await axios.post("/api/debts/create", debtData);
+        await axios.post("/api/debts/create", debtData, {
+          headers: AuthHeader(),
+        });
         toast.success("Debt added successfully");
       }
       fetchDebts();
@@ -198,7 +202,9 @@ const DebtsOverview = () => {
 
       delete updatedDebtData.id;
 
-      await axios.put(`/api/debts/update/${debtId}`, updatedDebtData);
+      await axios.put(`/api/debts/update/${debtId}`, updatedDebtData, {
+        headers: AuthHeader(),
+      });
       toast.success("Paid successfully");
       fetchDebts();
     } catch (error) {

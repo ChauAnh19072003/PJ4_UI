@@ -12,6 +12,7 @@ import {
   Select,
 } from "@chakra-ui/react";
 import { toast } from "react-toastify";
+import AuthHeader from "services/auth/authHeader";
 
 const UpdateCategory = ({
   onClose,
@@ -35,13 +36,17 @@ const UpdateCategory = ({
     const currentUser = AuthService.getCurrentUser();
     try {
       if (currentUser) {
-        await axios.put(`/api/categories/update/${selectedCategory.id}`, {
-          id: selectedCategory.id,
-          name: newCategoryName,
-          userId: currentUser.id,
-          icon: selectedIcon,
-          type: newCategoryType,
-        });
+        await axios.put(
+          `/api/categories/update/${selectedCategory.id}`,
+          {
+            id: selectedCategory.id,
+            name: newCategoryName,
+            userId: currentUser.id,
+            icon: selectedIcon,
+            type: newCategoryType,
+          },
+          { headers: AuthHeader() }
+        );
 
         fetchCategories();
         onClose();

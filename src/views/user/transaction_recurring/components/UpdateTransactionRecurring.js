@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import AuthService from "services/auth/auth.service";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { DatePickerStyle } from "../Styles";
+import { DatePickerStyle } from "views/user/bill/Styles";
 import {
   Text,
   Flex,
@@ -13,24 +13,24 @@ import {
   Box,
   Input,
   useColorModeValue,
+  NumberInputField,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputStepper,
+  SimpleGrid,
   Popover,
   PopoverTrigger,
   PopoverContent,
   PopoverArrow,
-  PopoverBody,
-  PopoverHeader,
   PopoverCloseButton,
+  PopoverHeader,
+  PopoverBody,
   Select,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
 } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthHeader from "services/auth/authHeader";
-
 function getWeekAndDayOfMonth(date) {
   const weekOfMonth = Math.ceil((date.getDate() + (date.getDay() + 1) - 1) / 7);
   const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "long" });
@@ -43,14 +43,30 @@ function getOrdinal(n) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-function AddBill({
-  onCreateModalClose,
-  fetchBills,
-  resetCreateModalData,
+function convertFrequencyToOption(frequency) {
+  switch (frequency) {
+    case "DAILY":
+      return "repeat daily";
+    case "WEEKLY":
+      return "repeat weekly";
+    case "MONTHLY":
+      return "repeat monthly";
+    case "YEARLY":
+      return "repeat yearly";
+  }
+}
+
+function UpdateTransactionRecurring({
+  onUpdateModalClose,
+  fetchTransactions,
+  chooseTransactionId,
+  setChooseTransactionId,
+  setDeleteAlertOpen,
+  selectedTransaction,
   categories,
+  groupedCategories,
   currentPage,
   wallets,
-  groupedCategories,
 }) {
   const adjustDateToUTC = (date) => {
     date.setHours(date.getHours() + 7);
@@ -72,142 +88,108 @@ function AddBill({
   const [selectedMonthOption, setSelectedMonthOption] = useState("SAMEDAY");
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState("MONDAY");
   const [selectedFrequencyValue, setSelectedFrequencyValue] = useState(1);
-  const { weekOfMonth, dayOfWeek } = getWeekAndDayOfMonth(changeStartDate);
-  useEffect(() => {
-    if (resetCreateModalData) {
-      setChangeAmount("");
-      setChangeStartDate(adjustDateToUTC(new Date()));
-      setChangeWallet("");
-    }
-  }, [resetCreateModalData]);
 
-  const validateForm = useCallback(() => {
-    if (!changeWallet) {
-      toast.error("Please select wallet!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return false;
+  useEffect(() => {
+    if (selectedTransaction) {
+      setChooseTransactionId(selectedTransaction.transactionRecurringId);
+      const selectedCategory = selectedTransaction.category
+        ? selectedTransaction.category.id.toString()
+        : "";
+      setChangeCategory(selectedCategory);
+      setChangeAmount(selectedTransaction.amount);
+      setChangeWallet(selectedTransaction.wallet.walletName);
+      setSelectedFrequency(
+        convertFrequencyToOption(selectedTransaction.recurrence.frequency)
+      );
+      setSelectedFrequencyValue(selectedTransaction.recurrence.every);
+      setSelectedDayOfWeek(selectedTransaction.recurrence.dayOfWeek || null);
+      setSelectedMonthOption(
+        selectedTransaction.recurrence.monthOption || null
+      );
+      setSelectedOption(selectedTransaction.recurrence.endType);
+      setUntilDate(
+        adjustDateToUTC(
+          adjustDateToUTC(new Date(selectedTransaction.recurrence.endDate))
+        )
+      );
+      setTimes(selectedTransaction.recurrence.times || 0);
+      setChangeStartDate(
+        adjustDateToUTC(new Date(selectedTransaction.recurrence.startDate))
+      );
     }
-    if (!changeCategory) {
-      toast.error("Please select category!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return false;
-    }
-    return true;
-  }, [changeWallet, changeCategory]);
-  const handleCreateBill = useCallback(async () => {
-    if (!validateForm()) {
-      return;
-    }
+  }, [selectedTransaction, setChooseTransactionId]);
+
+  const { weekOfMonth, dayOfWeek } = getWeekAndDayOfMonth(changeStartDate);
+
+  const handleUpdateTransaction = useCallback(async () => {
     const currentUser = AuthService.getCurrentUser();
-    if (currentUser) {
-      try {
+    try {
+      if (currentUser) {
         const walletData = wallets.find(
           (wallet) => wallet.walletName === changeWallet
         );
         const categoryData = categories.find(
           (cat) => cat.id === parseInt(changeCategory)
         );
-
-        const billData = {
-          user: {
-            id: currentUser.id,
-          },
-          amount: changeAmount,
-          recurrence: {
+        const response = await axios.put(
+          `/api/transactionsRecurring/update/${chooseTransactionId}`,
+          {
+            transactionRecurringId: chooseTransactionId,
             user: {
               id: currentUser.id,
             },
-            frequency: selectedFrequency,
-            every: selectedFrequencyValue,
-            dayOfWeek:
-              selectedFrequency === "repeat weekly" ? selectedDayOfWeek : null,
-            monthOption: selectedMonthOption || null,
-            endType: selectedOption,
-            endDate: untilDate === "UNTIL" ? untilDate : null,
-            times: times === "TIMES" ? times : null,
-            startDate: changeStartDate,
+            amount: changeAmount,
+            recurrence: {
+              recurrenceId: selectedTransaction.recurrence.recurrenceId,
+              frequency: selectedFrequency,
+              every: selectedFrequencyValue,
+              dayOfWeek:
+                selectedFrequency === "repeat weekly"
+                  ? selectedDayOfWeek
+                  : null,
+              monthOption: selectedMonthOption || null,
+              endType: selectedOption,
+              endDate: untilDate === "UNTIL" ? untilDate : null,
+              times: times === "TIMES" ? times : null,
+              startDate: changeStartDate,
+            },
+            wallet: {
+              walletId: walletData.walletId,
+              userId: currentUser.id,
+              walletName: changeWallet,
+            },
+            category: {
+              id: categoryData.id,
+              userId: currentUser.id,
+            },
           },
-          wallet: {
-            walletId: walletData.walletId,
-            userId: currentUser.id,
-            walletName: changeWallet,
-          },
-          category: {
-            id: categoryData.id,
-            userId: currentUser.id,
-          },
-        };
+          {
+            headers: AuthHeader(),
+          }
+        );
 
-        await axios.post("/api/bills/create", billData, {
-          headers: AuthHeader(),
-        });
-        fetchBills(currentPage);
-        onCreateModalClose();
-        toast.success("Create Successfull!", {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-      } catch (error) {
-        if (
-          error.response &&
-          error.response.data &&
-          typeof error.response.data === "object"
-        ) {
-          toast.error(
-            JSON.stringify(error.response.data, {
-              position: "top-center",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "light",
-            })
-          );
-        } else if (error.response && typeof error.response.data === "string") {
-          const fieldErrors = error.response.data.split("\n");
-          fieldErrors.forEach((errorMessage) => {
-            toast.error(errorMessage, {
-              position: "top-center",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "light",
-            });
+        if (response.status === 200) {
+          toast.success("Update Transaction Recurring successfull!", {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
           });
+          fetchTransactions(currentPage);
+          onUpdateModalClose();
         }
       }
+    } catch (error) {
+      console.error("Error updating transaction recurring: ", error);
     }
   }, [
-    fetchBills,
+    fetchTransactions,
     categories,
-    onCreateModalClose,
+    onUpdateModalClose,
     currentPage,
     changeAmount,
     changeCategory,
@@ -221,36 +203,38 @@ function AddBill({
     times,
     untilDate,
     wallets,
+    chooseTransactionId,
   ]);
 
   const categoryOptions = useMemo(() => {
     return Object.keys(groupedCategories).map((type) => (
       <Box key={type} mb={2}>
         <Text fontWeight="bold" mb={2}>
-          {type === "EXPENSE" ? "Expense" : type === "DEBT" ? "Debt" : "Income"}
+          {type === "EXPENSE"}
         </Text>
-        {groupedCategories[type].map((category) => (
-          <Button
-            key={category.id}
-            variant="ghost"
-            w="100%"
-            textAlign="left"
-            justifyContent="start"
-            alignItems="center"
-            onClick={() => {
-              setChangeCategory(category.id.toString());
-            }}
-          >
-            <img
-              src={`/assets/img/icons/${category.icon.path}`}
-              alt={category.name}
-              width="20"
-              height="20"
-              style={{ marginRight: "8px" }}
-            />
-            {category.name}
-          </Button>
-        ))}
+        <SimpleGrid columns={5} spacing={2}>
+          {groupedCategories[type].map((category) => (
+            <Button
+              key={category.id}
+              variant="ghost"
+              w="100%"
+              textAlign="left"
+              justifyContent="start"
+              alignItems="center"
+              onClick={() => {
+                setChangeCategory(category.id.toString());
+              }}
+            >
+              <img
+                src={`/assets/img/icons/${category.icon.path}`}
+                alt={category.name}
+                width="40"
+                height="40"
+                style={{ marginRight: "8px" }}
+              />
+            </Button>
+          ))}
+        </SimpleGrid>
       </Box>
     ));
   }, [groupedCategories]);
@@ -507,13 +491,24 @@ function AddBill({
         </Flex>
       </ModalBody>
       <ModalFooter justifyContent="center">
-        <Button colorScheme="blue" mr={3} onClick={handleCreateBill}>
-          Add
+        <Button
+          colorScheme="red"
+          mr={2}
+          onClick={() => {
+            setDeleteAlertOpen(true);
+          }}
+        >
+          Delete
         </Button>
-        <Button onClick={onCreateModalClose}>Cancel</Button>
+        <Button colorScheme="blue" mr={2} onClick={handleUpdateTransaction}>
+          Save Changes
+        </Button>
+        <Button color="grey.700" onClick={onUpdateModalClose}>
+          Cancel
+        </Button>
       </ModalFooter>
     </>
   );
 }
 
-export default AddBill;
+export default UpdateTransactionRecurring;

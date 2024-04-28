@@ -137,7 +137,9 @@ const SavingGoalsView = () => {
     };
 
     try {
-      await axios.post("/api/savinggoals/create", savingGoalData);
+      await axios.post("/api/savinggoals/create", savingGoalData, {
+        headers: AuthHeader(),
+      });
       toast.success("Saving goal added successfully");
       fetchSavingGoalsByUserId(currentUser.id);
     } catch (error) {

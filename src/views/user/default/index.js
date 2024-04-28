@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useReducer } from "react";
+import React, { useEffect, useCallback, useReducer } from "react";
 import {
   Box,
   Divider,
@@ -246,7 +246,7 @@ const UserReports = () => {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      if (walletId == "") {
+      if (walletId === "") {
         fetchAllData();
       } else if (walletId) {
         const [

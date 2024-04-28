@@ -11,14 +11,7 @@ import {
   Input,
   Select,
   Button,
-  Radio,
-  RadioGroup,
   FormControl,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
   Popover,
   PopoverTrigger,
   PopoverContent,
@@ -31,6 +24,7 @@ import {
 } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import AuthHeader from "services/auth/authHeader";
 
 const AddTransaction = ({
   onCreateModalClose,
@@ -137,7 +131,8 @@ const AddTransaction = ({
 
         const response = await axios.post(
           "/api/transactions/create",
-          requestData
+          requestData,
+          { headers: AuthHeader() }
         );
 
         if (response.status === 200) {
