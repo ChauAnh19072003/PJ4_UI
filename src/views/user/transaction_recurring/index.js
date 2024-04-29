@@ -12,7 +12,7 @@ function TransactionRecurring() {
           mx="auto"
           my="auto"
           overflowX={{ sm: "scroll", lg: "hidden" }}
-          w={{ base: "100%", md: "70%" }}
+          w={{ base: "100%", md: "80%" }}
           px={{ base: "10px", md: "50px" }}
         >
           <ListDataTransactionRecurring />

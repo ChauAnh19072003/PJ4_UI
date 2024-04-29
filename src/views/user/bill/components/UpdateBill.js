@@ -105,11 +105,7 @@ function UpdateBill({
       setSelectedDayOfWeek(selectedBill.recurrence.dayOfWeek || null);
       setSelectedMonthOption(selectedBill.recurrence.monthOption || null);
       setSelectedOption(selectedBill.recurrence.endType);
-      setUntilDate(
-        adjustDateToUTC(
-          adjustDateToUTC(new Date(selectedBill.recurrence.endDate))
-        )
-      );
+      setUntilDate(adjustDateToUTC(new Date(selectedBill.recurrence.endDate)));
       setTimes(selectedBill.recurrence.times || 0);
       setChangeStartDate(
         adjustDateToUTC(new Date(selectedBill.recurrence.startDate))
@@ -147,7 +143,7 @@ function UpdateBill({
                   : null,
               monthOption: selectedMonthOption || null,
               endType: selectedOption,
-              endDate: untilDate === "UNTIL" ? untilDate : null,
+              endDate: selectedOption === "UNTIL" ? untilDate : null,
               times: times === "TIMES" ? times : null,
               startDate: changeStartDate,
             },
@@ -180,7 +176,38 @@ function UpdateBill({
         }
       }
     } catch (error) {
-      console.error("Error updating bill: ", error);
+      if (
+        error.response &&
+        error.response.data &&
+        typeof error.response.data === "object"
+      ) {
+        toast.error(
+          JSON.stringify(error.response.data, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          })
+        );
+      } else if (error.response && typeof error.response.data === "string") {
+        const fieldErrors = error.response.data.split("\n");
+        fieldErrors.forEach((errorMessage) => {
+          toast.error(errorMessage, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+        });
+      }
     }
   }, [
     fetchBills,
@@ -321,7 +348,7 @@ function UpdateBill({
               onChange={(e) => {
                 setSelectedFrequency(e.target.value);
                 if (e.target.value !== "repeat weekly") {
-                  setSelectedDayOfWeek("");
+                  setSelectedDayOfWeek("MONDAY");
                 }
                 if (e.target.value !== "repeat monthly") {
                   setSelectedMonthOption("");
