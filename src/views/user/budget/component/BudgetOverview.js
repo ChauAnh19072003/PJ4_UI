@@ -112,7 +112,9 @@ const BudgetsOverview = ({ userId }) => {
   const handleDeleteBudget = async () => {
     if (budgetToDelete) {
       try {
-        await axios.delete(`/api/budgets/delete/${budgetToDelete}`);
+        await axios.delete(`/api/budgets/delete/${budgetToDelete}`, {
+          headers: AuthHeader(),
+        });
         toast.success("Budget successfully deleted");
         fetchBudgets();
         setBudgetToDelete(null);
@@ -164,10 +166,7 @@ const BudgetsOverview = ({ userId }) => {
         );
         toast.success("Budget updated successfully");
       } else {
-        await axios.post(`/api/budgets/create`, budgetData, {
-          headers: AuthHeader(),
-        });
-        toast.success("Budget added successfully");
+        await axios.post(`/api/budgets/create`, budgetData);
       }
       toast.success(
         `Budget ${selectedBudget ? "updated" : "added"} successfully`

@@ -22,6 +22,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthService from "services/auth/auth.service";
+import AuthHeader from "services/auth/authHeader";
 
 function Password({ handleClosePasswordModal, onPasswordOpen }) {
   const {
@@ -46,7 +47,8 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
             oldPassword: oldPassword,
             newPassword: newPassword,
             confirmNewPassword: confirmNewPassword,
-          }
+          },
+          { headers: AuthHeader() }
         );
         console.log(response);
 
@@ -97,7 +99,8 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
             email: currentUser.email,
             pin: enteredOTP,
           },
-        }
+        },
+        { headers: AuthHeader() }
       );
       toast.success(response.data, {
         position: "top-center",

@@ -5,7 +5,7 @@ import DatePicker from "react-datepicker";
 import { format } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
 import { SearchBar } from "components/navbar/searchBar/SearchBar";
-import DeleteConfirmationAlert from "./Delete";
+import DeleteConfirmationAlert from "./DeleteTransactionRecurring";
 import {
   Text,
   Flex,
@@ -24,16 +24,16 @@ import {
 } from "@chakra-ui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import AddBill from "./AddBill";
-import UpdateBill from "./UpdateBill";
 import AuthHeader from "services/auth/authHeader";
+import AddTransactionRecurring from "./AddTransactionRecurring";
+import UpdateTransactionRecurring from "./UpdateTransactionRecurring";
 
-function BillList() {
+function ListDataTransactionRecurring() {
   const [isDataLoaded, setDataLoaded] = useState(false);
-  const [bills, setBills] = useState({ content: [] });
+  const [transactions, setTransactions] = useState({ content: [] });
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [chooseBillId, setChooseBillId] = useState(null);
+  const [chooseTransactionId, setChooseTransactionId] = useState(null);
   const {
     isOpen: isUpdateModalOpen,
     onOpen: onUpdateModalOpen,
@@ -47,42 +47,42 @@ function BillList() {
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchDate, setSearchDate] = useState(null);
-  const [selectedBill, setSelectedBill] = useState(null);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
   const inputText = useColorModeValue("gray.700", "gray.100");
   const [categories, setCategories] = useState([]);
   const [groupedCategories, setGroupedCategories] = useState({});
   const [wallets, setWallets] = useState([]);
 
   const isMounted = useRef(true);
-  const fetchBills = useCallback(async (page) => {
+  const fetchTransactions = useCallback(async (page) => {
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
         const response = await axios.get(
-          `/api/bills/users/${currentUser.id}?page=${page}&size=10`,
+          `/api/transactionsRecurring/users/${currentUser.id}?page=${page}&size=10`,
           {
             headers: AuthHeader(),
           }
         );
         if (isMounted.current) {
-          setBills(response.data);
+          setTransactions(response.data);
           setTotalPages(response.data.totalPages);
         }
       } catch (error) {
-        console.error("Error fetching bills:", error);
+        console.error("Error fetching Transactions Recurring:", error);
       }
     }
   }, []);
 
   useEffect(() => {
-    fetchBills(currentPage);
-  }, [currentPage, fetchBills]);
+    fetchTransactions(currentPage);
+  }, [currentPage, fetchTransactions]);
 
   const resetCreateModalData = () => {};
 
-  const handleOpenUpdateModal = (bill) => {
-    setSelectedBill(bill);
-    setChooseBillId(bill.billId);
+  const handleOpenUpdateModal = (transactionsRecurring) => {
+    setSelectedTransaction(transactionsRecurring);
+    setChooseTransactionId(transactionsRecurring.transactionRecurringId);
     onUpdateModalOpen();
   };
 
@@ -90,14 +90,15 @@ function BillList() {
     setCurrentPage(pageNumber);
   };
 
-  const handleDeleteBill = async (billId) => {
+  const handleDeleteTransaction = async (transactionRecurringId) => {
     try {
-      await axios.delete(`/api/bills/delete/${billId}`, {
-        headers: AuthHeader(),
-      });
+      await axios.delete(
+        `/api/transactionsRecurring/delete/${transactionRecurringId}`,
+        { headers: AuthHeader() }
+      );
       setDeleteAlertOpen(false);
       onUpdateModalClose();
-      toast.success("Delete Bill Successfull", {
+      toast.success("Delete Transaction Recurring Successfull", {
         position: "top-center",
         autoClose: 3000,
         hideProgressBar: false,
@@ -107,9 +108,9 @@ function BillList() {
         progress: undefined,
         theme: "light",
       });
-      fetchBills(currentPage);
+      fetchTransactions(currentPage);
     } catch (error) {
-      console.error("Error deleting bill:", error);
+      console.error("Error deleting transaction recurring:", error);
     }
   };
 
@@ -155,7 +156,7 @@ function BillList() {
     };
 
     fetchData();
-  }, [fetchBills]);
+  }, [fetchTransactions]);
 
   return (
     <>
@@ -217,11 +218,11 @@ function BillList() {
       >
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Add Bill</ModalHeader>
+          <ModalHeader>Add Transaction Recurring</ModalHeader>
           <ModalCloseButton />
-          <AddBill
+          <AddTransactionRecurring
             onCreateModalClose={onCreateModalClose}
-            fetchBills={fetchBills}
+            fetchTransactions={fetchTransactions}
             currentPage={currentPage}
             resetCreateModalData={resetCreateModalData}
             categories={categories}
@@ -238,17 +239,17 @@ function BillList() {
       >
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Bill Details</ModalHeader>
+          <ModalHeader>Transaction Recurring Details</ModalHeader>
           <ModalCloseButton />
-          <UpdateBill
+          <UpdateTransactionRecurring
             onUpdateModalClose={onUpdateModalClose}
-            fetchBills={fetchBills}
+            fetchTransactions={fetchTransactions}
             currentPage={currentPage}
-            chooseBillId={chooseBillId}
-            setChooseBillId={setChooseBillId}
+            chooseTransactionId={chooseTransactionId}
+            setChooseTransactionId={setChooseTransactionId}
             setDeleteAlertOpen={setDeleteAlertOpen}
             handleOpenUpdateModal={handleOpenUpdateModal}
-            selectedBill={selectedBill}
+            selectedTransaction={selectedTransaction}
             categories={categories}
             groupedCategories={groupedCategories}
             wallets={wallets}
@@ -260,8 +261,8 @@ function BillList() {
         isOpen={isDeleteAlertOpen}
         onClose={() => setDeleteAlertOpen(false)}
         onConfirm={() => {
-          if (chooseBillId) {
-            handleDeleteBill(chooseBillId);
+          if (chooseTransactionId) {
+            handleDeleteTransaction(chooseTransactionId);
           }
           setDeleteAlertOpen(false);
         }}
@@ -295,16 +296,16 @@ function BillList() {
           </Center>
         ) : wallets && wallets.length === 0 ? (
           <Text textAlign="center" fontSize="xl" mt={5}>
-            You need to create wallet before create bill
+            You need to create wallet before create Transaction Recurring
           </Text>
         ) : (
-          bills &&
-          bills.content &&
-          bills.content
-            .filter((bill) => {
+          transactions &&
+          transactions.content &&
+          transactions.content
+            .filter((transaction) => {
               if (searchDate) {
                 const formattedDate = format(
-                  new Date(bill.recurrence.dueDate),
+                  new Date(transaction.recurrence.dueDate),
                   "yyyy-MM-dd"
                 );
                 const formattedSearchDate = format(searchDate, "yyyy-MM-dd");
@@ -325,32 +326,37 @@ function BillList() {
               }
               return 0;
             })
-            .map((bill, contentIndex) => {
+            .map((transaction, contentIndex) => {
               const startIndex = currentPage * 10 + contentIndex + 1;
               const category = categories.find(
-                (cat) => cat.id === parseInt(bill.category.id)
+                (cat) => cat.id === parseInt(transaction.category.id)
               );
               const iconPath = category ? category.icon.path : "";
               const categoryName = category ? category.name : "";
 
               return (
                 <Box
-                  key={bill.billId}
+                  key={transaction.transactionRecurringId}
                   alignItems="center"
-                  onClick={() => handleOpenUpdateModal(bill)}
+                  onClick={() => handleOpenUpdateModal(transaction)}
                   cursor="pointer"
                   position="relative"
                   borderRadius={8}
                   mb={1}
                   py="2"
                   px="4"
+                  backgroundColor={
+                    transaction.category.type === "INCOME"
+                      ? "green.200"
+                      : "red.200"
+                  }
                   fontSize={{ sm: "10px", lg: "sm" }}
                   _hover={{
                     boxShadow:
                       "20px rgba(0, 0, 0, 0.1), 0 0 20px -20px rgba(0, 0, 0, 0.1), 20px 0 20px -20px rgba(0, 0, 0, 0.5), 0 20px 20px -20px rgba(0, 0, 0, 0.5)",
                   }}
                 >
-                  <Flex key={bill.billId} py="2" px="4">
+                  <Flex key={transaction.transactionRecurringId} py="2" px="4">
                     <Box flex="1" color="secondaryGray.900" fontWeight="bold">
                       {startIndex}
                     </Box>
@@ -367,10 +373,10 @@ function BillList() {
                       </Flex>
                     </Box>
                     <Box flex="2" color="secondaryGray.900" fontWeight="bold">
-                      {bill.amount}
+                      {transaction.amount}
                     </Box>
                     <Box flex="2" color="secondaryGray.900" fontWeight="bold">
-                      {bill.recurrence.dueDate}
+                      {transaction.recurrence.dueDate}
                     </Box>
                   </Flex>
                 </Box>
@@ -413,4 +419,4 @@ function BillList() {
   );
 }
 
-export default BillList;
+export default ListDataTransactionRecurring;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useReducer } from "react";
+import React, { useEffect, useCallback, useReducer } from "react";
 import {
   Box,
   Divider,
@@ -246,7 +246,7 @@ const UserReports = () => {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      if (walletId == "") {
+      if (walletId === "") {
         fetchAllData();
       } else if (walletId) {
         const [
@@ -255,8 +255,8 @@ const UserReports = () => {
           expenseResponse,
           incomeResponse,
         ] = await Promise.all([
-          axios.get(`/api/wallets/${walletId}`),
-          axios.get(`/api/transactions/users/${userId}/wallets/${walletId}`, {
+          axios.get(`/api/wallets/${walletId}`, { headers: AuthHeader() }),
+          axios.get(`/api/transactions/wallets/${walletId}/users/${userId}`, {
             headers: AuthHeader(),
           }),
           axios.get(
@@ -299,6 +299,12 @@ const UserReports = () => {
 
           dispatch(setIncome(totalIncome));
           dispatch(setExpense(totalExpense));
+
+          const sortedTransactions = transactionsResponse.data.sort(
+            (a, b) => b.transactionId - a.transactionId
+          );
+          const selectedTransactions = sortedTransactions.slice(0, 4);
+          dispatch({ type: "SET_TRANSACTIONS", payload: selectedTransactions });
         }
       } else {
         fetchAllData();
@@ -347,6 +353,12 @@ const UserReports = () => {
         dispatch(setExpense(totalExpense));
 
         dispatch(setTransactions(transactionsResponse.data));
+
+        const sortedTransactions = transactionsResponse.data.sort(
+          (a, b) => b.transactionId - a.transactionId
+        );
+        const selectedTransactions = sortedTransactions.slice(0, 4);
+        dispatch({ type: "SET_TRANSACTIONS", payload: selectedTransactions });
 
         const totalBalance = calculateTotalBalance(
           walletResponse.data,

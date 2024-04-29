@@ -3,7 +3,7 @@ import axios from "axios";
 import AuthService from "services/auth/auth.service";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { DatePickerStyle } from "../Styles";
+import { DatePickerStyle } from "views/user/bill/Styles";
 import {
   Text,
   Flex,
@@ -43,9 +43,9 @@ function getOrdinal(n) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-function AddBill({
+function AddTransactionRecurring({
   onCreateModalClose,
-  fetchBills,
+  fetchTransactions,
   resetCreateModalData,
   categories,
   currentPage,
@@ -110,7 +110,7 @@ function AddBill({
     }
     return true;
   }, [changeWallet, changeCategory]);
-  const handleCreateBill = useCallback(async () => {
+  const handleCreateTransaction = useCallback(async () => {
     if (!validateForm()) {
       return;
     }
@@ -124,7 +124,7 @@ function AddBill({
           (cat) => cat.id === parseInt(changeCategory)
         );
 
-        const billData = {
+        const transactionData = {
           user: {
             id: currentUser.id,
           },
@@ -154,10 +154,10 @@ function AddBill({
           },
         };
 
-        await axios.post("/api/bills/create", billData, {
+        await axios.post("/api/transactionsRecurring/create", transactionData, {
           headers: AuthHeader(),
         });
-        fetchBills(currentPage);
+        fetchTransactions(currentPage);
         onCreateModalClose();
         toast.success("Create Successfull!", {
           position: "top-center",
@@ -205,7 +205,7 @@ function AddBill({
       }
     }
   }, [
-    fetchBills,
+    fetchTransactions,
     categories,
     onCreateModalClose,
     currentPage,
@@ -507,7 +507,7 @@ function AddBill({
         </Flex>
       </ModalBody>
       <ModalFooter justifyContent="center">
-        <Button colorScheme="blue" mr={3} onClick={handleCreateBill}>
+        <Button colorScheme="blue" mr={3} onClick={handleCreateTransaction}>
           Add
         </Button>
         <Button onClick={onCreateModalClose}>Cancel</Button>
@@ -516,4 +516,4 @@ function AddBill({
   );
 }
 
-export default AddBill;
+export default AddTransactionRecurring;

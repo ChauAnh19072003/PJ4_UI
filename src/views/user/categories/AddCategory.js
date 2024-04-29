@@ -14,6 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import AuthHeader from "services/auth/authHeader";
 
 const AddCategory = ({
   onCreateModalClose,
@@ -54,12 +55,16 @@ const AddCategory = ({
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
-        await axios.post("/api/categories/create", {
-          name: newCategoryName,
-          userId: currentUser.id,
-          icon: selectedIcon,
-          type: newCategoryType,
-        });
+        await axios.post(
+          "/api/categories/create",
+          {
+            name: newCategoryName,
+            userId: currentUser.id,
+            icon: selectedIcon,
+            type: newCategoryType,
+          },
+          { headers: AuthHeader() }
+        );
         fetchCategories();
         toast.success("Create Category Successfull!", {
           position: "top-center",
