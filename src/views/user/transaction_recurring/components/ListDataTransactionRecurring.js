@@ -281,12 +281,15 @@ function ListDataTransactionRecurring() {
           <Text flex="1" cursor={"pointer"} onClick={() => sortBy("id")}>
             Id
           </Text>
-          <Text flex="2">Category</Text>
-          <Text flex="2" cursor={"pointer"} onClick={() => sortBy("amount")}>
+          <Text flex="3">Category</Text>
+          <Text flex="4" cursor={"pointer"} onClick={() => sortBy("amount")}>
             Amount
           </Text>
-          <Text flex="2" cursor={"pointer"} onClick={() => sortBy("dueDate")}>
+          <Text flex="4" cursor={"pointer"} onClick={() => sortBy("dueDate")}>
             Due Date
+          </Text>
+          <Text flex="4" cursor={"pointer"} onClick={() => sortBy("dueDate")}>
+            Transaction Recurring
           </Text>
         </Flex>
 
@@ -351,16 +354,20 @@ function ListDataTransactionRecurring() {
                       : "red.200"
                   }
                   fontSize={{ sm: "10px", lg: "sm" }}
-                  _hover={{
-                    boxShadow:
-                      "20px rgba(0, 0, 0, 0.1), 0 0 20px -20px rgba(0, 0, 0, 0.1), 20px 0 20px -20px rgba(0, 0, 0, 0.5), 0 20px 20px -20px rgba(0, 0, 0, 0.5)",
-                  }}
+                  boxShadow="lg"
+                  transition="transform 0.2s"
+                  _hover={{ transform: "scale(1.02)" }}
                 >
                   <Flex key={transaction.transactionRecurringId} py="2" px="4">
-                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
+                    <Box
+                      flex="1"
+                      color="secondaryGray.900"
+                      fontWeight="bold"
+                      mr={-100}
+                    >
                       {startIndex}
                     </Box>
-                    <Box flex="2" color="secondaryGray.900" fontWeight="bold">
+                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
                       <Flex alignItems="center">
                         <img
                           src={`/assets/img/icons/${iconPath}`}
@@ -372,11 +379,40 @@ function ListDataTransactionRecurring() {
                         {categoryName}
                       </Flex>
                     </Box>
-                    <Box flex="2" color="secondaryGray.900" fontWeight="bold">
+                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
                       {transaction.amount}
                     </Box>
-                    <Box flex="2" color="secondaryGray.900" fontWeight="bold">
+                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
                       {transaction.recurrence.dueDate}
+                    </Box>
+                    <Box
+                      flex="1"
+                      color="secondaryGray.900"
+                      fontWeight="bold"
+                      mr={-35}
+                    >
+                      {transaction.recurrence.frequency === "DAILY" &&
+                        `Repeat daily `}
+                      {transaction.recurrence.frequency === "WEEKLY" &&
+                        `Repeat weekly `}
+                      {transaction.recurrence.frequency === "MONTHLY" &&
+                        `Repeat monthly `}
+                      {transaction.recurrence.frequency === "YEARLY" &&
+                        `Repeat yearly`}
+                    </Box>
+                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
+                      {transaction.recurrence.frequency === "DAILY" &&
+                        `From ${transaction.recurrence.startDate}`}
+                      {transaction.recurrence.frequency === "WEEKLY" &&
+                        `From ${transaction.recurrence.startDate}`}
+                      {transaction.recurrence.frequency === "MONTHLY" &&
+                        `From ${transaction.recurrence.startDate}`}
+                      {transaction.recurrence.frequency === "YEARLY" &&
+                        `From ${transaction.recurrence.startDate}`}
+                      {transaction.recurrence.endType === "UNTIL" &&
+                        ` until ${transaction.recurrence.endDate}`}
+                      {transaction.recurrence.endType === "TIMES" &&
+                        ` for ${transaction.recurrence.times} times from ${transaction.recurrence.startDate}`}
                     </Box>
                   </Flex>
                 </Box>

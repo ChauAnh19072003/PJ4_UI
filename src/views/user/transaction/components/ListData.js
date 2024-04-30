@@ -419,11 +419,10 @@ function ListData() {
                   mb={1}
                   py="2"
                   px="4"
-                  fontSize={{ sm: "10px", lg: "sm" }}
-                  _hover={{
-                    boxShadow:
-                      "20px rgba(0, 0, 0, 0.1), 0 0 20px -20px rgba(0, 0, 0, 0.1), 20px 0 20px -20px rgba(0, 0, 0, 0.5), 0 20px 20px -20px rgba(0, 0, 0, 0.5)",
-                  }}
+                  fontSize="sm"
+                  boxShadow="lg"
+                  transition="transform 0.2s"
+                  _hover={{ transform: "scale(1.02)" }}
                 >
                   <Flex key={transaction.transactionId} py="2" px="4">
                     <Box flex="1" color="secondaryGray.900" fontWeight="bold">

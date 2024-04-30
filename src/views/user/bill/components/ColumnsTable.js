@@ -273,19 +273,38 @@ function BillList() {
           borderBottomWidth="1px"
           borderColor="gray.200"
           py="2"
-          px="8"
+          px={{ base: 0, md: "8px", xl: "8px" }}
           fontSize={{ sm: "10px", lg: "12px" }}
           color="gray.400"
         >
-          <Text flex="1" cursor={"pointer"} onClick={() => sortBy("id")}>
+          <Text
+            flex={{ base: 1, md: 1, xl: 1 }}
+            cursor={"pointer"}
+            onClick={() => sortBy("id")}
+          >
             Id
           </Text>
-          <Text flex="2">Category</Text>
-          <Text flex="2" cursor={"pointer"} onClick={() => sortBy("amount")}>
+          <Text flex={{ base: 1, md: 3, xl: 3 }}>Category</Text>
+          <Text
+            flex={{ base: 1, md: 3, xl: 3 }}
+            cursor={"pointer"}
+            onClick={() => sortBy("amount")}
+          >
             Amount
           </Text>
-          <Text flex="2" cursor={"pointer"} onClick={() => sortBy("dueDate")}>
+          <Text
+            flex={{ base: 1, md: 4, xl: 4 }}
+            cursor={"pointer"}
+            onClick={() => sortBy("dueDate")}
+          >
             Due Date
+          </Text>
+          <Text
+            flex={{ base: 1, md: 4, xl: 4 }}
+            cursor={"pointer"}
+            onClick={() => sortBy("dueDate")}
+          >
+            Bill Recurring
           </Text>
         </Flex>
 
@@ -341,20 +360,25 @@ function BillList() {
                   cursor="pointer"
                   position="relative"
                   borderRadius={8}
+                  backgroundColor="yellow.100"
                   mb={1}
                   py="2"
-                  px="4"
+                  px={{ base: 0, xl: "4" }}
                   fontSize={{ sm: "10px", lg: "sm" }}
-                  _hover={{
-                    boxShadow:
-                      "20px rgba(0, 0, 0, 0.1), 0 0 20px -20px rgba(0, 0, 0, 0.1), 20px 0 20px -20px rgba(0, 0, 0, 0.5), 0 20px 20px -20px rgba(0, 0, 0, 0.5)",
-                  }}
+                  boxShadow="lg"
+                  transition="transform 0.2s"
+                  _hover={{ transform: "scale(1.02)" }}
                 >
-                  <Flex key={bill.billId} py="2" px="4">
-                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
+                  <Flex key={bill.billId} py={2} px={4}>
+                    <Box
+                      flex="1"
+                      color="secondaryGray.900"
+                      fontWeight="bold"
+                      mr={{ base: -50, xl: "-100" }}
+                    >
                       {startIndex}
                     </Box>
-                    <Box flex="2" color="secondaryGray.900" fontWeight="bold">
+                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
                       <Flex alignItems="center">
                         <img
                           src={`/assets/img/icons/${iconPath}`}
@@ -366,11 +390,52 @@ function BillList() {
                         {categoryName}
                       </Flex>
                     </Box>
-                    <Box flex="2" color="secondaryGray.900" fontWeight="bold">
+                    <Box
+                      flex={{ base: 1, md: 1, xl: 1 }}
+                      color="secondaryGray.900"
+                      fontWeight="bold"
+                    >
                       {bill.amount}
                     </Box>
-                    <Box flex="2" color="secondaryGray.900" fontWeight="bold">
+                    <Box
+                      flex={{ base: 1, md: 1, xl: 1 }}
+                      color="secondaryGray.900"
+                      fontWeight="bold"
+                    >
                       {bill.recurrence.dueDate}
+                    </Box>
+                    <Box
+                      flex={{ base: 0, md: 1, xl: 1 }}
+                      color="secondaryGray.900"
+                      fontWeight="bold"
+                      mr={{ base: 0, xl: "-35" }}
+                      display={{ base: "none", md: "block", xl: "block" }}
+                    >
+                      {bill.recurrence.frequency === "DAILY" && `Repeat daily `}
+                      {bill.recurrence.frequency === "WEEKLY" &&
+                        `Repeat weekly `}
+                      {bill.recurrence.frequency === "MONTHLY" &&
+                        `Repeat monthly `}
+                      {bill.recurrence.frequency === "YEARLY" &&
+                        `Repeat yearly`}
+                    </Box>
+                    <Box
+                      flex={{ base: 1, md: 1, xl: 1 }}
+                      color="secondaryGray.900"
+                      fontWeight="bold"
+                    >
+                      {bill.recurrence.frequency === "DAILY" &&
+                        `From ${bill.recurrence.startDate}`}
+                      {bill.recurrence.frequency === "WEEKLY" &&
+                        `From ${bill.recurrence.startDate}`}
+                      {bill.recurrence.frequency === "MONTHLY" &&
+                        `From ${bill.recurrence.startDate}`}
+                      {bill.recurrence.frequency === "YEARLY" &&
+                        `From ${bill.recurrence.startDate}`}
+                      {bill.recurrence.endType === "UNTIL" &&
+                        ` until ${bill.recurrence.endDate}`}
+                      {bill.recurrence.endType === "TIMES" &&
+                        ` for ${bill.recurrence.times} times from ${bill.recurrence.startDate}`}
                     </Box>
                   </Flex>
                 </Box>

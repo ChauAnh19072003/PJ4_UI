@@ -139,7 +139,7 @@ function AddTransactionRecurring({
               selectedFrequency === "repeat weekly" ? selectedDayOfWeek : null,
             monthOption: selectedMonthOption || null,
             endType: selectedOption,
-            endDate: untilDate === "UNTIL" ? untilDate : null,
+            endDate: selectedOption === "UNTIL" ? untilDate : null,
             times: times === "TIMES" ? times : null,
             startDate: changeStartDate,
           },
