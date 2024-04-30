@@ -166,7 +166,10 @@ const BudgetsOverview = ({ userId }) => {
         );
         toast.success("Budget updated successfully");
       } else {
-        await axios.post(`/api/budgets/create`, budgetData);
+        await axios.post(`/api/budgets/create`, budgetData,
+        {
+          headers: AuthHeader(),
+        });
       }
       toast.success(
         `Budget ${selectedBudget ? "updated" : "added"} successfully`
