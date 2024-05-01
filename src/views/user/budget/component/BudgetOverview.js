@@ -82,7 +82,8 @@ const BudgetsOverview = ({ userId }) => {
           headers: AuthHeader(),
         }
       );
-      setCategories(response.data);
+      const filteredCategories = response.data.filter(category => category.type === 'EXPENSE');
+      setCategories(filteredCategories);
     } catch (error) {
       toast.error("Error fetching categories");
     }
