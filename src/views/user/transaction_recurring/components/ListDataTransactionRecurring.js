@@ -21,6 +21,13 @@ import {
   useColorModeValue,
   Center,
   Spinner,
+  TableContainer,
+  Table,
+  Thead,
+  Tr,
+  Th,
+  Tbody,
+  Td,
 } from "@chakra-ui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -268,158 +275,134 @@ function ListDataTransactionRecurring() {
         }}
       />
       {/* LIST DATA */}
-      <Flex direction="column">
-        <Flex
-          fontWeight="bold"
-          borderBottomWidth="1px"
-          borderColor="gray.200"
-          py="2"
-          px="8"
-          fontSize={{ sm: "10px", lg: "12px" }}
-          color="gray.400"
-        >
-          <Text flex="1" cursor={"pointer"} onClick={() => sortBy("id")}>
-            Id
-          </Text>
-          <Text flex="3">Category</Text>
-          <Text flex="4" cursor={"pointer"} onClick={() => sortBy("amount")}>
-            Amount
-          </Text>
-          <Text flex="4" cursor={"pointer"} onClick={() => sortBy("dueDate")}>
-            Due Date
-          </Text>
-          <Text flex="4" cursor={"pointer"} onClick={() => sortBy("dueDate")}>
-            Transaction Recurring
-          </Text>
-        </Flex>
-
-        {!isDataLoaded ? (
-          <Center>
-            <Spinner my="20px" />
-          </Center>
-        ) : wallets && wallets.length === 0 ? (
-          <Text textAlign="center" fontSize="xl" mt={5}>
-            You need to create wallet before create Transaction Recurring
-          </Text>
-        ) : (
-          transactions &&
-          transactions.content &&
-          transactions.content
-            .filter((transaction) => {
-              if (searchDate) {
-                const formattedDate = format(
-                  new Date(transaction.recurrence.dueDate),
-                  "yyyy-MM-dd"
-                );
-                const formattedSearchDate = format(searchDate, "yyyy-MM-dd");
-                return formattedDate === formattedSearchDate;
-              } else {
-                return true;
-              }
-            })
-            .slice()
-            .sort((a, b) => {
-              if (sortConfig.key) {
-                if (a[sortConfig.key] < b[sortConfig.key]) {
-                  return sortConfig.direction === "asc" ? -1 : 1;
-                }
-                if (a[sortConfig.key] > b[sortConfig.key]) {
-                  return sortConfig.direction === "asc" ? 1 : -1;
-                }
-              }
-              return 0;
-            })
-            .map((transaction, contentIndex) => {
-              const startIndex = currentPage * 10 + contentIndex + 1;
-              const category = categories.find(
-                (cat) => cat.id === parseInt(transaction.category.id)
-              );
-              const iconPath = category ? category.icon.path : "";
-              const categoryName = category ? category.name : "";
-
-              return (
-                <Box
-                  key={transaction.transactionRecurringId}
-                  alignItems="center"
-                  onClick={() => handleOpenUpdateModal(transaction)}
-                  cursor="pointer"
-                  position="relative"
-                  borderRadius={8}
-                  mb={1}
-                  py="2"
-                  px="4"
-                  backgroundColor={
-                    transaction.category.type === "INCOME"
-                      ? "green.200"
-                      : "red.200"
+      {!isDataLoaded ? (
+        <Center>
+          <Spinner my="20px" />
+        </Center>
+      ) : wallets && wallets.length === 0 ? (
+        <Text textAlign="center" fontSize="xl" mt={5}>
+          You need to create wallet before create bill
+        </Text>
+      ) : (
+        <TableContainer>
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th cursor={"pointer"} onClick={() => sortBy("id")}>
+                  Id
+                </Th>
+                <Th>Category</Th>
+                <Th cursor={"pointer"} onClick={() => sortBy("amount")}>
+                  Amount
+                </Th>
+                <Th cursor={"pointer"} onClick={() => sortBy("dueDate")}>
+                  Due Date
+                </Th>
+                <Th cursor={"pointer"} onClick={() => sortBy("dueDate")}>
+                  Bill Recurring
+                </Th>
+              </Tr>
+            </Thead>
+            {transactions &&
+              transactions.content &&
+              transactions.content
+                .filter((transaction) => {
+                  if (searchDate) {
+                    const formattedDate = format(
+                      new Date(transaction.recurrence.dueDate),
+                      "yyyy-MM-dd"
+                    );
+                    const formattedSearchDate = format(
+                      searchDate,
+                      "yyyy-MM-dd"
+                    );
+                    return formattedDate === formattedSearchDate;
+                  } else {
+                    return true;
                   }
-                  fontSize={{ sm: "10px", lg: "sm" }}
-                  boxShadow="lg"
-                  transition="transform 0.2s"
-                  _hover={{ transform: "scale(1.02)" }}
-                >
-                  <Flex key={transaction.transactionRecurringId} py="2" px="4">
-                    <Box
-                      flex="1"
-                      color="secondaryGray.900"
-                      fontWeight="bold"
-                      mr={-100}
-                    >
-                      {startIndex}
-                    </Box>
-                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
-                      <Flex alignItems="center">
-                        <img
-                          src={`/assets/img/icons/${iconPath}`}
-                          alt={categoryName}
-                          width="20"
-                          height="20"
-                          style={{ marginRight: "8px" }}
-                        />
-                        {categoryName}
-                      </Flex>
-                    </Box>
-                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
-                      {transaction.amount}
-                    </Box>
-                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
-                      {transaction.recurrence.dueDate}
-                    </Box>
-                    <Box
-                      flex="1"
-                      color="secondaryGray.900"
-                      fontWeight="bold"
-                      mr={-35}
-                    >
-                      {transaction.recurrence.frequency === "DAILY" &&
-                        `Repeat daily `}
-                      {transaction.recurrence.frequency === "WEEKLY" &&
-                        `Repeat weekly `}
-                      {transaction.recurrence.frequency === "MONTHLY" &&
-                        `Repeat monthly `}
-                      {transaction.recurrence.frequency === "YEARLY" &&
-                        `Repeat yearly`}
-                    </Box>
-                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
-                      {transaction.recurrence.frequency === "DAILY" &&
-                        `From ${transaction.recurrence.startDate}`}
-                      {transaction.recurrence.frequency === "WEEKLY" &&
-                        `From ${transaction.recurrence.startDate}`}
-                      {transaction.recurrence.frequency === "MONTHLY" &&
-                        `From ${transaction.recurrence.startDate}`}
-                      {transaction.recurrence.frequency === "YEARLY" &&
-                        `From ${transaction.recurrence.startDate}`}
-                      {transaction.recurrence.endType === "UNTIL" &&
-                        ` until ${transaction.recurrence.endDate}`}
-                      {transaction.recurrence.endType === "TIMES" &&
-                        ` for ${transaction.recurrence.times} times from ${transaction.recurrence.startDate}`}
-                    </Box>
-                  </Flex>
-                </Box>
-              );
-            })
-        )}
-      </Flex>
+                })
+                .slice()
+                .sort((a, b) => {
+                  if (sortConfig.key) {
+                    if (a[sortConfig.key] < b[sortConfig.key]) {
+                      return sortConfig.direction === "asc" ? -1 : 1;
+                    }
+                    if (a[sortConfig.key] > b[sortConfig.key]) {
+                      return sortConfig.direction === "asc" ? 1 : -1;
+                    }
+                  }
+                  return 0;
+                })
+                .map((transaction, contentIndex) => {
+                  const startIndex = currentPage * 10 + contentIndex + 1;
+                  const category = categories.find(
+                    (cat) => cat.id === parseInt(transaction.category.id)
+                  );
+                  const iconPath = category ? category.icon.path : "";
+                  const categoryName = category ? category.name : "";
+
+                  return (
+                    <Tbody key={transaction.transactionRecurringId}>
+                      <Tr
+                        onClick={() => handleOpenUpdateModal(transaction)}
+                        cursor="pointer"
+                        borderRadius={8}
+                        backgroundColor="yellow.100"
+                        fontSize={{ sm: "10px", lg: "sm" }}
+                        boxShadow="lg"
+                        transition="transform 0.2s"
+                        _hover={{ transform: "scale(1.02)" }}
+                      >
+                        <Td color="secondaryGray.900" fontWeight="bold">
+                          {startIndex}
+                        </Td>
+                        <Td color="secondaryGray.900" fontWeight="bold">
+                          <Flex>
+                            <img
+                              src={`/assets/img/icons/${iconPath}`}
+                              alt={categoryName}
+                              width="20"
+                              height="20"
+                              style={{ marginRight: "8px" }}
+                            />
+                            {categoryName}
+                          </Flex>
+                        </Td>
+                        <Td color="secondaryGray.900" fontWeight="bold">
+                          {transaction.amount}
+                        </Td>
+                        <Td color="secondaryGray.900" fontWeight="bold">
+                          {transaction.recurrence.dueDate}
+                        </Td>
+                        <Td color="secondaryGray.900" fontWeight="bold">
+                          {transaction.recurrence.frequency === "DAILY" &&
+                            `Repeat daily `}
+                          {transaction.recurrence.frequency === "WEEKLY" &&
+                            `Repeat weekly `}
+                          {transaction.recurrence.frequency === "MONTHLY" &&
+                            `Repeat monthly `}
+                          {transaction.recurrence.frequency === "YEARLY" &&
+                            `Repeat yearly `}
+                          {transaction.recurrence.frequency === "DAILY" &&
+                            `From ${transaction.recurrence.startDate}`}
+                          {transaction.recurrence.frequency === "WEEKLY" &&
+                            `From ${transaction.recurrence.startDate}`}
+                          {transaction.recurrence.frequency === "MONTHLY" &&
+                            `From ${transaction.recurrence.startDate}`}
+                          {transaction.recurrence.frequency === "YEARLY" &&
+                            `From ${transaction.recurrence.startDate}`}
+                          {transaction.recurrence.endType === "UNTIL" &&
+                            ` until ${transaction.recurrence.endDate}`}
+                          {transaction.recurrence.endType === "TIMES" &&
+                            ` for ${transaction.recurrence.times} times from ${transaction.recurrence.startDate}`}
+                        </Td>
+                      </Tr>
+                    </Tbody>
+                  );
+                })}
+          </Table>
+        </TableContainer>
+      )}
       <Flex justifyContent="center" mt={4}>
         {/* Previous page button */}
         <Button

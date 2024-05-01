@@ -1,11 +1,39 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Flex, Text, Button, useColorModeValue } from "@chakra-ui/react";
 import { useHistory } from "react-router-dom";
 import Card from "components/card/Card";
+import axios from "axios";
+import AuthService from "services/auth/auth.service";
+import AuthHeader from "services/auth/authHeader";
 
 const TransactionHistory = ({ transactions }) => {
   const history = useHistory();
   const textColor = useColorModeValue("secondaryGray.900", "white");
+  const [categories, setCategories] = useState([]);
+  const [wallets, setWallets] = useState([]);
+  useEffect(() => {
+    const fetchData = async () => {
+      const currentUser = AuthService.getCurrentUser();
+      if (currentUser) {
+        try {
+          const [categoriesResponse, walletsResponse] = await Promise.all([
+            axios.get(`/api/categories/user/${currentUser.id}`, {
+              headers: AuthHeader(),
+            }),
+            axios.get(`/api/wallets/users/${currentUser.id}`, {
+              headers: AuthHeader(),
+            }),
+          ]);
+          setCategories(categoriesResponse.data);
+          setWallets(walletsResponse.data);
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        }
+      }
+    };
+
+    fetchData();
+  }, []);
 
   if (!Array.isArray(transactions) || transactions.length === 0) {
     return (
@@ -69,41 +97,53 @@ const TransactionHistory = ({ transactions }) => {
           </Button>
         </Flex>
 
-        {transactions.map((transaction) => (
-          <Box key={transaction.transactionId} marginBottom="2">
-            <Card
-              backgroundColor={
-                transaction.category.type === "INCOME" ? "green.200" : "red.200"
-              }
-            >
-              <Flex
-                alignItems="center"
-                fontSize={{ base: "13px", md: "15px", xl: "15px" }}
+        {transactions.map((transaction) => {
+          const category = categories.find(
+            (cat) => cat.id === parseInt(transaction.categoryId)
+          );
+          const iconPath = category?.icon.path || "";
+          const categoryName = category?.name || "";
+          const categoryType = category?.type || "";
+          const wallet = wallets.find(
+            (w) => w.walletId === transaction.walletId
+          );
+          const currency = wallet ? wallet.currency : "";
+
+          return (
+            <Box key={transaction.transactionId} marginBottom="2">
+              <Card
+                backgroundColor={
+                  categoryType === "INCOME" ? "green.200" : "red.200"
+                }
               >
-                <Text
-                  flex="1"
-                  display="flex"
+                <Flex
                   alignItems="center"
-                  ml={{ base: 0, md: 2, xl: 2 }}
+                  fontSize={{ base: "13px", md: "15px", xl: "15px" }}
                 >
-                  <img
-                    src={`/assets/img/icons/${transaction.category.icon.path}`}
-                    alt={transaction.category.name}
-                    width="20"
-                    height="20"
-                    style={{ marginRight: "8px" }}
-                  />
-                  {transaction.category.name}
-                </Text>
-                <Text flex="1">{transaction.transactionDate}</Text>
-                <Text flex="1" textAlign="end">
-                  {transaction.amount.toLocaleString()}{" "}
-                  {transaction.wallet.currency}
-                </Text>
-              </Flex>
-            </Card>
-          </Box>
-        ))}
+                  <Text
+                    flex="1"
+                    display="flex"
+                    alignItems="center"
+                    ml={{ base: 0, md: 2, xl: 2 }}
+                  >
+                    <img
+                      src={`/assets/img/icons/${iconPath}`}
+                      alt={categoryName}
+                      width="20"
+                      height="20"
+                      style={{ marginRight: "8px" }}
+                    />
+                    {categoryName}
+                  </Text>
+                  <Text flex="1">{transaction.transactionDate}</Text>
+                  <Text flex="1" textAlign="end">
+                    {transaction.amount.toLocaleString()} {currency}
+                  </Text>
+                </Flex>
+              </Card>
+            </Box>
+          );
+        })}
       </Box>
     </>
   );

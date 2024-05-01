@@ -92,12 +92,9 @@ function UpdateBill({
   useEffect(() => {
     if (selectedBill) {
       setChooseBillId(selectedBill.billId);
-      const selectedCategory = selectedBill.category
-        ? selectedBill.category.id.toString()
-        : "";
-      setChangeCategory(selectedCategory);
+      setChangeCategory(selectedBill.categoryId);
       setChangeAmount(selectedBill.amount);
-      setChangeWallet(selectedBill.wallet.walletName);
+      setChangeWallet(selectedBill.walletId);
       setSelectedFrequency(
         convertFrequencyToOption(selectedBill.recurrence.frequency)
       );
@@ -115,23 +112,62 @@ function UpdateBill({
 
   const { weekOfMonth, dayOfWeek } = getWeekAndDayOfMonth(changeStartDate);
 
+  const validateForm = useCallback(() => {
+    if (!changeWallet) {
+      toast.error("Please select wallet!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
+    }
+    if (!changeCategory) {
+      toast.error("Please select category!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
+    }
+    const currentDate = new Date();
+    if (changeStartDate < currentDate) {
+      toast.error("Start date must be in present or future!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
+    }
+    return true;
+  }, [changeWallet, changeCategory, changeStartDate]);
+
   const handleUpdateBill = useCallback(async () => {
+    if (!validateForm()) {
+      return;
+    }
     const currentUser = AuthService.getCurrentUser();
     try {
       if (currentUser) {
-        const walletData = wallets.find(
-          (wallet) => wallet.walletName === changeWallet
-        );
-        const categoryData = categories.find(
-          (cat) => cat.id === parseInt(changeCategory)
-        );
         const response = await axios.put(
           `/api/bills/update/${chooseBillId}`,
           {
             billId: chooseBillId,
-            user: {
-              id: currentUser.id,
-            },
+            userId: currentUser.id,
             amount: changeAmount,
             recurrence: {
               recurrenceId: selectedBill.recurrence.recurrenceId,
@@ -147,13 +183,8 @@ function UpdateBill({
               times: times === "TIMES" ? times : null,
               startDate: changeStartDate,
             },
-            wallet: {
-              walletId: walletData.walletId,
-              walletName: changeWallet,
-            },
-            category: {
-              id: categoryData.id,
-            },
+            walletId: changeWallet,
+            categoryId: changeCategory,
           },
           {
             headers: AuthHeader(),
@@ -227,6 +258,7 @@ function UpdateBill({
     untilDate,
     wallets,
     chooseBillId,
+    validateForm,
   ]);
 
   const categoryOptions = useMemo(() => {
@@ -330,7 +362,7 @@ function UpdateBill({
                 onChange={(e) => setChangeWallet(e.target.value)}
               >
                 {wallets.map((wallet) => (
-                  <option key={wallet.walletId} value={wallet.walletName}>
+                  <option key={wallet.walletId} value={wallet.walletId}>
                     {wallet.walletName}
                   </option>
                 ))}

@@ -93,39 +93,12 @@ const AddTransaction = ({
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
-        const walletData = wallets.find(
-          (wallet) => wallet.walletName === changeWallet
-        );
-        const categoryData = categories.find(
-          (cat) => cat.id === parseInt(changeCategory)
-        );
-
         const requestData = {
-          user: {
-            id: currentUser.id,
-          },
+          userId: currentUser.id,
           amount: changeAmount,
           transactionDate: changeDate,
-          wallet: {
-            walletId: walletData.walletId,
-            userId: currentUser.id,
-            walletName: changeWallet,
-            balance: walletData.balance,
-            bankName: walletData.bankName,
-            bankAccountNum: walletData.bankAccountNum,
-            walletType: walletData.walletType,
-            currency: walletData.currency,
-          },
-          category: {
-            id: categoryData.id,
-            name: categoryData.name,
-            type: categoryData.type,
-            icon: {
-              id: categoryData.icon.id,
-              path: categoryData.icon.path,
-            },
-            userId: currentUser.id,
-          },
+          walletId: changeWallet,
+          categoryId: changeCategory,
           notes: changeNotes,
         };
 
@@ -194,8 +167,6 @@ const AddTransaction = ({
     changeWallet,
     currentPage,
     fetchTransaction,
-    wallets,
-    categories,
     onCreateModalClose,
     validateForm,
   ]);
@@ -285,7 +256,7 @@ const AddTransaction = ({
               onChange={(e) => setChangeWallet(e.target.value)}
             >
               {wallets.map((wallet) => (
-                <option key={wallet.walletId} value={wallet.walletName}>
+                <option key={wallet.walletId} value={wallet.walletId}>
                   {wallet.walletName}
                 </option>
               ))}
