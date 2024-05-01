@@ -59,7 +59,7 @@ function AddBill({
   };
   const inputText = useColorModeValue("gray.700", "gray.100");
   const [selectedOption, setSelectedOption] = useState("");
-  const [changeCategory, setChangeCategory] = useState("");
+  const [changeCategoryId, setChangeCategoryId] = useState("");
   const [changeAmount, setChangeAmount] = useState("");
   const [changeStartDate, setChangeStartDate] = useState(() =>
     adjustDateToUTC(new Date())
@@ -95,7 +95,7 @@ function AddBill({
       });
       return false;
     }
-    if (!changeCategory) {
+    if (!changeCategoryId) {
       toast.error("Please select category!", {
         position: "top-center",
         autoClose: 3000,
@@ -108,8 +108,23 @@ function AddBill({
       });
       return false;
     }
+    const currentDate = new Date();
+    if (changeStartDate < currentDate) {
+      toast.error("Start date must be in present or future!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
+    }
     return true;
-  }, [changeWallet, changeCategory]);
+  }, [changeWallet, changeCategoryId, changeStartDate]);
+
   const handleCreateBill = useCallback(async () => {
     if (!validateForm()) {
       return;
@@ -117,22 +132,11 @@ function AddBill({
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
-        const walletData = wallets.find(
-          (wallet) => wallet.walletName === changeWallet
-        );
-        const categoryData = categories.find(
-          (cat) => cat.id === parseInt(changeCategory)
-        );
-
         const billData = {
-          user: {
-            id: currentUser.id,
-          },
+          userId: currentUser.id,
           amount: changeAmount,
           recurrence: {
-            user: {
-              id: currentUser.id,
-            },
+            userId: currentUser.id,
             frequency: selectedFrequency,
             every: selectedFrequencyValue,
             dayOfWeek:
@@ -143,15 +147,8 @@ function AddBill({
             times: times === "TIMES" ? times : null,
             startDate: changeStartDate,
           },
-          wallet: {
-            walletId: walletData.walletId,
-            userId: currentUser.id,
-            walletName: changeWallet,
-          },
-          category: {
-            id: categoryData.id,
-            userId: currentUser.id,
-          },
+          walletId: changeWallet,
+          categoryId: changeCategoryId,
         };
         console.log("untilDate:", untilDate);
 
@@ -211,7 +208,7 @@ function AddBill({
     onCreateModalClose,
     currentPage,
     changeAmount,
-    changeCategory,
+    changeCategoryId,
     changeStartDate,
     changeWallet,
     selectedDayOfWeek,
@@ -222,6 +219,7 @@ function AddBill({
     times,
     untilDate,
     wallets,
+    validateForm,
   ]);
 
   const categoryOptions = useMemo(() => {
@@ -239,7 +237,7 @@ function AddBill({
             justifyContent="start"
             alignItems="center"
             onClick={() => {
-              setChangeCategory(category.id.toString());
+              setChangeCategoryId(category.id);
             }}
           >
             <img
@@ -265,17 +263,17 @@ function AddBill({
             <Popover placement="right-start">
               <PopoverTrigger>
                 <Button color={inputText} textAlign="left" w="100%">
-                  {changeCategory ? (
+                  {changeCategoryId ? (
                     <Flex alignItems="center">
                       <img
                         src={`/assets/img/icons/${
                           categories.find(
-                            (cat) => cat.id === parseInt(changeCategory)
+                            (cat) => cat.id === parseInt(changeCategoryId)
                           ).icon.path
                         }`}
                         alt={
                           categories.find(
-                            (cat) => cat.id === parseInt(changeCategory)
+                            (cat) => cat.id === parseInt(changeCategoryId)
                           ).name
                         }
                         width="20"
@@ -284,7 +282,7 @@ function AddBill({
                       />
                       {
                         categories.find(
-                          (cat) => cat.id === parseInt(changeCategory)
+                          (cat) => cat.id === parseInt(changeCategoryId)
                         ).name
                       }
                     </Flex>
@@ -324,7 +322,7 @@ function AddBill({
                 onChange={(e) => setChangeWallet(e.target.value)}
               >
                 {wallets.map((wallet) => (
-                  <option key={wallet.walletId} value={wallet.walletName}>
+                  <option key={wallet.walletId} value={wallet.walletId}>
                     {wallet.walletName}
                   </option>
                 ))}

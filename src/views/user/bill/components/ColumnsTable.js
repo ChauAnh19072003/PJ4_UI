@@ -21,6 +21,13 @@ import {
   useColorModeValue,
   Center,
   Spinner,
+  TableContainer,
+  Thead,
+  Tr,
+  Th,
+  Tbody,
+  Td,
+  Table,
 } from "@chakra-ui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -267,182 +274,134 @@ function BillList() {
         }}
       />
       {/* LIST DATA */}
-      <Flex direction="column">
-        <Flex
-          fontWeight="bold"
-          borderBottomWidth="1px"
-          borderColor="gray.200"
-          py="2"
-          px={{ base: 0, md: "8px", xl: "8px" }}
-          fontSize={{ sm: "10px", lg: "12px" }}
-          color="gray.400"
-        >
-          <Text
-            flex={{ base: 1, md: 1, xl: 1 }}
-            cursor={"pointer"}
-            onClick={() => sortBy("id")}
-          >
-            Id
-          </Text>
-          <Text flex={{ base: 1, md: 3, xl: 3 }}>Category</Text>
-          <Text
-            flex={{ base: 1, md: 3, xl: 3 }}
-            cursor={"pointer"}
-            onClick={() => sortBy("amount")}
-          >
-            Amount
-          </Text>
-          <Text
-            flex={{ base: 1, md: 4, xl: 4 }}
-            cursor={"pointer"}
-            onClick={() => sortBy("dueDate")}
-          >
-            Due Date
-          </Text>
-          <Text
-            flex={{ base: 1, md: 4, xl: 4 }}
-            cursor={"pointer"}
-            onClick={() => sortBy("dueDate")}
-          >
-            Bill Recurring
-          </Text>
-        </Flex>
+      {!isDataLoaded ? (
+        <Center>
+          <Spinner my="20px" />
+        </Center>
+      ) : wallets && wallets.length === 0 ? (
+        <Text textAlign="center" fontSize="xl" mt={5}>
+          You need to create wallet before create bill
+        </Text>
+      ) : (
+        <TableContainer>
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th cursor={"pointer"} onClick={() => sortBy("id")}>
+                  Id
+                </Th>
+                <Th>Category</Th>
+                <Th cursor={"pointer"} onClick={() => sortBy("amount")}>
+                  Amount
+                </Th>
+                <Th cursor={"pointer"} onClick={() => sortBy("dueDate")}>
+                  Due Date
+                </Th>
+                <Th cursor={"pointer"} onClick={() => sortBy("dueDate")}>
+                  Bill Recurring
+                </Th>
+              </Tr>
+            </Thead>
+            {bills &&
+              bills.content &&
+              bills.content
+                .filter((bill) => {
+                  if (searchDate) {
+                    const formattedDate = format(
+                      new Date(bill.recurrence.dueDate),
+                      "yyyy-MM-dd"
+                    );
+                    const formattedSearchDate = format(
+                      searchDate,
+                      "yyyy-MM-dd"
+                    );
+                    return formattedDate === formattedSearchDate;
+                  } else {
+                    return true;
+                  }
+                })
+                .slice()
+                .sort((a, b) => {
+                  if (sortConfig.key) {
+                    if (a[sortConfig.key] < b[sortConfig.key]) {
+                      return sortConfig.direction === "asc" ? -1 : 1;
+                    }
+                    if (a[sortConfig.key] > b[sortConfig.key]) {
+                      return sortConfig.direction === "asc" ? 1 : -1;
+                    }
+                  }
+                  return 0;
+                })
+                .map((bill, contentIndex) => {
+                  const startIndex = currentPage * 10 + contentIndex + 1;
+                  const category = categories.find(
+                    (cat) => cat.id === parseInt(bill.categoryId)
+                  );
+                  const iconPath = category ? category.icon.path : "";
+                  const categoryName = category ? category.name : "";
 
-        {!isDataLoaded ? (
-          <Center>
-            <Spinner my="20px" />
-          </Center>
-        ) : wallets && wallets.length === 0 ? (
-          <Text textAlign="center" fontSize="xl" mt={5}>
-            You need to create wallet before create bill
-          </Text>
-        ) : (
-          bills &&
-          bills.content &&
-          bills.content
-            .filter((bill) => {
-              if (searchDate) {
-                const formattedDate = format(
-                  new Date(bill.recurrence.dueDate),
-                  "yyyy-MM-dd"
-                );
-                const formattedSearchDate = format(searchDate, "yyyy-MM-dd");
-                return formattedDate === formattedSearchDate;
-              } else {
-                return true;
-              }
-            })
-            .slice()
-            .sort((a, b) => {
-              if (sortConfig.key) {
-                if (a[sortConfig.key] < b[sortConfig.key]) {
-                  return sortConfig.direction === "asc" ? -1 : 1;
-                }
-                if (a[sortConfig.key] > b[sortConfig.key]) {
-                  return sortConfig.direction === "asc" ? 1 : -1;
-                }
-              }
-              return 0;
-            })
-            .map((bill, contentIndex) => {
-              const startIndex = currentPage * 10 + contentIndex + 1;
-              const category = categories.find(
-                (cat) => cat.id === parseInt(bill.category.id)
-              );
-              const iconPath = category ? category.icon.path : "";
-              const categoryName = category ? category.name : "";
-
-              return (
-                <Box
-                  key={bill.billId}
-                  alignItems="center"
-                  onClick={() => handleOpenUpdateModal(bill)}
-                  cursor="pointer"
-                  position="relative"
-                  borderRadius={8}
-                  backgroundColor="yellow.100"
-                  mb={1}
-                  py="2"
-                  px={{ base: 0, xl: "4" }}
-                  fontSize={{ sm: "10px", lg: "sm" }}
-                  boxShadow="lg"
-                  transition="transform 0.2s"
-                  _hover={{ transform: "scale(1.02)" }}
-                >
-                  <Flex key={bill.billId} py={2} px={4}>
-                    <Box
-                      flex="1"
-                      color="secondaryGray.900"
-                      fontWeight="bold"
-                      mr={{ base: -50, xl: "-100" }}
-                    >
-                      {startIndex}
-                    </Box>
-                    <Box flex="1" color="secondaryGray.900" fontWeight="bold">
-                      <Flex alignItems="center">
-                        <img
-                          src={`/assets/img/icons/${iconPath}`}
-                          alt={categoryName}
-                          width="20"
-                          height="20"
-                          style={{ marginRight: "8px" }}
-                        />
-                        {categoryName}
-                      </Flex>
-                    </Box>
-                    <Box
-                      flex={{ base: 1, md: 1, xl: 1 }}
-                      color="secondaryGray.900"
-                      fontWeight="bold"
-                    >
-                      {bill.amount}
-                    </Box>
-                    <Box
-                      flex={{ base: 1, md: 1, xl: 1 }}
-                      color="secondaryGray.900"
-                      fontWeight="bold"
-                    >
-                      {bill.recurrence.dueDate}
-                    </Box>
-                    <Box
-                      flex={{ base: 0, md: 1, xl: 1 }}
-                      color="secondaryGray.900"
-                      fontWeight="bold"
-                      mr={{ base: 0, xl: "-35" }}
-                      display={{ base: "none", md: "block", xl: "block" }}
-                    >
-                      {bill.recurrence.frequency === "DAILY" && `Repeat daily `}
-                      {bill.recurrence.frequency === "WEEKLY" &&
-                        `Repeat weekly `}
-                      {bill.recurrence.frequency === "MONTHLY" &&
-                        `Repeat monthly `}
-                      {bill.recurrence.frequency === "YEARLY" &&
-                        `Repeat yearly`}
-                    </Box>
-                    <Box
-                      flex={{ base: 1, md: 1, xl: 1 }}
-                      color="secondaryGray.900"
-                      fontWeight="bold"
-                    >
-                      {bill.recurrence.frequency === "DAILY" &&
-                        `From ${bill.recurrence.startDate}`}
-                      {bill.recurrence.frequency === "WEEKLY" &&
-                        `From ${bill.recurrence.startDate}`}
-                      {bill.recurrence.frequency === "MONTHLY" &&
-                        `From ${bill.recurrence.startDate}`}
-                      {bill.recurrence.frequency === "YEARLY" &&
-                        `From ${bill.recurrence.startDate}`}
-                      {bill.recurrence.endType === "UNTIL" &&
-                        ` until ${bill.recurrence.endDate}`}
-                      {bill.recurrence.endType === "TIMES" &&
-                        ` for ${bill.recurrence.times} times from ${bill.recurrence.startDate}`}
-                    </Box>
-                  </Flex>
-                </Box>
-              );
-            })
-        )}
-      </Flex>
+                  return (
+                    <Tbody key={bill.billId}>
+                      <Tr
+                        onClick={() => handleOpenUpdateModal(bill)}
+                        cursor="pointer"
+                        borderRadius={8}
+                        backgroundColor="yellow.100"
+                        fontSize={{ sm: "10px", lg: "sm" }}
+                        boxShadow="lg"
+                        transition="transform 0.2s"
+                        _hover={{ transform: "scale(1.02)" }}
+                      >
+                        <Td color="secondaryGray.900" fontWeight="bold">
+                          {startIndex}
+                        </Td>
+                        <Td color="secondaryGray.900" fontWeight="bold">
+                          <Flex>
+                            <img
+                              src={`/assets/img/icons/${iconPath}`}
+                              alt={categoryName}
+                              width="20"
+                              height="20"
+                              style={{ marginRight: "8px" }}
+                            />
+                            {categoryName}
+                          </Flex>
+                        </Td>
+                        <Td color="secondaryGray.900" fontWeight="bold">
+                          {bill.amount}
+                        </Td>
+                        <Td color="secondaryGray.900" fontWeight="bold">
+                          {bill.recurrence.dueDate}
+                        </Td>
+                        <Td color="secondaryGray.900" fontWeight="bold">
+                          {bill.recurrence.frequency === "DAILY" &&
+                            `Repeat daily `}
+                          {bill.recurrence.frequency === "WEEKLY" &&
+                            `Repeat weekly `}
+                          {bill.recurrence.frequency === "MONTHLY" &&
+                            `Repeat monthly `}
+                          {bill.recurrence.frequency === "YEARLY" &&
+                            `Repeat yearly `}
+                          {bill.recurrence.frequency === "DAILY" &&
+                            `From ${bill.recurrence.startDate}`}
+                          {bill.recurrence.frequency === "WEEKLY" &&
+                            `From ${bill.recurrence.startDate}`}
+                          {bill.recurrence.frequency === "MONTHLY" &&
+                            `From ${bill.recurrence.startDate}`}
+                          {bill.recurrence.frequency === "YEARLY" &&
+                            `From ${bill.recurrence.startDate}`}
+                          {bill.recurrence.endType === "UNTIL" &&
+                            ` until ${bill.recurrence.endDate}`}
+                          {bill.recurrence.endType === "TIMES" &&
+                            ` for ${bill.recurrence.times} times from ${bill.recurrence.startDate}`}
+                        </Td>
+                      </Tr>
+                    </Tbody>
+                  );
+                })}
+          </Table>
+        </TableContainer>
+      )}
       <Flex justifyContent="center" mt={4}>
         {/* Previous page button */}
         <Button

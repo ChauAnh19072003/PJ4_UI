@@ -108,8 +108,23 @@ function AddTransactionRecurring({
       });
       return false;
     }
+    const currentDate = new Date();
+    if (changeStartDate < currentDate) {
+      toast.error("Start date must be in present or future!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
+    }
     return true;
-  }, [changeWallet, changeCategory]);
+  }, [changeWallet, changeCategory, changeStartDate]);
+
   const handleCreateTransaction = useCallback(async () => {
     if (!validateForm()) {
       return;
@@ -117,22 +132,11 @@ function AddTransactionRecurring({
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
-        const walletData = wallets.find(
-          (wallet) => wallet.walletName === changeWallet
-        );
-        const categoryData = categories.find(
-          (cat) => cat.id === parseInt(changeCategory)
-        );
-
         const transactionData = {
-          user: {
-            id: currentUser.id,
-          },
+          userId: currentUser.id,
           amount: changeAmount,
           recurrence: {
-            user: {
-              id: currentUser.id,
-            },
+            userId: currentUser.id,
             frequency: selectedFrequency,
             every: selectedFrequencyValue,
             dayOfWeek:
@@ -143,15 +147,8 @@ function AddTransactionRecurring({
             times: times === "TIMES" ? times : null,
             startDate: changeStartDate,
           },
-          wallet: {
-            walletId: walletData.walletId,
-            userId: currentUser.id,
-            walletName: changeWallet,
-          },
-          category: {
-            id: categoryData.id,
-            userId: currentUser.id,
-          },
+          walletId: changeWallet,
+          categoryId: changeCategory,
         };
 
         await axios.post("/api/transactionsRecurring/create", transactionData, {
@@ -206,7 +203,6 @@ function AddTransactionRecurring({
     }
   }, [
     fetchTransactions,
-    categories,
     onCreateModalClose,
     currentPage,
     changeAmount,
@@ -220,7 +216,7 @@ function AddTransactionRecurring({
     selectedOption,
     times,
     untilDate,
-    wallets,
+    validateForm,
   ]);
 
   const categoryOptions = useMemo(() => {
@@ -323,7 +319,7 @@ function AddTransactionRecurring({
                 onChange={(e) => setChangeWallet(e.target.value)}
               >
                 {wallets.map((wallet) => (
-                  <option key={wallet.walletId} value={wallet.walletName}>
+                  <option key={wallet.walletId} value={wallet.walletId}>
                     {wallet.walletName}
                   </option>
                 ))}

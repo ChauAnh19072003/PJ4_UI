@@ -56,46 +56,13 @@ const UpdateTransaction = ({
     const currentUser = AuthService.getCurrentUser();
     try {
       if (currentUser) {
-        const walletData = wallets.find(
-          (wallet) => wallet.walletName === changeWallet
-        );
-        const categoryData = categories.find(
-          (cat) => cat.id === parseInt(changeCategory)
-        );
-
-        const oldAmount = parseFloat(selectedTransaction.amount);
-        const newAmount = parseFloat(changeAmount);
-
-        let newBalance;
-        if (categoryData.type === "INCOME") {
-          newBalance = parseFloat(walletData.balance) - oldAmount + newAmount;
-        } else if (categoryData.type === "EXPENSE") {
-          newBalance = parseFloat(walletData.balance) + oldAmount - newAmount;
-        }
-
-        const updatedWalletData = {
-          ...walletData,
-          balance: newBalance.toFixed(2),
-        };
-
         const requestData = {
-          user: {
-            id: currentUser.id,
-          },
+          userId: currentUser.id,
           transactionId: chooseTransactionId,
           amount: changeAmount,
           transactionDate: changeDate,
-          wallet: updatedWalletData,
-          category: {
-            id: categoryData.id,
-            name: categoryData.name,
-            type: categoryData.type,
-            icon: {
-              id: categoryData.icon.id,
-              path: categoryData.icon.path,
-            },
-            userId: currentUser.id,
-          },
+          walletId: changeWallet,
+          categoryId: changeCategory,
           notes: changeNotes,
         };
 
@@ -162,23 +129,16 @@ const UpdateTransaction = ({
     changeNotes,
     chooseTransactionId,
     currentPage,
-    selectedTransaction,
     fetchTransaction,
     onUpdateModalClose,
-    wallets,
-    categories,
   ]);
 
   useEffect(() => {
     if (selectedTransaction) {
       setChooseTransactionId(selectedTransaction.transactionId);
-      setChangeWallet(selectedTransaction.wallet.walletName);
+      setChangeWallet(selectedTransaction.walletId);
       setChangeAmount(selectedTransaction.amount.toString());
-
-      const selectedCategory = selectedTransaction.category
-        ? selectedTransaction.category.id.toString()
-        : "";
-      setChangeCategory(selectedCategory);
+      setChangeCategory(selectedTransaction.categoryId);
 
       setChangeDate(() => {
         return adjustDateToUTC(new Date(selectedTransaction.transactionDate));
@@ -186,7 +146,7 @@ const UpdateTransaction = ({
 
       setChangeNotes(selectedTransaction.notes);
     }
-  }, [selectedTransaction, setChooseTransactionId, wallets, categories]);
+  }, [selectedTransaction, setChooseTransactionId]);
 
   return (
     <>
@@ -276,7 +236,7 @@ const UpdateTransaction = ({
             placeholder="Select Wallet"
           >
             {wallets.map((wallet) => (
-              <option key={wallet.walletId} value={wallet.walletName}>
+              <option key={wallet.walletId} value={wallet.walletId}>
                 {wallet.walletName}
               </option>
             ))}

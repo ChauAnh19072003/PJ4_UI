@@ -149,7 +149,6 @@ const DebtsOverview = () => {
       toast.error("You must be logged in to perform this action.");
       return;
     }
-
     const debtData = {
       ...debtForm,
       userId: currentUser.id,
@@ -172,15 +171,43 @@ const DebtsOverview = () => {
         });
         toast.success("Debt added successfully");
       }
+      setIsEditModalOpen(false);
       fetchDebts();
     } catch (error) {
-      toast.error(
-        `Error ${currentDebt ? "updating" : "adding"} debt: ${
-          error.response?.data?.message || error.message
-        }`
-      );
+      if (
+        error.response &&
+        error.response.data &&
+        typeof error.response.data === "object"
+      ) {
+        toast.error(
+          JSON.stringify(error.response.data, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          })
+        );
+      } else if (error.response && typeof error.response.data === "string") {
+        const fieldErrors = error.response.data.split("\n");
+        fieldErrors.forEach((errorMessage) => {
+          toast.error(errorMessage, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+        });
+      }
     } finally {
-      setIsEditModalOpen(false);
+      setIsEditModalOpen(true);
     }
   };
 

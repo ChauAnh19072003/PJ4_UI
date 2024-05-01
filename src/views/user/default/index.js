@@ -131,15 +131,21 @@ const calculateTotalBalance = (
     : `$${totalBalance.toLocaleString()}USD`;
 };
 
-const calculateTotalForWallet = (transactions, exchangeRate, currency) => {
-  if (!Array.isArray(transactions)) {
+const calculateTotalForWallet = (
+  transactions,
+  exchangeRate,
+  currency,
+  wallets
+) => {
+  if (!Array.isArray(transactions) || !Array.isArray(wallets)) {
     return currency === "VND" ? "0VND" : "$0USD";
   }
 
   const totalBalance = transactions.reduce((acc, transaction) => {
-    const transactionAmount = parseFloat(transaction.amount);
-    const walletCurrency = transaction.wallet.currency;
+    const wallet = wallets.find((w) => w.walletId === transaction.walletId);
+    const walletCurrency = wallet ? wallet.currency : currency;
 
+    const transactionAmount = parseFloat(transaction.amount);
     let convertedAmount = transactionAmount;
 
     if (walletCurrency !== currency) {
@@ -161,7 +167,8 @@ const calculateTotalForWallet = (transactions, exchangeRate, currency) => {
 const calculateTotalForWalletId = (
   transactions,
   walletCurrency,
-  exchangeRate
+  exchangeRate,
+  wallets
 ) => {
   if (!transactions) {
     return walletCurrency === "VND" ? "0VND" : "$0";
@@ -169,14 +176,22 @@ const calculateTotalForWalletId = (
 
   const totalBalance = transactions.reduce((acc, transaction) => {
     let amount = parseFloat(transaction.amount);
+    let transactionCurrency = walletCurrency;
 
-    if (transaction.wallet && transaction.wallet.currency !== walletCurrency) {
-      if (transaction.wallet.currency === "USD" && walletCurrency === "VND") {
+    if (transaction.walletId) {
+      const foundWallet = wallets.find(
+        (wallet) => wallet.walletId === transaction.walletId
+      );
+
+      if (foundWallet) {
+        transactionCurrency = foundWallet.currency;
+      }
+    }
+
+    if (transactionCurrency !== walletCurrency) {
+      if (transactionCurrency === "USD" && walletCurrency === "VND") {
         amount *= exchangeRate;
-      } else if (
-        transaction.wallet.currency === "VND" &&
-        walletCurrency === "USD"
-      ) {
+      } else if (transactionCurrency === "VND" && walletCurrency === "USD") {
         amount /= exchangeRate;
       }
     }
@@ -279,22 +294,23 @@ const UserReports = () => {
             payload: selectedWalletResponse.data,
           });
 
-          // Assuming transactions are only related to the selected wallet
           dispatch(setTransactions(transactionsResponse.data));
+
+          const walletCurrency = selectedWalletResponse.data.currency;
 
           const totalBalance = calculateTotalForWalletId(
             [selectedWalletResponse.data],
-            selectedWalletResponse.data.currency
+            walletCurrency
           );
           dispatch(setTotalBalance(totalBalance));
 
           const totalIncome = calculateTotalForWalletId(
             incomeResponse.data,
-            selectedWalletResponse.data.currency
+            walletCurrency
           );
           const totalExpense = calculateTotalForWalletId(
             expenseResponse.data,
-            selectedWalletResponse.data.currency
+            walletCurrency
           );
 
           dispatch(setIncome(totalIncome));

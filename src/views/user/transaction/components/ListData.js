@@ -196,7 +196,7 @@ function ListData() {
           >
             {Array.isArray(wallets) && wallets.length > 0 ? (
               wallets.map((wallet) => (
-                <option key={wallet.walletId} value={wallet.walletName}>
+                <option key={wallet.walletId} value={wallet.walletId}>
                   {wallet.walletName}
                 </option>
               ))
@@ -357,11 +357,17 @@ function ListData() {
           transaction &&
           transaction.content &&
           transaction.content
-            .filter((transaction) =>
-              transaction.wallet.walletName
-                .toLowerCase()
-                .includes(searchWallet.toLowerCase())
-            )
+            .filter((transaction) => {
+              if (searchWallet) {
+                const walletId =
+                  typeof searchWallet === "string"
+                    ? parseInt(searchWallet)
+                    : searchWallet;
+                return transaction.walletId === walletId;
+              } else {
+                return true;
+              }
+            })
             .filter((transaction) => {
               if (searchDate) {
                 const formattedDate = format(
@@ -376,8 +382,12 @@ function ListData() {
             })
             .filter((transaction) => {
               if (searchCateType) {
+                const category = categories.find(
+                  (cat) => cat.id === parseInt(transaction.categoryId)
+                );
                 return (
-                  transaction.category.type.toLowerCase() === searchCateType
+                  category &&
+                  category.type.toLowerCase() === searchCateType.toLowerCase()
                 );
               } else {
                 return true;
@@ -398,11 +408,15 @@ function ListData() {
             .map((transaction, contentIndex) => {
               const startIndex = currentPage * 10 + contentIndex + 1;
               const category = categories.find(
-                (cat) => cat.id === parseInt(transaction.category.id)
+                (cat) => cat.id === parseInt(transaction.categoryId)
+              );
+              const wallet = wallets.find(
+                (wallet) => wallet.walletId === parseInt(transaction.walletId)
               );
               const iconPath = category ? category.icon.path : "";
               const categoryName = category ? category.name : "";
-
+              const categoryType = category ? category.type : "";
+              const walletName = wallet ? wallet.walletName : "";
               return (
                 <Box
                   key={transaction.transactionId}
@@ -412,9 +426,7 @@ function ListData() {
                   position="relative"
                   borderRadius={8}
                   backgroundColor={
-                    transaction.category.type === "INCOME"
-                      ? "green.200"
-                      : "red.200"
+                    categoryType === "INCOME" ? "green.200" : "red.200"
                   }
                   mb={1}
                   py="2"
@@ -429,7 +441,7 @@ function ListData() {
                       {startIndex}
                     </Box>
                     <Box flex="2" color="secondaryGray.900" fontWeight="bold">
-                      {transaction.wallet.walletName}
+                      {walletName}
                     </Box>
                     <Box flex="2" color="secondaryGray.900" fontWeight="bold">
                       {transaction.amount}
