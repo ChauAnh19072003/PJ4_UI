@@ -207,9 +207,9 @@ const UpdateTransaction = ({
                         justifyContent="start"
                         alignItems="center"
                         onClick={() => {
-                          setChangeCategory(category.id.toString());
+                          setChangeCategory(category.id);
                         }}
-                        isActive={category.id.toString() === changeCategory}
+                        isActive={category.id === changeCategory}
                       >
                         <img
                           src={`/assets/img/icons/${category.icon.path}`}

@@ -131,6 +131,21 @@ const AuthStyles = styled.div`
     border-color: #4481eb;
   }
 
+  .social-icons {
+    margin: 20px 0;
+  }
+
+  .social-icons a {
+    border: 1px solid #ccc;
+    border-radius: 20%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 3px;
+    width: 40px;
+    height: 40px;
+  }
+
   .btn {
     width: 150px;
     background-color: #5995fd;

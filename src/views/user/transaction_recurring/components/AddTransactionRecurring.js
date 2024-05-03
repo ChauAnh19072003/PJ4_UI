@@ -234,7 +234,7 @@ function AddTransactionRecurring({
             justifyContent="start"
             alignItems="center"
             onClick={() => {
-              setChangeCategory(category.id.toString());
+              setChangeCategory(category.id);
             }}
           >
             <img
