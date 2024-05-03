@@ -96,21 +96,36 @@ const AddTransaction = ({
         const requestData = {
           userId: currentUser.id,
           amount: changeAmount,
-          transactionDate: changeDate,
+          transactionDate: changeDate.toISOString(), 
           walletId: changeWallet,
           categoryId: changeCategory,
           notes: changeNotes,
         };
 
-        const response = await axios.post(
-          "/api/transactions/create",
-          requestData,
-          { headers: AuthHeader() }
-        );
+        await axios.post("/api/transactions/create", requestData, {
+          headers: AuthHeader(),
+        });
 
-        if (response.status === 200) {
-          fetchTransaction(currentPage);
-          toast.success("Create Transaction Successful!", {
+        toast.success("Create Transaction Successful!", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+        onCreateModalClose();
+        fetchTransaction(currentPage);
+      } catch (error) {
+        console.error("Error:", error);
+        const errorMessage = error.response?.data || "An error occurred";
+        if (
+          error.response?.status === 400 &&
+          errorMessage.includes("Insufficient funds")
+        ) {
+          toast.error("Insufficient funds in wallet after transaction.", {
             position: "top-center",
             autoClose: 3000,
             hideProgressBar: false,
@@ -120,41 +135,16 @@ const AddTransaction = ({
             progress: undefined,
             theme: "light",
           });
-          onCreateModalClose();
-        }
-      } catch (error) {
-        console.error("Error:", error); // Logging the error
-
-        if (
-          error.response &&
-          error.response.data &&
-          typeof error.response.data === "object"
-        ) {
-          toast.error(
-            JSON.stringify(error.response.data, {
-              position: "top-center",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "light",
-            })
-          );
-        } else if (error.response && typeof error.response.data === "string") {
-          const fieldErrors = error.response.data.split("\n");
-          fieldErrors.forEach((errorMessage) => {
-            toast.error(errorMessage, {
-              position: "top-center",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: "light",
-            });
+        } else {
+          toast.error(`Failed to create transaction: ${errorMessage}`, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
           });
         }
       }
