@@ -14,6 +14,7 @@ import ForgotPassword from "auth/ForgotPassword";
 import ResetPassword from "auth/ResetPassword";
 import { myAtom } from "config/recoil";
 import { RecoilRoot } from "recoil";
+import OAuth2RedirectHandler from "auth/oauth2/OAuth2RedirectHandler";
 ReactDOM.render(
   <ChakraProvider theme={theme}>
     <RecoilRoot
@@ -27,7 +28,11 @@ ReactDOM.render(
           <BrowserRouter>
             <Switch>
               <Route path="/visitor" component={Homepage} />
-              <Route path="/auth/signin" component={Login} />{" "}
+              <Route path="/auth/signin" component={Login} />
+              <Route
+                path="/oauth2/redirect"
+                component={OAuth2RedirectHandler}
+              />
               {/* Signup and Signin */}
               <Redirect
                 exact

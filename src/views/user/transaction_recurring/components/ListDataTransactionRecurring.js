@@ -336,7 +336,7 @@ function ListDataTransactionRecurring() {
                 .map((transaction, contentIndex) => {
                   const startIndex = currentPage * 10 + contentIndex + 1;
                   const category = categories.find(
-                    (cat) => cat.id === parseInt(transaction.category.id)
+                    (cat) => cat.id === parseInt(transaction.categoryId)
                   );
                   const iconPath = category ? category.icon.path : "";
                   const categoryName = category ? category.name : "";

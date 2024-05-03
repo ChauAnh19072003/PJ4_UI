@@ -12,6 +12,8 @@ const TransactionHistory = ({ transactions }) => {
   const [categories, setCategories] = useState([]);
   const [wallets, setWallets] = useState([]);
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
       const currentUser = AuthService.getCurrentUser();
       if (currentUser) {
@@ -24,8 +26,12 @@ const TransactionHistory = ({ transactions }) => {
               headers: AuthHeader(),
             }),
           ]);
-          setCategories(categoriesResponse.data);
-          setWallets(walletsResponse.data);
+
+          if (isMounted) {
+            // Check isMounted before updating state
+            setCategories(categoriesResponse.data);
+            setWallets(walletsResponse.data);
+          }
         } catch (error) {
           console.error("Error fetching data:", error);
         }
@@ -33,6 +39,10 @@ const TransactionHistory = ({ transactions }) => {
     };
 
     fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   if (!Array.isArray(transactions) || transactions.length === 0) {

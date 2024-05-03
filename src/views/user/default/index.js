@@ -137,31 +137,47 @@ const calculateTotalForWallet = (
   currency,
   wallets
 ) => {
-  if (!Array.isArray(transactions) || !Array.isArray(wallets)) {
-    return currency === "VND" ? "0VND" : "$0USD";
-  }
-
-  const totalBalance = transactions.reduce((acc, transaction) => {
-    const wallet = wallets.find((w) => w.walletId === transaction.walletId);
-    const walletCurrency = wallet ? wallet.currency : currency;
-
-    const transactionAmount = parseFloat(transaction.amount);
-    let convertedAmount = transactionAmount;
-
-    if (walletCurrency !== currency) {
-      if (walletCurrency === "USD" && currency === "VND") {
-        convertedAmount = transactionAmount * exchangeRate;
-      } else if (walletCurrency === "VND" && currency === "USD") {
-        convertedAmount = transactionAmount / exchangeRate;
-      }
+  try {
+    if (!Array.isArray(wallets) || wallets.length === 0) {
+      throw new Error("Wallets data is not valid or empty");
     }
 
-    return acc + convertedAmount;
-  }, 0);
+    const totalBalance = transactions.reduce((acc, transaction) => {
+      const wallet = wallets.find((w) => w.walletId === transaction.walletId);
+      if (!wallet) {
+        throw new Error(
+          `Wallet not found for transaction: ${transaction.walletId}`
+        );
+      }
 
-  return currency === "VND"
-    ? `${totalBalance.toLocaleString()}VND`
-    : `$${totalBalance.toLocaleString()}USD`;
+      if (!wallet.currency) {
+        throw new Error(
+          `Currency not found for wallet: ${transaction.walletId}`
+        );
+      }
+
+      const walletCurrency = wallet.currency;
+
+      const transactionAmount = parseFloat(transaction.amount);
+      let convertedAmount = transactionAmount;
+
+      if (walletCurrency !== currency) {
+        if (walletCurrency === "USD" && currency === "VND") {
+          convertedAmount = transactionAmount * exchangeRate;
+        } else if (walletCurrency === "VND" && currency === "USD") {
+          convertedAmount = transactionAmount / exchangeRate;
+        }
+      }
+
+      return acc + convertedAmount;
+    }, 0);
+
+    const formattedBalance = currency === "VND" ? "VND" : "USD";
+    return `${totalBalance.toLocaleString()}${formattedBalance}`;
+  } catch (error) {
+    console.error("Error calculating total balance for wallet:", error);
+    return currency === "VND" ? "0VND" : "$0USD";
+  }
 };
 
 const calculateTotalForWalletId = (
@@ -299,18 +315,25 @@ const UserReports = () => {
           const walletCurrency = selectedWalletResponse.data.currency;
 
           const totalBalance = calculateTotalForWalletId(
-            [selectedWalletResponse.data],
-            walletCurrency
+            transactionsResponse.data,
+            walletCurrency,
+            exchangeRate,
+            wallets
           );
+
           dispatch(setTotalBalance(totalBalance));
 
           const totalIncome = calculateTotalForWalletId(
             incomeResponse.data,
-            walletCurrency
+            walletCurrency,
+            exchangeRate,
+            wallets
           );
           const totalExpense = calculateTotalForWalletId(
             expenseResponse.data,
-            walletCurrency
+            walletCurrency,
+            exchangeRate,
+            wallets
           );
 
           dispatch(setIncome(totalIncome));
@@ -357,12 +380,14 @@ const UserReports = () => {
         const totalIncome = calculateTotalForWallet(
           incomeResponse.data,
           exchangeRate,
-          currency
+          currency,
+          walletResponse.data
         );
         const totalExpense = calculateTotalForWallet(
           expenseResponse.data,
           exchangeRate,
-          currency
+          currency,
+          walletResponse.data
         );
 
         dispatch(setIncome(totalIncome));

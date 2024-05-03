@@ -7,6 +7,9 @@ import Header from "components/visitor/Header";
 import Footer from "components/visitor/Footer";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { FaGithub } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
+import { GOOGLE_AUTH_URL, GITHUB_AUTH_URL } from "./constants";
 import PasswordField from "./PasswordField";
 const Login = () => {
   const history = useHistory();
@@ -157,6 +160,14 @@ const Login = () => {
                 ref={form}
               >
                 <h2 className="title">Create Account</h2>
+                <div className="social-icons">
+                  <a href={GOOGLE_AUTH_URL}>
+                    <FcGoogle />
+                  </a>
+                  <a href={GITHUB_AUTH_URL}>
+                    <FaGithub />
+                  </a>
+                </div>
                 <div className="input-field">
                   <input
                     type="text"
