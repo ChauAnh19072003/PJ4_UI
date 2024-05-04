@@ -1,5 +1,6 @@
 // BudgetsOverview.js
 import React, { useState, useEffect, useRef } from "react";
+import { Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
 import {
   Box,
   Button,
@@ -55,6 +56,10 @@ const BudgetsOverview = ({ userId }) => {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [budgetToDelete, setBudgetToDelete] = useState(null);
+  const [validBudgets, setValidBudgets] = useState([]);
+  const [notValidBudgets, setNotValidBudgets] = useState([]);
+  const [formErrors, setFormErrors] = useState({});
+  const [originalBudgetData, setOriginalBudgetData] = useState({});
   const cancelRef = useRef();
   const initialBudgetState = {
     budgetId: 0,
@@ -62,16 +67,89 @@ const BudgetsOverview = ({ userId }) => {
     categoryId: 0,
     amount: 0,
     threshold_amount: 0,
-    period_start: new Date().toISOString().split("T")[0],
-    period_end: new Date().toISOString().split("T")[0],
+    periodStart: new Date().toISOString().split("T")[0],
+    periodEnd: new Date().toISOString().split("T")[0],
     recurrenceId: null,
   };
   const [budgetForm, setBudgetForm] = useState(initialBudgetState);
 
+  const validateForm = () => {
+    let errors = {};
+    let isValid = true;
+    const today = new Date().toISOString().split("T")[0];
+
+    if (!budgetForm.categoryId) {
+      errors.categoryId = "You must choose a category.";
+      isValid = false;
+    }
+
+    if (budgetForm.amount < 0) {
+      errors.amount = "Amount must not be less than 0.";
+      isValid = false;
+    }
+
+    if (budgetForm.threshold_amount <= 0) {
+      errors.threshold_amount = "Threshold must not be less than 0.";
+      isValid = false;
+    }
+
+    // Allow the original start date when editing
+    if (isEditing) {
+      if (budgetForm.periodStart < originalBudgetData.periodStart) {
+        errors.periodStart =
+          "Start date can't be before the original start date.";
+        isValid = false;
+      }
+    } else {
+      // For new budgets, the start date must be today or in the future
+      if (budgetForm.periodStart < today) {
+        errors.periodStart = "Start date must be today or in the future.";
+        isValid = false;
+      }
+    }
+
+    if (budgetForm.periodEnd < budgetForm.periodStart) {
+      errors.periodEnd = "End date can't be less than start date.";
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
   useEffect(() => {
     fetchBudgets();
     fetchCategories();
+    fetchValidBudgets();
+    fetchNotValidBudgets();
   }, [userId]);
+
+  const fetchValidBudgets = async () => {
+    const currentUser = AuthService.getCurrentUser();
+    try {
+      const response = await axios.get(
+        `/api/budgets/valid/user/${currentUser.id}`,
+        { headers: AuthHeader() }
+      );
+      setValidBudgets(response.data);
+      console.log(response.data);
+    } catch (error) {
+      toast.error("Error fetching valid budgets");
+    }
+  };
+
+  const fetchNotValidBudgets = async () => {
+    const currentUser = AuthService.getCurrentUser();
+    try {
+      const response = await axios.get(
+        `/api/budgets/not_valid/user/${currentUser.id}`,
+        { headers: AuthHeader() }
+      );
+      setNotValidBudgets(response.data);
+    } catch (error) {
+      toast.error("Error fetching not valid budgets");
+    }
+  };
 
   const fetchCategories = async () => {
     const currentUser = AuthService.getCurrentUser();
@@ -82,7 +160,9 @@ const BudgetsOverview = ({ userId }) => {
           headers: AuthHeader(),
         }
       );
-      const filteredCategories = response.data.filter(category => category.type === 'EXPENSE');
+      const filteredCategories = response.data.filter(
+        (category) => category.type === "EXPENSE"
+      );
       setCategories(filteredCategories);
     } catch (error) {
       toast.error("Error fetching categories");
@@ -135,6 +215,7 @@ const BudgetsOverview = ({ userId }) => {
 
   const openModalToEdit = (budget) => {
     setBudgetForm(budget);
+    setOriginalBudgetData(budget);
     setIsEditing(true);
     onOpen();
   };
@@ -147,6 +228,11 @@ const BudgetsOverview = ({ userId }) => {
     const currentUser = AuthService.getCurrentUser();
     if (!currentUser || !currentUser.id) {
       toast.error("You must be logged in to perform this action.");
+      return;
+    }
+
+    if (!validateForm()) {
+      toast.error("Please correct the errors in the form.");
       return;
     }
 
@@ -167,8 +253,7 @@ const BudgetsOverview = ({ userId }) => {
         );
         toast.success("Budget updated successfully");
       } else {
-        await axios.post(`/api/budgets/create`, budgetData,
-        {
+        await axios.post(`/api/budgets/create`, budgetData, {
           headers: AuthHeader(),
         });
       }
@@ -176,18 +261,28 @@ const BudgetsOverview = ({ userId }) => {
         `Budget ${selectedBudget ? "updated" : "added"} successfully`
       );
       fetchBudgets();
+      fetchValidBudgets();
+      fetchNotValidBudgets();
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || error.message || "An error occurred";
-      toast.error(
-        `Error ${
-          selectedBudget ? "updating" : "adding"
-        } budget: ${errorMessage}`
-      );
+        error.response?.data || error.message || "An error occurred";
+      if (
+        error.response?.status === 401 &&
+        errorMessage.includes("Insufficient funds")
+      ) {
+        toast.error("Insufficient funds in wallet after transaction.");
+      } else {
+        toast.error(
+          `Error ${
+            selectedBudget ? "updating" : "adding"
+          } budget: ${errorMessage}`
+        );
+      }
     } finally {
       onClose();
       setSelectedBudget(null);
     }
+    setOriginalBudgetData({});
   };
 
   if (loading) {
@@ -197,6 +292,95 @@ const BudgetsOverview = ({ userId }) => {
       </Center>
     );
   }
+
+  const renderBudgetItem = (budget) => (
+    <Flex
+      key={budget.budgetId}
+      bg={budget.amount > budget.threshold_amount ? "pink.100" : "white"}
+      p={4}
+      shadow="md"
+      borderWidth="1px"
+      borderRadius="lg"
+      align="center"
+      justify="space-between"
+      mb={2}
+    >
+      <Box flex="1">
+        <Text fontSize="lg" fontWeight="bold" color="#4A5568">
+          {budget.name}
+        </Text>
+        <Flex align="center" mt={1}>
+          {categories.find((category) => category.id === budget.categoryId) ? (
+            <>
+              <Box
+                boxSize="20px"
+                as="img"
+                src={`/assets/img/icons/${
+                  categories.find(
+                    (category) => category.id === budget.categoryId
+                  ).icon.path
+                }`}
+                alt={
+                  categories.find(
+                    (category) => category.id === budget.categoryId
+                  ).name
+                }
+                mr={2}
+              />
+              <Text fontSize="md" fontWeight="bold" color="#4A5568">
+                {
+                  categories.find(
+                    (category) => category.id === budget.categoryId
+                  ).name
+                }
+              </Text>
+            </>
+          ) : (
+            <Text fontSize="md" color="gray.500">
+              Uncategorized
+            </Text>
+          )}
+        </Flex>
+        <Progress
+          value={(budget.amount / budget.threshold_amount) * 100}
+          colorScheme={
+            budget.amount > budget.threshold_amount ? "red" : "green"
+          }
+          size="lg"
+          mt={2}
+          width="100%"
+        />
+        <Text
+          fontSize="sm"
+          fontWeight="bold"
+          mt={2}
+          textAlign="center"
+          bg="gray.100"
+          p={1}
+          borderRadius="md"
+        >
+          {`$${budget.amount} / $${budget.threshold_amount}`}
+        </Text>
+      </Box>
+      <HStack>
+        <IconButton
+          icon={<EditIcon />}
+          onClick={() => openModalToEdit(budget)}
+          aria-label="Edit"
+          colorScheme="blue"
+        />
+        <IconButton
+          icon={<DeleteIcon />}
+          onClick={() => {
+            setBudgetToDelete(budget.budgetId);
+            setIsDeleteAlertOpen(true);
+          }}
+          aria-label="Delete"
+          colorScheme="red"
+        />
+      </HStack>
+    </Flex>
+  );
 
   return (
     <>
@@ -215,122 +399,25 @@ const BudgetsOverview = ({ userId }) => {
           >
             Add New Budget
           </Button>
-          {loading ? (
-            <Center p={10}>
-              <Spinner />
-            </Center>
-          ) : (
-            <Flex direction="column" mt={4}>
-              {budgets.length > 0 ? (
-                budgets.map((budget) => (
-                  <Flex
-                    key={budget.budgetId}
-                    bg={
-                      budget.amount > budget.threshold_amount
-                        ? "pink.100"
-                        : "white"
-                    }
-                    p={4}
-                    shadow="md"
-                    borderWidth="1px"
-                    borderRadius="lg"
-                    align="center"
-                    justify="space-between"
-                    mb={2}
-                  >
-                    <Box flex="1">
-                      <Text fontSize="lg" fontWeight="bold" color="#4A5568">
-                        {budget.name}
-                      </Text>
-                      <Flex align="center" mt={1}>
-                        {categories.find(
-                          (category) => category.id === budget.categoryId
-                        ) ? (
-                          <>
-                            <Box
-                              boxSize="20px"
-                              as="img"
-                              src={`/assets/img/icons/${
-                                categories.find(
-                                  (category) =>
-                                    category.id === budget.categoryId
-                                ).icon.path
-                              }`}
-                              alt={
-                                categories.find(
-                                  (category) =>
-                                    category.id === budget.categoryId
-                                ).name
-                              }
-                              mr={2}
-                            />
-                            <Text
-                              fontSize="md"
-                              fontWeight="bold"
-                              color="#4A5568"
-                            >
-                              {
-                                categories.find(
-                                  (category) =>
-                                    category.id === budget.categoryId
-                                ).name
-                              }
-                            </Text>
-                          </>
-                        ) : (
-                          <Text fontSize="md" color="gray.500">
-                            Uncategorized
-                          </Text>
-                        )}
-                      </Flex>
-                      <Progress
-                        value={(budget.amount / budget.threshold_amount) * 100}
-                        colorScheme={
-                          budget.amount > budget.threshold_amount
-                            ? "red"
-                            : "green"
-                        }
-                        size="lg"
-                        mt={2}
-                        width="100%"
-                      />
-                      <Text
-                        fontSize="sm"
-                        fontWeight="bold"
-                        mt={2}
-                        textAlign="center"
-                        bg="gray.100"
-                        p={1}
-                        borderRadius="md"
-                      >
-                        {`$${budget.amount} / $${budget.threshold_amount}`}
-                      </Text>
-                    </Box>
-                    <HStack>
-                      <IconButton
-                        icon={<EditIcon />}
-                        onClick={() => openModalToEdit(budget)}
-                        aria-label="Edit"
-                        colorScheme="blue"
-                      />
-                      <IconButton
-                        icon={<DeleteIcon />}
-                        onClick={() => {
-                          setBudgetToDelete(budget.budgetId);
-                          setIsDeleteAlertOpen(true);
-                        }}
-                        aria-label="Delete"
-                        colorScheme="red"
-                      />
-                    </HStack>
-                  </Flex>
-                ))
-              ) : (
-                <Text>No budgets found.</Text>
-              )}
-            </Flex>
-          )}
         </VStack>
+        <Tabs isFitted variant="enclosed">
+          <TabList mb="1em">
+            <Tab>Valid Budgets</Tab>
+            <Tab>Not Valid Budgets</Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel>
+              <Flex direction="column" mt={4}>
+                {validBudgets.map((budget) => renderBudgetItem(budget))}
+              </Flex>
+            </TabPanel>
+            <TabPanel>
+              <Flex direction="column" mt={4}>
+                {notValidBudgets.map((budget) => renderBudgetItem(budget))}
+              </Flex>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </Box>
 
       {/* Add/Edit Budget Modal */}
@@ -342,7 +429,7 @@ const BudgetsOverview = ({ userId }) => {
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <FormControl mt={4}>
+            <FormControl mt={4} isInvalid={!!formErrors.categoryId}>
               <FormLabel>Category</FormLabel>
               <Popover placement="right-start">
                 <PopoverTrigger>
@@ -409,8 +496,11 @@ const BudgetsOverview = ({ userId }) => {
                   </PopoverBody>
                 </PopoverContent>
               </Popover>
+              {formErrors.categoryId && (
+                <Text color="red.500">{formErrors.categoryId}</Text>
+              )}
             </FormControl>
-            <FormControl mt={4}>
+            <FormControl mt={4} hidden>
               <FormLabel>Amount</FormLabel>
               <NumberInput
                 value={budgetForm.amount}
@@ -423,7 +513,7 @@ const BudgetsOverview = ({ userId }) => {
                 <NumberInputField />
               </NumberInput>
             </FormControl>
-            <FormControl mt={4}>
+            <FormControl mt={4} isInvalid={!!formErrors.threshold_amount}>
               <FormLabel>Threshold Amount</FormLabel>
               <NumberInput
                 value={budgetForm.threshold_amount}
@@ -434,28 +524,37 @@ const BudgetsOverview = ({ userId }) => {
               >
                 <NumberInputField />
               </NumberInput>
+              {formErrors.threshold_amount && (
+                <Text color="red.500">{formErrors.threshold_amount}</Text>
+              )}
             </FormControl>
-            <FormControl mt={4}>
+            <FormControl mt={4} isInvalid={!!formErrors.periodStart}>
               <FormLabel>Start Date</FormLabel>
               <Input
                 type="date"
-                value={budgetForm.period_start}
+                value={budgetForm.periodStart}
                 onChange={(e) =>
-                  handleBudgetFormChange("period_start", e.target.value)
+                  handleBudgetFormChange("periodStart", e.target.value)
                 }
                 min={new Date().toISOString().split("T")[0]}
               />
+              {formErrors.periodStart && (
+                <Text color="red.500">{formErrors.periodStart}</Text>
+              )}
             </FormControl>
-            <FormControl mt={4}>
+            <FormControl mt={4} isInvalid={!!formErrors.periodEnd}>
               <FormLabel>End Date</FormLabel>
               <Input
                 type="date"
-                value={budgetForm.period_end}
+                value={budgetForm.periodEnd}
                 onChange={(e) =>
-                  handleBudgetFormChange("period_end", e.target.value)
+                  handleBudgetFormChange("periodEnd", e.target.value)
                 }
                 min={new Date().toISOString().split("T")[0]}
               />
+              {formErrors.periodEnd && (
+                <Text color="red.500">{formErrors.periodEnd}</Text>
+              )}
             </FormControl>
             <FormControl mt={4} hidden>
               <FormLabel>Amount</FormLabel>
