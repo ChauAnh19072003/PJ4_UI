@@ -39,6 +39,7 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   Progress,
+  Select,
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon, EditIcon } from "@chakra-ui/icons";
 import { toast, ToastContainer } from "react-toastify";
@@ -73,6 +74,47 @@ const BudgetsOverview = ({ userId }) => {
   };
   const [budgetForm, setBudgetForm] = useState(initialBudgetState);
 
+  const setPeriod = (value) => {
+    const today = new Date();
+    let periodStart, periodEnd;
+
+    switch (value) {
+      case "thisWeek":
+        // Assuming week starts on Sunday
+        periodStart = new Date(today.setDate(today.getDate() - today.getDay()));
+        periodEnd = new Date(today.setDate(today.getDate() + 6));
+        break;
+      case "thisMonth":
+        periodStart = new Date(today.getFullYear(), today.getMonth(), 2);
+        periodEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        break;
+      case "thisYear":
+        periodStart = new Date(today.getFullYear(), 0, 2);
+        periodEnd = new Date(today.getFullYear(), 11, 32);
+        break;
+      default:
+        break;
+    }
+
+    // Adjust to reset potentially modified "today"
+    today.setDate(
+      today.getDate() -
+        today.getDay() +
+        (value === "thisWeek" ? 0 : today.getDay())
+    );
+
+    setBudgetForm((prev) => ({
+      ...prev,
+      periodStart: periodStart.toISOString().split("T")[0],
+      periodEnd: periodEnd.toISOString().split("T")[0],
+    }));
+  };
+
+  const handlePeriodChange = (e) => {
+    const value = typeof e === "string" ? e : e.target.value;
+    setPeriod(value);
+  };
+
   const validateForm = () => {
     let errors = {};
     let isValid = true;
@@ -93,26 +135,6 @@ const BudgetsOverview = ({ userId }) => {
       isValid = false;
     }
 
-    // Allow the original start date when editing
-    if (isEditing) {
-      if (budgetForm.periodStart < originalBudgetData.periodStart) {
-        errors.periodStart =
-          "Start date can't be before the original start date.";
-        isValid = false;
-      }
-    } else {
-      // For new budgets, the start date must be today or in the future
-      if (budgetForm.periodStart < today) {
-        errors.periodStart = "Start date must be today or in the future.";
-        isValid = false;
-      }
-    }
-
-    if (budgetForm.periodEnd < budgetForm.periodStart) {
-      errors.periodEnd = "End date can't be less than start date.";
-      isValid = false;
-    }
-
     setFormErrors(errors);
     return isValid;
   };
@@ -122,6 +144,7 @@ const BudgetsOverview = ({ userId }) => {
     fetchCategories();
     fetchValidBudgets();
     fetchNotValidBudgets();
+    setPeriod("thisWeek");
   }, [userId]);
 
   const fetchValidBudgets = async () => {
@@ -402,8 +425,8 @@ const BudgetsOverview = ({ userId }) => {
         </VStack>
         <Tabs isFitted variant="enclosed">
           <TabList mb="1em">
-            <Tab>Valid Budgets</Tab>
-            <Tab>Not Valid Budgets</Tab>
+            <Tab>This month</Tab>
+            <Tab>Old budget</Tab>
           </TabList>
           <TabPanels>
             <TabPanel>
@@ -528,7 +551,15 @@ const BudgetsOverview = ({ userId }) => {
                 <Text color="red.500">{formErrors.threshold_amount}</Text>
               )}
             </FormControl>
-            <FormControl mt={4} isInvalid={!!formErrors.periodStart}>
+            <FormControl mt={4}>
+              <FormLabel>Budget Period</FormLabel>
+              <Select onChange={handlePeriodChange}>
+                <option value="thisWeek">This Week</option>
+                <option value="thisMonth">This Month</option>
+                <option value="thisYear">This Year</option>
+              </Select>
+            </FormControl>
+            <FormControl mt={4} isDisabled>
               <FormLabel>Start Date</FormLabel>
               <Input
                 type="date"
@@ -536,13 +567,9 @@ const BudgetsOverview = ({ userId }) => {
                 onChange={(e) =>
                   handleBudgetFormChange("periodStart", e.target.value)
                 }
-                min={new Date().toISOString().split("T")[0]}
               />
-              {formErrors.periodStart && (
-                <Text color="red.500">{formErrors.periodStart}</Text>
-              )}
             </FormControl>
-            <FormControl mt={4} isInvalid={!!formErrors.periodEnd}>
+            <FormControl mt={4} isDisabled>
               <FormLabel>End Date</FormLabel>
               <Input
                 type="date"
@@ -550,11 +577,7 @@ const BudgetsOverview = ({ userId }) => {
                 onChange={(e) =>
                   handleBudgetFormChange("periodEnd", e.target.value)
                 }
-                min={new Date().toISOString().split("T")[0]}
               />
-              {formErrors.periodEnd && (
-                <Text color="red.500">{formErrors.periodEnd}</Text>
-              )}
             </FormControl>
             <FormControl mt={4} hidden>
               <FormLabel>Amount</FormLabel>

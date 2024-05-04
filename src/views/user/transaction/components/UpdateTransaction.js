@@ -227,7 +227,7 @@ const UpdateTransaction = ({
             </PopoverContent>
           </Popover>
         </Box>
-        <Box mb={4}>
+        <Box mb={4} hidden>
           <Text mb={2}>Wallet:</Text>
           <Select
             value={changeWallet}
