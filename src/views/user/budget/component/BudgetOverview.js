@@ -197,6 +197,8 @@ const BudgetsOverview = ({ userId }) => {
           headers: AuthHeader(),
         });
         toast.success("Budget successfully deleted");
+        fetchValidBudgets();
+        fetchNotValidBudgets();
         fetchBudgets();
         setBudgetToDelete(null);
       } catch (error) {
@@ -402,10 +404,16 @@ const BudgetsOverview = ({ userId }) => {
         </VStack>
         <Tabs isFitted variant="enclosed">
           <TabList mb="1em">
-            <Tab>Valid Budgets</Tab>
-            <Tab>Not Valid Budgets</Tab>
+            <Tab>All Budgets</Tab>
+            <Tab>This month</Tab>
+            <Tab>Old Budgets</Tab>
           </TabList>
           <TabPanels>
+          <TabPanel>
+              <Flex direction="column" mt={4}>
+                {budgets.map((budget) => renderBudgetItem(budget))}
+              </Flex>
+            </TabPanel>
             <TabPanel>
               <Flex direction="column" mt={4}>
                 {validBudgets.map((budget) => renderBudgetItem(budget))}
