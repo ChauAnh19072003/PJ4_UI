@@ -122,8 +122,21 @@ function AddBill({
       });
       return false;
     }
+    if (!selectedOption) {
+      toast.error("Please select type to repeat!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
+    }
     return true;
-  }, [changeWallet, changeCategoryId, changeStartDate]);
+  }, [changeWallet, changeCategoryId, changeStartDate, selectedOption]);
 
   const handleCreateBill = useCallback(async () => {
     if (!validateForm()) {
@@ -204,7 +217,6 @@ function AddBill({
     }
   }, [
     fetchBills,
-    categories,
     onCreateModalClose,
     currentPage,
     changeAmount,
@@ -218,7 +230,6 @@ function AddBill({
     selectedOption,
     times,
     untilDate,
-    wallets,
     validateForm,
   ]);
 

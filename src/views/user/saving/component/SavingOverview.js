@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import axios from "axios";
 import {
   Box,
@@ -28,6 +34,13 @@ import {
   useDisclosure,
   Progress,
   Select,
+  PopoverContent,
+  PopoverArrow,
+  PopoverCloseButton,
+  PopoverHeader,
+  PopoverBody,
+  PopoverTrigger,
+  Popover,
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
@@ -42,7 +55,9 @@ const SavingGoalsView = () => {
   const [savingGoalToDelete, setSavingGoalToDelete] = useState(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [wallets, setWallets] = useState([]);
+  const [categories, setCategories] = useState([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [groupedCategories, setGroupedCategories] = useState({});
   const initialSavingGoalState = {
     name: "",
     targetAmount: 0,
@@ -51,16 +66,57 @@ const SavingGoalsView = () => {
     endDate: new Date().toISOString().split("T")[0],
     userId: 0,
     walletId: 0,
+    endDateType: "",
+    categoryId: 0,
   };
   const [savingGoalForm, setSavingGoalForm] = useState(initialSavingGoalState);
 
-  useEffect(() => {
-    const currentUser = AuthService.getCurrentUser();
-    if (currentUser && currentUser.id) {
-      fetchSavingGoalsByUserId(currentUser.id);
+  const validateForm = useCallback(() => {
+    if (!savingGoalForm.walletId) {
+      toast.error("Please select wallet!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
     }
-    fetchWallets();
-  }, []);
+    if (!savingGoalForm.categoryId) {
+      toast.error("Please select category!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
+    }
+    if (!savingGoalForm.endDateType) {
+      toast.error("Please select End Date Type!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
+    }
+    return true;
+  }, [
+    savingGoalForm.walletId,
+    savingGoalForm.categoryId,
+    savingGoalForm.endDateType,
+  ]);
 
   const fetchWallets = async () => {
     try {
@@ -76,31 +132,98 @@ const SavingGoalsView = () => {
       }
     } catch (error) {
       console.error("Failed to fetch wallets", error);
-      toast.error("Failed to fetch wallets.");
     }
   };
 
-  const fetchSavingGoalsByUserId = async (userId) => {
-    setLoading(true);
+  const fetchCategories = async () => {
+    const currentUser = AuthService.getCurrentUser();
     try {
-      const response = await axios.get(`/api/savinggoals/user/${userId}`, {
-        headers: AuthHeader(),
-      });
-      setSavingGoals(response.data);
-      if (response.data.length === 0) {
-        toast.info("No saving goals found.");
-      }
+      const response = await axios.get(
+        `/api/categories/user/${currentUser.id}`,
+        {
+          headers: AuthHeader(),
+        }
+      );
+      const grouped = response.data.reduce((acc, category) => {
+        const { type } = category;
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        acc[type].push(category);
+        return acc;
+      }, {});
+      setCategories(response.data);
+      setGroupedCategories(grouped);
     } catch (error) {
-      if (error.response && error.response.status === 404) {
-        toast.info("No saving goals found.");
-      } else {
-        toast.error("Failed to fetch saving goals");
-      }
-      console.log(error);
-    } finally {
-      setLoading(false);
+      toast.error("Error fetching categories");
     }
   };
+
+  const categoryOptions = useMemo(() => {
+    return Object.keys(groupedCategories).map((type) => (
+      <Box key={type} mb={2}>
+        <Text fontWeight="bold" mb={2}>
+          {type === "EXPENSE" ? "Expense" : type === "DEBT" ? "Debt" : "Income"}
+        </Text>
+        {groupedCategories[type].map((category) => (
+          <Button
+            key={category.id}
+            variant="ghost"
+            w="100%"
+            textAlign="left"
+            justifyContent="start"
+            alignItems="center"
+            onClick={() => {
+              handleSavingGoalFormChange("categoryId", category.id);
+            }}
+          >
+            <img
+              src={`/assets/img/icons/${category.icon.path}`}
+              alt={category.name}
+              width="20"
+              height="20"
+              style={{ marginRight: "8px" }}
+            />
+            {category.name}
+          </Button>
+        ))}
+      </Box>
+    ));
+  }, [groupedCategories]);
+
+  const fetchSavingGoals = useCallback(async () => {
+    setLoading(true);
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      try {
+        const response = await axios.get(
+          `/api/savinggoals/user/${currentUser.id}`,
+          {
+            headers: AuthHeader(),
+          }
+        );
+        setSavingGoals(response.data);
+        if (response.data.length === 0) {
+          toast.info("No saving goals found.");
+        }
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          toast.info("No saving goals found.");
+        } else {
+          toast.error("Failed to fetch saving goals");
+        }
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSavingGoals();
+    fetchWallets();
+    fetchCategories();
+  }, [fetchSavingGoals]);
 
   const handleDeleteSavingGoal = async () => {
     try {
@@ -108,10 +231,7 @@ const SavingGoalsView = () => {
         headers: AuthHeader(),
       });
       toast.success("Saving goal successfully deleted");
-      const currentUser = AuthService.getCurrentUser();
-      if (currentUser && currentUser.id) {
-        fetchSavingGoalsByUserId(currentUser.id);
-      }
+      await fetchSavingGoals();
     } catch (error) {
       toast.error("Could not delete saving goal.");
       console.log(error);
@@ -131,11 +251,19 @@ const SavingGoalsView = () => {
       toast.error("You must be logged in to perform this action.");
       return;
     }
+    if (!validateForm()) {
+      return;
+    }
 
     const savingGoalData = {
       ...savingGoalForm,
       userId: currentUser.id,
-      walletId: savingGoalForm.walletId, // Ensure walletId is correctly set
+      walletId: savingGoalForm.walletId,
+      endDate:
+        savingGoalForm.endDateType === "END_DATE"
+          ? savingGoalForm.endDate
+          : null,
+      // Ensure walletId is correctly set
     };
 
     try {
@@ -143,12 +271,41 @@ const SavingGoalsView = () => {
         headers: AuthHeader(),
       });
       toast.success("Saving goal added successfully");
-      fetchSavingGoalsByUserId(currentUser.id);
-    } catch (error) {
-      toast.error("Error adding saving goal");
-      console.log(error);
-    } finally {
+      fetchSavingGoals();
       onClose();
+    } catch (error) {
+      if (
+        error.response &&
+        error.response.data &&
+        typeof error.response.data === "object"
+      ) {
+        toast.error(
+          JSON.stringify(error.response.data, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          })
+        );
+      } else if (error.response && typeof error.response.data === "string") {
+        const fieldErrors = error.response.data.split("\n");
+        fieldErrors.forEach((errorMessage) => {
+          toast.error(errorMessage, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+        });
+      }
     }
   };
 
@@ -248,7 +405,7 @@ const SavingGoalsView = () => {
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Add New Saving Goal</ModalHeader>
+          <ModalHeader>Add New Goal</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <FormControl>
@@ -260,6 +417,52 @@ const SavingGoalsView = () => {
                 }
                 placeholder="Enter saving goal name"
               />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel>Category</FormLabel>
+              <Popover placement="right-start">
+                <PopoverTrigger>
+                  <Button w="100%">
+                    {savingGoalForm.categoryId ? (
+                      <Flex alignItems="center">
+                        {categories.find(
+                          (cat) =>
+                            cat.id === parseInt(savingGoalForm.categoryId)
+                        ) && (
+                          <img
+                            src={`/assets/img/icons/${
+                              categories.find(
+                                (cat) =>
+                                  cat.id === parseInt(savingGoalForm.categoryId)
+                              ).icon.path
+                            }`}
+                            alt={
+                              categories.find(
+                                (cat) =>
+                                  cat.id === parseInt(savingGoalForm.categoryId)
+                              ).name
+                            }
+                            width="20"
+                            height="20"
+                            style={{ marginRight: "8px" }}
+                          />
+                        )}
+                        {categories.find(
+                          (cat) => cat.id === savingGoalForm.categoryId
+                        )?.name || "Select Category"}
+                      </Flex>
+                    ) : (
+                      "Select Category"
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent maxH="300px" overflowY="auto">
+                  <PopoverArrow />
+                  <PopoverCloseButton />
+                  <PopoverHeader>Select Category</PopoverHeader>
+                  <PopoverBody>{categoryOptions}</PopoverBody>
+                </PopoverContent>
+              </Popover>
             </FormControl>
             <FormControl mt={4}>
               <FormLabel>Target Amount</FormLabel>
@@ -284,20 +487,30 @@ const SavingGoalsView = () => {
               />
             </FormControl>
             <FormControl mt={4}>
-              <FormLabel>Wallet</FormLabel>
-              <Select
-                placeholder="Select wallet"
-                value={savingGoalForm.walletId}
-                onChange={(e) =>
-                  handleSavingGoalFormChange("walletId", e.target.value)
-                }
-              >
-                {wallets.map((wallet) => (
-                  <option key={wallet.walletId} value={wallet.walletId}>
-                    {wallet.walletName}
-                  </option>
-                ))}
-              </Select>
+              <FormLabel>Wallet Goals</FormLabel>
+              {wallets && wallets.length > 0 ? (
+                <Select
+                  placeholder="Select wallet"
+                  value={savingGoalForm.walletId}
+                  onChange={(e) =>
+                    handleSavingGoalFormChange("walletId", e.target.value)
+                  }
+                >
+                  {wallets.map((wallet) => {
+                    if (wallet.walletType === 3) {
+                      return (
+                        <option key={wallet.walletId} value={wallet.walletId}>
+                          {wallet.walletName}
+                        </option>
+                      );
+                    }
+                  })}
+                </Select>
+              ) : (
+                <Text color="red.500">
+                  No wallets available. Please create a wallet goal first.
+                </Text>
+              )}
             </FormControl>
             <FormControl mt={4}>
               <FormLabel>Start Date</FormLabel>
@@ -311,15 +524,47 @@ const SavingGoalsView = () => {
               />
             </FormControl>
             <FormControl mt={4}>
-              <FormLabel>End Date</FormLabel>
-              <Input
-                type="date"
-                value={savingGoalForm.endDate}
-                onChange={(e) =>
-                  handleSavingGoalFormChange("endDate", e.target.value)
+              <Button
+                onClick={() =>
+                  handleSavingGoalFormChange("endDateType", "FOREVER")
                 }
-                min={new Date().toISOString().split("T")[0]}
-              />
+                backgroundColor={
+                  savingGoalForm.endDateType === "FOREVER"
+                    ? "gray.200"
+                    : undefined
+                }
+                w="100%"
+              >
+                Forever
+              </Button>
+            </FormControl>
+            <FormControl mt={4}>
+              <Button
+                onClick={() =>
+                  handleSavingGoalFormChange("endDateType", "END_DATE")
+                }
+                backgroundColor={
+                  savingGoalForm.endDateType === "END_DATE"
+                    ? "gray.200"
+                    : undefined
+                }
+                w="100%"
+              >
+                End Date
+              </Button>
+              {savingGoalForm.endDateType === "END_DATE" && (
+                <>
+                  <FormLabel mb={2}>End Date:</FormLabel>
+                  <Input
+                    type="date"
+                    value={savingGoalForm.endDate}
+                    onChange={(e) =>
+                      handleSavingGoalFormChange("endDate", e.target.value)
+                    }
+                    min={new Date().toISOString().split("T")[0]}
+                  />
+                </>
+              )}
             </FormControl>
           </ModalBody>
           <ModalFooter>

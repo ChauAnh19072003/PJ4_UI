@@ -96,7 +96,7 @@ const AddTransaction = ({
         const requestData = {
           userId: currentUser.id,
           amount: changeAmount,
-          transactionDate: changeDate.toISOString(), 
+          transactionDate: changeDate.toISOString(),
           walletId: changeWallet,
           categoryId: changeCategory,
           notes: changeNotes,

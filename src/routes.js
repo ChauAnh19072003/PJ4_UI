@@ -54,7 +54,7 @@ const Routes = [
     component: Budget,
   },
   {
-    name: "Save",
+    name: "Goals",
     layout: "/user",
     path: "/save",
     icon: <Icon as={TbPigMoney} width="20px" height="20px" color="inherit" />,
