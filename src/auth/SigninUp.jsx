@@ -160,14 +160,6 @@ const Login = () => {
                 ref={form}
               >
                 <h2 className="title">Create Account</h2>
-                <div className="social-icons">
-                  <a href={GOOGLE_AUTH_URL}>
-                    <FcGoogle />
-                  </a>
-                  {/* <a href={GITHUB_AUTH_URL}>
-                    <FaGithub />
-                  </a> */}
-                </div>
                 <div className="input-field">
                   <input
                     type="text"
@@ -218,6 +210,12 @@ const Login = () => {
                   onChange={onChangePassword}
                 />
                 <button className="btn solid">Sign In</button>
+                <div className="social-icons">
+                  <a href={GOOGLE_AUTH_URL}>
+                    <FcGoogle />
+                    <div>Login with Google</div>
+                  </a>
+                </div>
                 <Link
                   to="/auth/forgot-password"
                   className="forgot-password-link"

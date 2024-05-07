@@ -111,43 +111,45 @@ const AuthStyles = styled.div`
     justify-content: center;
   }
 
-  .social-icon {
-    height: 46px;
-    width: 46px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 0.45rem;
-    color: #333;
-    border-radius: 50%;
-    border: 1px solid #333;
-    text-decoration: none;
-    font-size: 1.1rem;
-    transition: 0.3s;
-  }
-
-  .social-icon:hover {
-    color: #4481eb;
-    border-color: #4481eb;
-  }
-
-  .social-icons {
-    margin: 20px 0;
+  .social-icon a:hover {
+    background-color: #4d84e2;
   }
 
   .social-icons a {
-    border: 1px solid #ccc;
-    border-radius: 20%;
+    margin: 20px 0;
+    transition: 0.5s;
+    width: 250px;
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    margin: 0 3px;
-    width: 40px;
-    height: 40px;
+    height: 49px;
+    border: none;
+    outline: none;
+    border-radius: 49px;
+    cursor: pointer;
+    text-transform: uppercase;
+    color: #757575;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.25);
+    &:hover {
+      box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.25);
+    }
+
+    &:active {
+      background-color: #eeeeee;
+    }
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.25),
+        0 0 0 3px #c8dafc;
+    }
   }
 
   .btn {
-    width: 150px;
+    width: 250px;
     background-color: #5995fd;
     border: none;
     outline: none;

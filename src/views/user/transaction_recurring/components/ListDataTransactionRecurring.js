@@ -61,7 +61,7 @@ function ListDataTransactionRecurring() {
   const [wallets, setWallets] = useState([]);
 
   const isMounted = useRef(true);
-  const fetchTransactions = useCallback(async (page) => {
+  const fetchTransactions = async (page) => {
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
@@ -79,7 +79,7 @@ function ListDataTransactionRecurring() {
         console.error("Error fetching Transactions Recurring:", error);
       }
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchTransactions(currentPage);

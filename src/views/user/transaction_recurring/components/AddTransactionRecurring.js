@@ -122,8 +122,21 @@ function AddTransactionRecurring({
       });
       return false;
     }
+    if (!selectedOption) {
+      toast.error("Please select type to repeat!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
+    }
     return true;
-  }, [changeWallet, changeCategory, changeStartDate]);
+  }, [changeWallet, changeCategory, changeStartDate, selectedOption]);
 
   const handleCreateTransaction = useCallback(async () => {
     if (!validateForm()) {
