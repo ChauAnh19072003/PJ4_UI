@@ -167,7 +167,9 @@ const WalletsOverview = () => {
       (type) => type.typeId.toString() === walletTypeId
     );
     setShowBankFields(
-      selectedWalletType && selectedWalletType.typeName !== "Cash"
+      selectedWalletType &&
+        selectedWalletType.typeName !== "Cash" &&
+        selectedWalletType.typeName !== "Goals"
     );
     handleWalletFormChange("type", walletTypeId);
   };

@@ -61,14 +61,11 @@ function UserProfile() {
 
   const updateUserProfile = async () => {
     try {
-      const response = await axios.put(
-        `/api/auth/updateEmailUsernameProfile/${userId}`,
-        {
-          headers: AuthHeader(),
-          email: email,
-          username: username,
-        }
-      );
+      const response = await axios.put(`/api/auth/updateEmailUsernameProfile`, {
+        headers: AuthHeader(),
+        email: email,
+        username: username,
+      });
       toast.success(response.data);
       // onUpdateClose();
     } catch (error) {
