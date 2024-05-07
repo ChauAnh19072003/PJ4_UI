@@ -47,6 +47,7 @@ const ResetPassword = () => {
           progress: undefined,
           theme: "light",
         });
+        history.push("/auth/signin");
         await axios.delete(`/api/auth/password-reset-tokens/${token}`);
       }
     } catch (error) {
