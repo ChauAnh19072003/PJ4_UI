@@ -64,10 +64,18 @@ const TotalSpent = ({ selectedWallet }) => {
       return [];
     }
 
-    const amounts = dates.map((date) => {
-      const entry = data.find((d) => d.transactionDate === date);
-      return entry ? entry.amount : 0;
-    });
+    const amountsByDate = data.reduce((acc, transaction) => {
+      const date = transaction.transactionDate;
+
+      if (acc[date]) {
+        acc[date] += transaction.amount;
+      } else {
+        acc[date] = transaction.amount;
+      }
+      return acc;
+    }, {});
+
+    const amounts = dates.map((date) => amountsByDate[date] || 0);
     return amounts;
   };
 

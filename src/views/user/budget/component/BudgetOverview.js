@@ -73,6 +73,18 @@ const BudgetsOverview = ({ userId }) => {
   };
   const [budgetForm, setBudgetForm] = useState(initialBudgetState);
 
+  const resetFormAndErrors = () => {
+    setBudgetForm(initialBudgetState); // Reset form to initial state
+    setFormErrors({}); // Clear any form errors
+    setSelectedBudget(null); // Clear any selected budget 
+    setOriginalBudgetData({});
+  };
+  
+  const closeModal = () => {
+      onClose(); // Close the modal
+      resetFormAndErrors(); // Reset form and clear errors
+  }
+
   const validateForm = () => {
     let errors = {};
     let isValid = true;
@@ -429,7 +441,7 @@ const BudgetsOverview = ({ userId }) => {
       </Box>
 
       {/* Add/Edit Budget Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isOpen} onClose={closeModal}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
@@ -573,7 +585,7 @@ const BudgetsOverview = ({ userId }) => {
             <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
               {isEditing ? "Save Changes" : "Add"}
             </Button>
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={closeModal}>Cancel</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
