@@ -23,6 +23,7 @@ import Card from "components/card/Card";
 import TransactionHistory from "./components/TransactionHistory";
 import { Button } from "@chakra-ui/react/dist/chakra-ui-react.cjs";
 import AuthHeader from "services/auth/authHeader";
+import TotalSpent2 from "./components/TotalSpent 2";
 
 const initialState = {
   loading: false,
@@ -563,7 +564,8 @@ const UserReports = () => {
         </SimpleGrid>
 
         <SimpleGrid columns={{ base: 1, md: 1, xl: 1 }} gap="20px" mb="20px">
-          <TotalSpent />
+          <TotalSpent selectedWallet={state.selectedWallet}/>
+          <TotalSpent2 selectedWallet={state.selectedWallet}/>
         </SimpleGrid>
       </Box>
       <Box w="50px" display={{ base: "none", md: "block", xl: "block" }}>

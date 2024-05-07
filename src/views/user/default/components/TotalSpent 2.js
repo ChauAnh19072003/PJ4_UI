@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Line, Bar } from "react-chartjs-2";
+import { Line } from "react-chartjs-2";
 import {
   Box,
   Flex,
@@ -11,9 +11,6 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import Card from "components/card/Card";
-import { MdBarChart, MdOutlineCalendarToday } from "react-icons/md";
-import { RiArrowUpSFill } from "react-icons/ri";
-import { IoCheckmarkCircle } from "react-icons/io5";
 import AuthHeader from "services/auth/authHeader";
 import AuthService from "services/auth/auth.service";
 import {
@@ -46,7 +43,7 @@ const calculateTotal = (data) => {
   return data.reduce((acc, item) => acc + item.amount, 0);
 };
 
-const TotalSpent = ({ selectedWallet }) => {
+const TotalSpent2 = ({ selectedWallet }) => {
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const [selectedTotal, setSelectedTotal] = useState(0);
   const [selectedOption, setSelectedOption] = useState("month");
@@ -225,11 +222,11 @@ const TotalSpent = ({ selectedWallet }) => {
           </Flex> */}
         </Flex>
         <Box minH="260px" minW="75%" mt="auto">
-          <Bar data={chartData} options={chartOptions} />
+          <Line data={chartData} options={chartOptions} />
         </Box>
       </Flex>
     </Card>
   );
 };
 
-export default TotalSpent;
+export default TotalSpent2;
