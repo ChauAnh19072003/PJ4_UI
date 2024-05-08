@@ -83,6 +83,9 @@ const TotalSpent = ({ selectedWallet }) => {
   const expenseAmounts = prepareChartData(getAllDates, expenseData);
 
   useEffect(() => {
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+
     const currentUser = AuthService.getCurrentUser();
 
     const fetchDataBasedOnWallet = async () => {
@@ -104,8 +107,10 @@ const TotalSpent = ({ selectedWallet }) => {
           axios.get(expenseUrl, { headers }),
         ]);
 
-        setIncomeData(Array.isArray(incomeRes.data) ? incomeRes.data : []);
-        setExpenseData(Array.isArray(expenseRes.data) ? expenseRes.data : []);
+        if (!signal.aborted) {
+          setIncomeData(Array.isArray(incomeRes.data) ? incomeRes.data : []);
+          setExpenseData(Array.isArray(expenseRes.data) ? expenseRes.data : []);
+        }
       } catch (error) {
         console.error("Error fetching income/expense transactions:", error);
       }
@@ -114,6 +119,10 @@ const TotalSpent = ({ selectedWallet }) => {
     if (currentUser) {
       fetchDataBasedOnWallet();
     }
+
+    return () => {
+      abortController.abort();
+    };
   }, [selectedWallet]);
 
   useEffect(() => {
