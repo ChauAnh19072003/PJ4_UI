@@ -1,4 +1,3 @@
-// BudgetsOverview.js
 import React, { useState, useEffect, useRef } from "react";
 import { Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
 import {
@@ -57,7 +56,8 @@ const BudgetsOverview = ({ userId }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [budgetToDelete, setBudgetToDelete] = useState(null);
   const [validBudgets, setValidBudgets] = useState([]);
-  const [notValidBudgets, setNotValidBudgets] = useState([]);
+  const [oldBudgets, setOldBudgets] = useState([]);
+  const [futureBudgets, setFutureBudgets] = useState([]);
   const [formErrors, setFormErrors] = useState({});
   const [originalBudgetData, setOriginalBudgetData] = useState({});
   const cancelRef = useRef();
@@ -74,16 +74,16 @@ const BudgetsOverview = ({ userId }) => {
   const [budgetForm, setBudgetForm] = useState(initialBudgetState);
 
   const resetFormAndErrors = () => {
-    setBudgetForm(initialBudgetState); // Reset form to initial state
-    setFormErrors({}); // Clear any form errors
-    setSelectedBudget(null); // Clear any selected budget 
+    setBudgetForm(initialBudgetState);
+    setFormErrors({});
+    setSelectedBudget(null);
     setOriginalBudgetData({});
   };
-  
+
   const closeModal = () => {
-      onClose(); // Close the modal
-      resetFormAndErrors(); // Reset form and clear errors
-  }
+    onClose();
+    resetFormAndErrors();
+  };
 
   const validateForm = () => {
     let errors = {};
@@ -105,7 +105,6 @@ const BudgetsOverview = ({ userId }) => {
       isValid = false;
     }
 
-    // Allow the original start date when editing
     if (isEditing) {
       if (budgetForm.periodStart < originalBudgetData.periodStart) {
         errors.periodStart =
@@ -113,7 +112,6 @@ const BudgetsOverview = ({ userId }) => {
         isValid = false;
       }
     } else {
-      // For new budgets, the start date must be today or in the future
       if (budgetForm.periodStart < today) {
         errors.periodStart = "Start date must be today or in the future.";
         isValid = false;
@@ -133,7 +131,8 @@ const BudgetsOverview = ({ userId }) => {
     fetchBudgets();
     fetchCategories();
     fetchValidBudgets();
-    fetchNotValidBudgets();
+    fetchOldBudgets();
+    fetchFutureBudgets();
   }, [userId]);
 
   const fetchValidBudgets = async () => {
@@ -150,16 +149,29 @@ const BudgetsOverview = ({ userId }) => {
     }
   };
 
-  const fetchNotValidBudgets = async () => {
+  const fetchOldBudgets = async () => {
     const currentUser = AuthService.getCurrentUser();
     try {
       const response = await axios.get(
-        `/api/budgets/not_valid/user/${currentUser.id}`,
+        `/api/budgets/past/user/${currentUser.id}`,
         { headers: AuthHeader() }
       );
-      setNotValidBudgets(response.data);
+      setOldBudgets(response.data);
     } catch (error) {
-      toast.error("Error fetching not valid budgets");
+      toast.error("Error fetching past budgets");
+    }
+  };
+
+  const fetchFutureBudgets = async () => {
+    const currentUser = AuthService.getCurrentUser();
+    try {
+      const response = await axios.get(
+        `/api/budgets/future/user/${currentUser.id}`,
+        { headers: AuthHeader() }
+      );
+      setFutureBudgets(response.data);
+    } catch (error) {
+      toast.error("Error fetching future budgets");
     }
   };
 
@@ -210,8 +222,9 @@ const BudgetsOverview = ({ userId }) => {
         });
         toast.success("Budget successfully deleted");
         fetchValidBudgets();
-        fetchNotValidBudgets();
+        fetchOldBudgets();
         fetchBudgets();
+        fetchFutureBudgets();
         setBudgetToDelete(null);
       } catch (error) {
         toast.error("Could not delete budget.");
@@ -276,7 +289,8 @@ const BudgetsOverview = ({ userId }) => {
       );
       fetchBudgets();
       fetchValidBudgets();
-      fetchNotValidBudgets();
+      fetchOldBudgets();
+      fetchFutureBudgets();
     } catch (error) {
       const errorMessage =
         error.response?.data || error.message || "An error occurred";
@@ -310,89 +324,81 @@ const BudgetsOverview = ({ userId }) => {
   const renderBudgetItem = (budget) => (
     <Flex
       key={budget.budgetId}
-      bg={budget.amount > budget.threshold_amount ? "pink.100" : "white"}
-      p={4}
+      flexDirection="column"
+      bg={budget.amount > budget.threshold_amount ? "pink.200" : "gray.100"}
+      p={5}
       shadow="md"
       borderWidth="1px"
       borderRadius="lg"
-      align="center"
-      justify="space-between"
-      mb={2}
+      mb={4}
     >
-      <Box flex="1">
-        <Text fontSize="lg" fontWeight="bold" color="#4A5568">
-          {budget.name}
-        </Text>
-        <Flex align="center" mt={1}>
-          {categories.find((category) => category.id === budget.categoryId) ? (
-            <>
-              <Box
-                boxSize="20px"
-                as="img"
-                src={`/assets/img/icons/${
-                  categories.find(
-                    (category) => category.id === budget.categoryId
-                  ).icon.path
-                }`}
-                alt={
-                  categories.find(
-                    (category) => category.id === budget.categoryId
-                  ).name
-                }
-                mr={2}
-              />
-              <Text fontSize="md" fontWeight="bold" color="#4A5568">
-                {
-                  categories.find(
-                    (category) => category.id === budget.categoryId
-                  ).name
-                }
-              </Text>
-            </>
-          ) : (
-            <Text fontSize="md" color="gray.500">
-              Uncategorized
-            </Text>
+      <Flex justifyContent="space-between" alignItems="center">
+        <Flex alignItems="center" maxWidth="70%">
+          {categories.find((category) => category.id === budget.categoryId) && (
+            <Box
+              boxSize="40px"
+              mr={4}
+              as="img"
+              src={`/assets/img/icons/${
+                categories.find((category) => category.id === budget.categoryId)
+                  .icon.path
+              }`}
+              alt={
+                categories.find((category) => category.id === budget.categoryId)
+                  .name
+              }
+            />
           )}
+          <Box>
+            <Heading size="md" isTruncated>
+              {budget.name}
+            </Heading>
+            <Text fontSize="sm" color="gray.600" isTruncated>
+              Category:{" "}
+              {categories.find((category) => category.id === budget.categoryId)
+                ?.name || "Uncategorized"}
+            </Text>
+            <Text fontSize="sm" color="gray.500" isTruncated>
+              Period: {new Date(budget.periodStart).toLocaleDateString()} -{" "}
+              {new Date(budget.periodEnd).toLocaleDateString()}
+            </Text>
+          </Box>
         </Flex>
-        <Progress
-          value={(budget.amount / budget.threshold_amount) * 100}
-          colorScheme={
-            budget.amount > budget.threshold_amount ? "red" : "green"
-          }
-          size="lg"
-          mt={2}
-          width="100%"
-        />
-        <Text
-          fontSize="sm"
-          fontWeight="bold"
-          mt={2}
-          textAlign="center"
-          bg="gray.100"
-          p={1}
-          borderRadius="md"
-        >
-          {`$${budget.amount} / $${budget.threshold_amount}`}
+        <Flex alignItems="center">
+          <IconButton
+            icon={<EditIcon />}
+            onClick={() => openModalToEdit(budget)}
+            aria-label="Edit"
+            colorScheme="blue"
+            size="sm"
+            mr={2}
+          />
+          <IconButton
+            icon={<DeleteIcon />}
+            onClick={() => {
+              setBudgetToDelete(budget.budgetId);
+              setIsDeleteAlertOpen(true);
+            }}
+            aria-label="Delete"
+            colorScheme="red"
+            size="sm"
+          />
+        </Flex>
+      </Flex>
+      <Progress
+        value={(budget.amount / budget.threshold_amount) * 100}
+        colorScheme={budget.amount > budget.threshold_amount ? "red" : "green"}
+        size="md"
+        borderRadius="md"
+        my={3}
+        width="100%"
+      />
+      <Box>
+        <Text fontSize="sm" fontWeight="normal" color="gray.700">
+          Amount: <strong>${budget.amount.toFixed(2)}</strong> of{" "}
+          <strong>${budget.threshold_amount.toFixed(2)}</strong>
         </Text>
       </Box>
-      <HStack>
-        <IconButton
-          icon={<EditIcon />}
-          onClick={() => openModalToEdit(budget)}
-          aria-label="Edit"
-          colorScheme="blue"
-        />
-        <IconButton
-          icon={<DeleteIcon />}
-          onClick={() => {
-            setBudgetToDelete(budget.budgetId);
-            setIsDeleteAlertOpen(true);
-          }}
-          aria-label="Delete"
-          colorScheme="red"
-        />
-      </HStack>
     </Flex>
   );
 
@@ -416,14 +422,14 @@ const BudgetsOverview = ({ userId }) => {
         </VStack>
         <Tabs isFitted variant="enclosed">
           <TabList mb="1em">
-            <Tab>All Budgets</Tab>
-            <Tab>This month</Tab>
             <Tab>Old Budgets</Tab>
+            <Tab>This month</Tab>
+            <Tab>Future Budgets</Tab>
           </TabList>
           <TabPanels>
-          <TabPanel>
+            <TabPanel>
               <Flex direction="column" mt={4}>
-                {budgets.map((budget) => renderBudgetItem(budget))}
+                {oldBudgets.map((budget) => renderBudgetItem(budget))}
               </Flex>
             </TabPanel>
             <TabPanel>
@@ -431,9 +437,10 @@ const BudgetsOverview = ({ userId }) => {
                 {validBudgets.map((budget) => renderBudgetItem(budget))}
               </Flex>
             </TabPanel>
+
             <TabPanel>
               <Flex direction="column" mt={4}>
-                {notValidBudgets.map((budget) => renderBudgetItem(budget))}
+                {futureBudgets.map((budget) => renderBudgetItem(budget))}
               </Flex>
             </TabPanel>
           </TabPanels>

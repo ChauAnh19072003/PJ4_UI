@@ -27,10 +27,14 @@ import {
   ModalOverlay,
   useDisclosure,
   Select,
+  Icon,
+  VStack,
+  Image
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon, EditIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
 //import Card from "components/card/Card";
+import { MdWallet } from "react-icons/md";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthHeader from "services/auth/authHeader";
@@ -42,8 +46,9 @@ const WalletsOverview = () => {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentWallet, setCurrentWallet] = useState(null);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { onClose } = useDisclosure();
   const cancelRef = useRef();
+  const [transactions, setTransactions] = useState([]);
   const initialWalletState = {
     name: "",
     balance: "",
@@ -126,11 +131,23 @@ const WalletsOverview = () => {
     }
   };
 
+  const {
+    isOpen: isEditModalOpen,
+    onOpen: onEditModalOpen,
+    onClose: onEditModalClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: isTransactionsModalOpen,
+    onOpen: onTransactionsModalOpen,
+    onClose: onTransactionsModalClose,
+  } = useDisclosure();
+
   const openModalToAdd = () => {
     setWalletForm(initialWalletState);
     setShowBankFields(false);
     setIsEditing(false);
-    onOpen();
+    onEditModalOpen();
   };
 
   const openModalToEdit = (wallet) => {
@@ -155,7 +172,7 @@ const WalletsOverview = () => {
       selectedWalletType && selectedWalletType.typeName !== "Cash"
     );
 
-    onOpen();
+    onEditModalOpen();
   };
 
   const handleWalletFormChange = (field, value) => {
@@ -215,6 +232,19 @@ const WalletsOverview = () => {
     }
   };
 
+  const fetchTransactions = async (userId, walletId) => {
+    try {
+      const response = await axios.get(
+        `/api/transactions/getTop5NewTransactionforWallet/users/${userId}/wallets/${walletId}`,
+        { headers: AuthHeader() }
+      );
+      setTransactions(response.data);
+      onTransactionsModalOpen();
+    } catch (error) {
+      toast.error("Could not fetch transactions.");
+    }
+  };
+
   if (loading) {
     return (
       <Center p={10}>
@@ -249,7 +279,7 @@ const WalletsOverview = () => {
               borderRadius="lg"
               overflow="hidden"
               boxShadow="lg"
-              bg="white"
+              bg={wallet.balance < 0 ? "red.100" : "gray.50"}
               transition="transform 0.2s"
               _hover={{ transform: "scale(1.02)" }}
               role="group"
@@ -257,20 +287,41 @@ const WalletsOverview = () => {
               <Flex alignItems="center" justifyContent="space-between">
                 <Box>
                   <Text fontWeight="semibold" fontSize="xl" color="#2D3748">
+                    <Icon
+                      as={MdWallet}
+                      width="20px"
+                      height="20px"
+                      color="inherit"
+                    />{" "}
                     {wallet.walletName}
                   </Text>
-                  <Text fontSize="md" color="#4A5568">
+                  <Text
+                    fontSize="md"
+                    color={wallet.balance < 0 ? "red.600" : "#4A5568"}
+                  >
                     {wallet.balance} {wallet.currency}
                     <Text as="span" fontWeight="bold" ml={2}>
                       • {wallet.walletTypeName}
                     </Text>
                   </Text>
+                  {wallet.balance < 0 && (
+                    <Text
+                      color="red.500"
+                      cursor="pointer"
+                      onClick={() =>
+                        fetchTransactions(wallet.userId, wallet.walletId)
+                      }
+                    >
+                      Seem like your lately transactions make wallet negative.
+                      Click <span fontWeight="600">here</span> to see lately transactions.
+                    </Text>
+                  )}
                 </Box>
                 <Flex alignItems="center">
                   <IconButton
                     icon={<EditIcon />}
                     size="sm"
-                    variant="outline"
+                    variant="ghost"
                     colorScheme="blue"
                     aria-label="Edit wallet"
                     onClick={() => openModalToEdit(wallet)}
@@ -281,7 +332,7 @@ const WalletsOverview = () => {
                   <IconButton
                     icon={<DeleteIcon />}
                     size="sm"
-                    variant="outline"
+                    variant="ghost"
                     colorScheme="red"
                     aria-label="Delete wallet"
                     onClick={() => {
@@ -302,8 +353,58 @@ const WalletsOverview = () => {
         )}
       </Box>
 
+      {/* Modal to show transactions */}
+      <Modal
+        isOpen={isTransactionsModalOpen}
+        onClose={onTransactionsModalClose}
+        size="xl"
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            5 latest transactions
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4} align="stretch">
+              {transactions.map((transaction, index) => (
+                <Box key={index} p={5} shadow="md" borderWidth="1px">
+                  <Flex align="center">
+                    <Box mr={3}>
+                      <Image
+                        boxSize="50px"
+                        src={`/assets/img/icons/${transaction.cateIcon}`}
+                        alt={transaction.categoryName}
+                      />
+                    </Box>
+                    <Box>
+                      <Heading size="md">{transaction.categoryName}</Heading>
+                      <Text mt={2}>
+                        Amount: ${transaction.amount.toFixed(2)}
+                      </Text>
+                      <Text mt={2}>
+                        Date: {transaction.transactionDate}
+                      </Text>
+                    </Box>
+                  </Flex>
+                </Box>
+              ))}
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              colorScheme="blue"
+              mr={3}
+              onClick={onTransactionsModalClose}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/*Add/Edit Wallet Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isEditModalOpen} onClose={onEditModalClose}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
@@ -340,7 +441,6 @@ const WalletsOverview = () => {
                 }
               >
                 <option value="USD">USD</option>
-                <option value="VND">VND</option>
               </Select>
             </FormControl>
             <FormControl mt={4}>
@@ -386,7 +486,7 @@ const WalletsOverview = () => {
             <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
               {isEditing ? "Save Changes" : "Add"}
             </Button>
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={onEditModalClose}>Cancel</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -402,7 +502,7 @@ const WalletsOverview = () => {
               Delete Wallet
             </AlertDialogHeader>
             <AlertDialogBody>
-              Are you sure you want to delete this wallet? This action cannot be
+              Are you sure you want to delete this wallet? All things relate to this wallet like transaction will be delete. This action cannot be
               undone.
             </AlertDialogBody>
             <AlertDialogFooter>
