@@ -1,8 +1,7 @@
 import { Box } from "@chakra-ui/react";
 import Card from "components/card/Card";
-import ListData from "./components/ListData";
+import ListTransactions from "./components/ListTransactions";
 import React from "react";
-import { DataProviderTransaction } from "./DataContext/DataContextTransaction";
 export default function Transactions() {
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
@@ -14,9 +13,7 @@ export default function Transactions() {
         w={{ base: "100%", md: "70%" }}
         px={{ base: "10px", md: "50px" }}
       >
-        <DataProviderTransaction>
-          <ListData />
-        </DataProviderTransaction>
+        <ListTransactions />
       </Card>
     </Box>
   );

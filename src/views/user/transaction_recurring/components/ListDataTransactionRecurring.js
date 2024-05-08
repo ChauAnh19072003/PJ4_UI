@@ -61,7 +61,7 @@ function ListDataTransactionRecurring() {
   const [wallets, setWallets] = useState([]);
 
   const isMounted = useRef(true);
-  const fetchTransactions = async (page) => {
+  const fetchTransactions = useCallback(async (page) => {
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
@@ -79,11 +79,7 @@ function ListDataTransactionRecurring() {
         console.error("Error fetching Transactions Recurring:", error);
       }
     }
-  };
-
-  useEffect(() => {
-    fetchTransactions(currentPage);
-  }, [currentPage, fetchTransactions]);
+  }, []);
 
   const resetCreateModalData = () => {};
 
@@ -131,39 +127,45 @@ function ListDataTransactionRecurring() {
     setSortConfig({ key, direction });
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const currentUser = AuthService.getCurrentUser();
-      if (currentUser) {
-        try {
-          const [categoriesResponse, walletsResponse] = await Promise.all([
-            axios.get(`/api/categories/user/${currentUser.id}`, {
-              headers: AuthHeader(),
-            }),
-            axios.get(`/api/wallets/users/${currentUser.id}`, {
-              headers: AuthHeader(),
-            }),
-          ]);
-          const grouped = categoriesResponse.data.reduce((acc, category) => {
-            const { type } = category;
-            if (!acc[type]) {
-              acc[type] = [];
-            }
-            acc[type].push(category);
-            return acc;
-          }, {});
-          setCategories(categoriesResponse.data);
-          setGroupedCategories(grouped);
-          setWallets(walletsResponse.data);
-          setDataLoaded(true);
-        } catch (error) {
-          console.error("Error fetching data:", error);
-        }
+  const fetchData = useCallback(async () => {
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      try {
+        const [categoriesResponse, walletsResponse] = await Promise.all([
+          axios.get(`/api/categories/user/${currentUser.id}`, {
+            headers: AuthHeader(),
+          }),
+          axios.get(`/api/wallets/users/${currentUser.id}`, {
+            headers: AuthHeader(),
+          }),
+        ]);
+        const grouped = categoriesResponse.data.reduce((acc, category) => {
+          const { type } = category;
+          if (!acc[type]) {
+            acc[type] = [];
+          }
+          acc[type].push(category);
+          return acc;
+        }, {});
+        setCategories(categoriesResponse.data);
+        setGroupedCategories(grouped);
+        setWallets(walletsResponse.data);
+        setDataLoaded(true);
+      } catch (error) {
+        console.error("Error fetching data:", error);
       }
-    };
+    }
+  }, []);
 
-    fetchData();
-  }, [fetchTransactions]);
+  useEffect(() => {
+    if (isMounted.current) {
+      fetchTransactions(currentPage);
+      fetchData();
+    }
+    return () => {
+      isMounted.current = false;
+    };
+  }, [currentPage, fetchTransactions, fetchData]);
 
   return (
     <>

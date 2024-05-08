@@ -62,7 +62,38 @@ const UpdateCategory = ({
         });
       }
     } catch (error) {
-      console.error("Error updating category:", error);
+      if (
+        error.response &&
+        error.response.data &&
+        typeof error.response.data === "object"
+      ) {
+        toast.error(
+          JSON.stringify(error.response.data, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          })
+        );
+      } else if (error.response && typeof error.response.data === "string") {
+        const fieldErrors = error.response.data.split("\n");
+        fieldErrors.forEach((errorMessage) => {
+          toast.error(errorMessage, {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+          });
+        });
+      }
     }
   };
 

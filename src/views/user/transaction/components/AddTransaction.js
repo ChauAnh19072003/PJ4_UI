@@ -34,6 +34,7 @@ const AddTransaction = ({
   groupedCategories,
   resetCreateModalData,
   currentPage,
+  goals,
 }) => {
   const inputText = "gray.700";
   const adjustDateToUTC = (date) => {
@@ -46,6 +47,7 @@ const AddTransaction = ({
   const [changeWallet, setChangeWallet] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
+  const [changeGoal, setChangeGoal] = useState("");
   const [changeDate, setChangeDate] = useState(adjustDateToUTC(new Date()));
   const validateForm = useCallback(() => {
     if (!changeWallet) {
@@ -193,6 +195,38 @@ const AddTransaction = ({
     ));
   }, [groupedCategories]);
 
+  const goalSelection = useMemo(() => {
+    const wallet = wallets.find((wallet) => wallet.walletId === changeWallet);
+
+    if (wallet && wallet.walletType === 3) {
+      if (goals.length > 0) {
+        return (
+          <Box mr={4}>
+            <Text mb={2}>Select Goal:</Text>
+            <Select
+              placeholder="Select Goal"
+              value={changeGoal}
+              onChange={(e) => setChangeGoal(e.target.value)}
+            >
+              {goals.map((goal) => (
+                <option key={goal.id} value={goal.id}>
+                  {goal.name}
+                </option>
+              ))}
+            </Select>
+          </Box>
+        );
+      } else {
+        return (
+          <Box mr={4}>
+            <Text>You need to create goals to select a goal for saving.</Text>
+          </Box>
+        );
+      }
+    }
+    return null;
+  }, [changeWallet, wallets, goals, changeGoal]);
+
   return (
     <>
       <ModalBody>
@@ -257,6 +291,7 @@ const AddTransaction = ({
             </Text>
           )}
         </Box>
+        {goalSelection}
         <Box
           mb={4}
           display="flex"

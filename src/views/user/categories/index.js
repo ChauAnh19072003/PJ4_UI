@@ -259,34 +259,39 @@ const CategoryList = () => {
                           )}
                           <Text color={textColor}>{category.name}</Text>
                         </Flex>
-                        <Flex mr={10}>
-                          <Button
-                            mr="4px"
-                            className="setting"
-                            onClick={() => handleOpenUpdateModal(category)}
-                          >
-                            <Icon
-                              as={MdSettings}
-                              w="20px"
-                              h="20px"
-                              color={textColor}
-                            />
-                          </Button>
-                          <Button
-                            className="delete"
-                            onClick={() => {
-                              setCategoryIdToDelete(category.id);
-                              setDeleteAlertOpen(true);
-                            }}
-                          >
-                            <Icon
-                              as={MdDelete}
-                              w="20px"
-                              h="20px"
-                              color={textColor}
-                            />
-                          </Button>
-                        </Flex>
+                        {!["DEBT"].includes(category.type) &&
+                          !["Incoming Transfer", "Outgoing Transfer"].includes(
+                            category.name
+                          ) && ( // Kiểm tra nếu loại danh mục không phải là "DEBT"
+                            <Flex mr={10}>
+                              <Button
+                                mr="4px"
+                                className="setting"
+                                onClick={() => handleOpenUpdateModal(category)}
+                              >
+                                <Icon
+                                  as={MdSettings}
+                                  w="20px"
+                                  h="20px"
+                                  color={textColor}
+                                />
+                              </Button>
+                              <Button
+                                className="delete"
+                                onClick={() => {
+                                  setCategoryIdToDelete(category.id);
+                                  setDeleteAlertOpen(true);
+                                }}
+                              >
+                                <Icon
+                                  as={MdDelete}
+                                  w="20px"
+                                  h="20px"
+                                  color={textColor}
+                                />
+                              </Button>
+                            </Flex>
+                          )}
                       </Flex>
                     )
                 )}

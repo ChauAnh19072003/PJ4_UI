@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Box,
   Button,
@@ -24,7 +24,11 @@ import "react-toastify/dist/ReactToastify.css";
 import AuthService from "services/auth/auth.service";
 import AuthHeader from "services/auth/authHeader";
 
-function Password({ handleClosePasswordModal, onPasswordOpen }) {
+function UpdatePassword({
+  handleClosePasswordModal,
+  onPasswordOpen,
+  fetchUser,
+}) {
   const {
     isOpen: isPinOpen,
     onOpen: onPinOpen,
@@ -112,6 +116,7 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
         progress: undefined,
         theme: "light",
       });
+      fetchUser();
       handleClosePinAfterVerifyModal();
     } catch (error) {
       if (
@@ -121,6 +126,7 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
       ) {
         toast.error(
           JSON.stringify(error.response.data, {
+            position: "top-center",
             autoClose: 3000,
             hideProgressBar: false,
             closeOnClick: true,
@@ -132,6 +138,7 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
         );
       } else if (error.response && typeof error.response.data === "string") {
         toast.error(error.response.data, {
+          position: "top-center",
           autoClose: 3000,
           hideProgressBar: false,
           closeOnClick: true,
@@ -232,4 +239,4 @@ function Password({ handleClosePasswordModal, onPasswordOpen }) {
   );
 }
 
-export default Password;
+export default UpdatePassword;

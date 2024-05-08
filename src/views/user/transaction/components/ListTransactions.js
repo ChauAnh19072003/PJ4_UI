@@ -26,10 +26,9 @@ import {
 } from "@chakra-ui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useDataTransaction } from "../DataContext/DataContextTransaction";
 import AuthHeader from "services/auth/authHeader";
 
-function ListData() {
+function ListTransactions() {
   const inputText = useColorModeValue("gray.700", "gray.100");
   const [searchCateType, setSearchCateType] = useState("");
   const [searchWallet, setSearchWallet] = useState("");
@@ -40,6 +39,7 @@ function ListData() {
   const [chooseTransactionId, setChooseTransactionId] = useState(null);
   const [wallets, setWallets] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [goals, setGoals] = useState([]);
   const [groupedCategories, setGroupedCategories] = useState({});
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
@@ -55,45 +55,24 @@ function ListData() {
     onClose: onUpdateModalClose,
   } = useDisclosure();
 
-  const { cachedTransactions, updateCachedTransactions } = useDataTransaction();
   const isMounted = useRef(true);
 
-  const fetchTransaction = useCallback(
-    async (page) => {
-      const currentUser = AuthService.getCurrentUser();
-      if (currentUser) {
-        try {
-          let response = await axios.get(
-            `/api/transactions/users/${currentUser.id}?page=${page}&size=10`,
-            { headers: AuthHeader() }
-          );
-          if (isMounted.current) {
-            setTransaction(response.data);
-            setTotalPages(response.data.totalPages);
-            updateCachedTransactions(page, response.data);
-          }
-        } catch (error) {
-          console.error("Error fetching transaction: ", error);
+  const fetchTransaction = useCallback(async (page) => {
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      try {
+        let response = await axios.get(
+          `/api/transactions/users/${currentUser.id}?page=${page}&size=10`,
+          { headers: AuthHeader() }
+        );
+        if (isMounted.current) {
+          setTransaction(response.data);
+          setTotalPages(response.data.totalPages);
         }
+      } catch (error) {
+        console.error("Error fetching transaction: ", error);
       }
-    },
-    [updateCachedTransactions]
-  );
-
-  useEffect(() => {
-    if (!cachedTransactions[currentPage]) {
-      fetchTransaction(currentPage);
-    } else {
-      setTransaction(cachedTransactions[currentPage]);
-      setTotalPages(cachedTransactions[currentPage]?.totalPages || 1);
     }
-  }, [currentPage, cachedTransactions, fetchTransaction]);
-
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
   }, []);
 
   const resetCreateModalData = () => {};
@@ -141,39 +120,66 @@ function ListData() {
     setCurrentPage(pageNumber);
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const currentUser = AuthService.getCurrentUser();
-      if (currentUser) {
-        try {
-          const [categoriesResponse, walletsResponse] = await Promise.all([
-            axios.get(`/api/categories/user/${currentUser.id}`, {
-              headers: AuthHeader(),
-            }),
-            axios.get(`/api/wallets/users/${currentUser.id}`, {
-              headers: AuthHeader(),
-            }),
-          ]);
-          const grouped = categoriesResponse.data.reduce((acc, category) => {
-            const { type } = category;
-            if (!acc[type]) {
-              acc[type] = [];
-            }
-            acc[type].push(category);
-            return acc;
-          }, {});
-          setCategories(categoriesResponse.data);
-          setGroupedCategories(grouped);
-          setWallets(walletsResponse.data);
-          setDataLoaded(true);
-        } catch (error) {
-          console.error("Error fetching data:", error);
-        }
+  const fetchData = useCallback(async () => {
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      try {
+        const [categoriesResponse, walletsResponse] = await Promise.all([
+          axios.get(`/api/categories/user/${currentUser.id}`, {
+            headers: AuthHeader(),
+          }),
+          axios.get(`/api/wallets/users/${currentUser.id}`, {
+            headers: AuthHeader(),
+          }),
+        ]);
+        const grouped = categoriesResponse.data.reduce((acc, category) => {
+          const { type } = category;
+          if (!acc[type]) {
+            acc[type] = [];
+          }
+          acc[type].push(category);
+          return acc;
+        }, {});
+        setCategories(categoriesResponse.data);
+        setGroupedCategories(grouped);
+        setWallets(walletsResponse.data);
+        setDataLoaded(true);
+      } catch (error) {
+        console.error("Error fetching data:", error);
       }
-    };
+    }
+  }, []);
 
-    fetchData();
-  }, [fetchTransaction]);
+  const fetchGoals = useCallback(async () => {
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      try {
+        let response = await axios.get(
+          `api/savinggoals/user/${currentUser.id}`,
+          {
+            headers: AuthHeader(),
+          }
+        );
+        setGoals(response.data);
+      } catch (error) {
+        console.error("Error fetching goals:", error);
+      }
+    }
+  });
+
+  useEffect(() => {
+    if (isMounted.current) {
+      fetchData();
+      fetchTransaction(currentPage);
+      // if (goals.length > 0) {
+      //   fetchGoals();
+      // }
+    }
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [currentPage, fetchTransaction, fetchData]);
 
   return (
     <>
@@ -271,6 +277,7 @@ function ListData() {
             groupedCategories={groupedCategories}
             resetCreateModalData={resetCreateModalData}
             currentPage={currentPage}
+            goals={goals}
           />
         </ModalContent>
       </Modal>
@@ -507,4 +514,4 @@ function ListData() {
   );
 }
 
-export default ListData;
+export default ListTransactions;

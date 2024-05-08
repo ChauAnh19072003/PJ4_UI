@@ -81,10 +81,6 @@ function BillList() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchBills(currentPage);
-  }, [currentPage, fetchBills]);
-
   const resetCreateModalData = () => {};
 
   const handleOpenUpdateModal = (bill) => {
@@ -130,39 +126,45 @@ function BillList() {
     setSortConfig({ key, direction });
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const currentUser = AuthService.getCurrentUser();
-      if (currentUser) {
-        try {
-          const [categoriesResponse, walletsResponse] = await Promise.all([
-            axios.get(`/api/categories/user/${currentUser.id}`, {
-              headers: AuthHeader(),
-            }),
-            axios.get(`/api/wallets/users/${currentUser.id}`, {
-              headers: AuthHeader(),
-            }),
-          ]);
-          const grouped = categoriesResponse.data.reduce((acc, category) => {
-            const { type } = category;
-            if (!acc[type]) {
-              acc[type] = [];
-            }
-            acc[type].push(category);
-            return acc;
-          }, {});
-          setCategories(categoriesResponse.data);
-          setGroupedCategories(grouped);
-          setWallets(walletsResponse.data);
-          setDataLoaded(true);
-        } catch (error) {
-          console.error("Error fetching data:", error);
-        }
+  const fetchData = useCallback(async () => {
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      try {
+        const [categoriesResponse, walletsResponse] = await Promise.all([
+          axios.get(`/api/categories/user/${currentUser.id}`, {
+            headers: AuthHeader(),
+          }),
+          axios.get(`/api/wallets/users/${currentUser.id}`, {
+            headers: AuthHeader(),
+          }),
+        ]);
+        const grouped = categoriesResponse.data.reduce((acc, category) => {
+          const { type } = category;
+          if (!acc[type]) {
+            acc[type] = [];
+          }
+          acc[type].push(category);
+          return acc;
+        }, {});
+        setCategories(categoriesResponse.data);
+        setGroupedCategories(grouped);
+        setWallets(walletsResponse.data);
+        setDataLoaded(true);
+      } catch (error) {
+        console.error("Error fetching data:", error);
       }
-    };
+    }
+  }, []);
 
-    fetchData();
-  }, [fetchBills]);
+  useEffect(() => {
+    if (isMounted.current) {
+      fetchBills(currentPage);
+      fetchData();
+    }
+    return () => {
+      isMounted.current = false;
+    };
+  }, [currentPage, fetchBills, fetchData]);
 
   return (
     <>

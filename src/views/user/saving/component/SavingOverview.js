@@ -34,19 +34,13 @@ import {
   useDisclosure,
   Progress,
   Select,
-  PopoverContent,
-  PopoverArrow,
-  PopoverCloseButton,
-  PopoverHeader,
-  PopoverBody,
-  PopoverTrigger,
-  Popover,
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthHeader from "services/auth/authHeader";
+import GoalDetails from "./GoalDetails";
 
 const SavingGoalsView = () => {
   const [savingGoals, setSavingGoals] = useState([]);
@@ -54,11 +48,16 @@ const SavingGoalsView = () => {
   const cancelRef = useRef();
   const [savingGoalToDelete, setSavingGoalToDelete] = useState(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState(null);
   const [wallets, setWallets] = useState([]);
-  const [categories, setCategories] = useState([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [groupedCategories, setGroupedCategories] = useState({});
+  const {
+    isOpen: isUpdateOpen,
+    onOpen: onUpdateOpen,
+    onClose: onUpdateClose,
+  } = useDisclosure();
   const initialSavingGoalState = {
+    id: 0,
     name: "",
     targetAmount: 0,
     currentAmount: 0,
@@ -67,26 +66,12 @@ const SavingGoalsView = () => {
     userId: 0,
     walletId: 0,
     endDateType: "",
-    categoryId: 0,
   };
   const [savingGoalForm, setSavingGoalForm] = useState(initialSavingGoalState);
 
   const validateForm = useCallback(() => {
     if (!savingGoalForm.walletId) {
       toast.error("Please select wallet!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return false;
-    }
-    if (!savingGoalForm.categoryId) {
-      toast.error("Please select category!", {
         position: "top-center",
         autoClose: 3000,
         hideProgressBar: false,
@@ -112,11 +97,7 @@ const SavingGoalsView = () => {
       return false;
     }
     return true;
-  }, [
-    savingGoalForm.walletId,
-    savingGoalForm.categoryId,
-    savingGoalForm.endDateType,
-  ]);
+  }, [savingGoalForm.walletId, savingGoalForm.endDateType]);
 
   const fetchWallets = async () => {
     try {
@@ -134,62 +115,6 @@ const SavingGoalsView = () => {
       console.error("Failed to fetch wallets", error);
     }
   };
-
-  const fetchCategories = async () => {
-    const currentUser = AuthService.getCurrentUser();
-    try {
-      const response = await axios.get(
-        `/api/categories/user/${currentUser.id}`,
-        {
-          headers: AuthHeader(),
-        }
-      );
-      const grouped = response.data.reduce((acc, category) => {
-        const { type } = category;
-        if (!acc[type]) {
-          acc[type] = [];
-        }
-        acc[type].push(category);
-        return acc;
-      }, {});
-      setCategories(response.data);
-      setGroupedCategories(grouped);
-    } catch (error) {
-      toast.error("Error fetching categories");
-    }
-  };
-
-  const categoryOptions = useMemo(() => {
-    return Object.keys(groupedCategories).map((type) => (
-      <Box key={type} mb={2}>
-        <Text fontWeight="bold" mb={2}>
-          {type === "EXPENSE" ? "Expense" : type === "DEBT" ? "Debt" : "Income"}
-        </Text>
-        {groupedCategories[type].map((category) => (
-          <Button
-            key={category.id}
-            variant="ghost"
-            w="100%"
-            textAlign="left"
-            justifyContent="start"
-            alignItems="center"
-            onClick={() => {
-              handleSavingGoalFormChange("categoryId", category.id);
-            }}
-          >
-            <img
-              src={`/assets/img/icons/${category.icon.path}`}
-              alt={category.name}
-              width="20"
-              height="20"
-              style={{ marginRight: "8px" }}
-            />
-            {category.name}
-          </Button>
-        ))}
-      </Box>
-    ));
-  }, [groupedCategories]);
 
   const fetchSavingGoals = useCallback(async () => {
     setLoading(true);
@@ -222,7 +147,6 @@ const SavingGoalsView = () => {
   useEffect(() => {
     fetchSavingGoals();
     fetchWallets();
-    fetchCategories();
   }, [fetchSavingGoals]);
 
   const handleDeleteSavingGoal = async () => {
@@ -308,6 +232,10 @@ const SavingGoalsView = () => {
       }
     }
   };
+  const handleGoalSelect = (goal) => {
+    setSelectedGoal(goal);
+    onUpdateOpen();
+  };
 
   if (loading) {
     return (
@@ -342,6 +270,7 @@ const SavingGoalsView = () => {
           return (
             <Box
               key={goal.id}
+              onClick={() => handleGoalSelect(goal)}
               mb={6}
               p={6}
               borderWidth="1px"
@@ -350,6 +279,9 @@ const SavingGoalsView = () => {
               boxShadow="lg"
               bg="gray.50"
               position="relative"
+              cursor="pointer"
+              transition="transform 0.2s"
+              _hover={{ transform: "scale(1.02)" }}
             >
               <Flex alignItems="center" justifyContent="space-between" mb={4}>
                 <Heading size="md" fontWeight="semibold">
@@ -361,7 +293,8 @@ const SavingGoalsView = () => {
                   variant="ghost"
                   colorScheme="red"
                   aria-label="Delete saving goal"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setSavingGoalToDelete(goal.id);
                     setIsDeleteAlertOpen(true);
                   }}
@@ -370,6 +303,15 @@ const SavingGoalsView = () => {
               </Flex>
               <Text mb={2}>Target Amount: ${goal.targetAmount}</Text>
               <Text mb={2}>Current Amount: ${goal.currentAmount}</Text>
+              {savingGoalForm.endDateType === "END_DATE" ? (
+                <Text mb={2}>
+                  Start Date: {savingGoalForm.startDate} - End Date:{" "}
+                  {savingGoalForm.endDate}
+                </Text>
+              ) : (
+                ""
+              )}
+
               <Progress
                 value={goal.currentAmount}
                 max={goal.targetAmount}
@@ -409,7 +351,7 @@ const SavingGoalsView = () => {
           <ModalCloseButton />
           <ModalBody>
             <FormControl>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Name: </FormLabel>
               <Input
                 value={savingGoalForm.name}
                 onChange={(e) =>
@@ -419,53 +361,7 @@ const SavingGoalsView = () => {
               />
             </FormControl>
             <FormControl mt={4}>
-              <FormLabel>Category</FormLabel>
-              <Popover placement="right-start">
-                <PopoverTrigger>
-                  <Button w="100%">
-                    {savingGoalForm.categoryId ? (
-                      <Flex alignItems="center">
-                        {categories.find(
-                          (cat) =>
-                            cat.id === parseInt(savingGoalForm.categoryId)
-                        ) && (
-                          <img
-                            src={`/assets/img/icons/${
-                              categories.find(
-                                (cat) =>
-                                  cat.id === parseInt(savingGoalForm.categoryId)
-                              ).icon.path
-                            }`}
-                            alt={
-                              categories.find(
-                                (cat) =>
-                                  cat.id === parseInt(savingGoalForm.categoryId)
-                              ).name
-                            }
-                            width="20"
-                            height="20"
-                            style={{ marginRight: "8px" }}
-                          />
-                        )}
-                        {categories.find(
-                          (cat) => cat.id === savingGoalForm.categoryId
-                        )?.name || "Select Category"}
-                      </Flex>
-                    ) : (
-                      "Select Category"
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent maxH="300px" overflowY="auto">
-                  <PopoverArrow />
-                  <PopoverCloseButton />
-                  <PopoverHeader>Select Category</PopoverHeader>
-                  <PopoverBody>{categoryOptions}</PopoverBody>
-                </PopoverContent>
-              </Popover>
-            </FormControl>
-            <FormControl mt={4}>
-              <FormLabel>Target Amount</FormLabel>
+              <FormLabel>Target Amount: </FormLabel>
               <Input
                 type="number"
                 value={savingGoalForm.targetAmount}
@@ -476,7 +372,7 @@ const SavingGoalsView = () => {
               />
             </FormControl>
             <FormControl mt={4}>
-              <FormLabel>Current Amount</FormLabel>
+              <FormLabel>Current Amount: </FormLabel>
               <Input
                 type="number"
                 value={savingGoalForm.currentAmount}
@@ -487,7 +383,7 @@ const SavingGoalsView = () => {
               />
             </FormControl>
             <FormControl mt={4}>
-              <FormLabel>Wallet Goals</FormLabel>
+              <FormLabel>Wallet Goals: </FormLabel>
               {wallets && wallets.length > 0 ? (
                 <Select
                   placeholder="Select wallet"
@@ -513,7 +409,7 @@ const SavingGoalsView = () => {
               )}
             </FormControl>
             <FormControl mt={4}>
-              <FormLabel>Start Date</FormLabel>
+              <FormLabel>Start Date: </FormLabel>
               <Input
                 type="date"
                 value={savingGoalForm.startDate}
@@ -524,6 +420,7 @@ const SavingGoalsView = () => {
               />
             </FormControl>
             <FormControl mt={4}>
+              <FormLabel>Ending Date: </FormLabel>
               <Button
                 onClick={() =>
                   handleSavingGoalFormChange("endDateType", "FOREVER")
@@ -567,12 +464,35 @@ const SavingGoalsView = () => {
               )}
             </FormControl>
           </ModalBody>
-          <ModalFooter>
+          <ModalFooter justifyContent="center">
             <Button colorScheme="blue" onClick={handleSubmitSavingGoal}>
               Add
             </Button>
             <Button onClick={onClose}>Cancel</Button>
           </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={isUpdateOpen}
+        onClose={onUpdateClose}
+        isCentered
+        size="4xl"
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Goal Details</ModalHeader>
+          <ModalCloseButton />
+          <GoalDetails
+            wallets={wallets}
+            onUpdateClose={onUpdateClose}
+            selectedGoal={selectedGoal}
+            setSavingGoalForm={setSavingGoalForm}
+            savingGoalForm={savingGoalForm}
+            validateForm={validateForm}
+            fetchSavingGoals={fetchSavingGoals}
+            handleSavingGoalFormChange={handleSavingGoalFormChange}
+          />
         </ModalContent>
       </Modal>
 
