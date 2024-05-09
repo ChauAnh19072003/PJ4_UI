@@ -29,7 +29,8 @@ import {
   Select,
   Icon,
   VStack,
-  Image
+  Image,
+  FormErrorMessage,
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon, EditIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
@@ -47,6 +48,7 @@ const WalletsOverview = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentWallet, setCurrentWallet] = useState(null);
   const { onClose } = useDisclosure();
+  const [validationErrors, setValidationErrors] = useState({});
   const cancelRef = useRef();
   const [transactions, setTransactions] = useState([]);
   const initialWalletState = {
@@ -63,7 +65,18 @@ const WalletsOverview = () => {
 
   useEffect(() => {
     fetchWallets();
+    fetchWalletTypes();
   }, []);
+
+  const fetchWalletTypes = async () => {
+    try {
+      const response = await axios.get(`/api/wallet_types`);
+      setWalletTypes(response.data);
+    } catch (error) {
+      console.error("Failed to fetch wallet types:", error);
+      toast.error("Failed to fetch wallet types.");
+    }
+  };
 
   const fetchWallets = async () => {
     setLoading(true);
@@ -77,15 +90,9 @@ const WalletsOverview = () => {
           }
         );
 
-        // Debugging: Log the response data
-        console.log("API response data:", response.data);
-
-        if (Array.isArray(response.data)) {
-          const walletTypesRes = await axios.get(`/api/wallet_types`);
-          setWalletTypes(walletTypesRes.data);
-
+        if (Array.isArray(response.data) && response.data.length > 0) {
           const walletsWithType = response.data.map((wallet) => {
-            const walletType = walletTypesRes.data.find(
+            const walletType = walletTypes.find(
               (type) => type.typeId === wallet.walletType
             );
             return {
@@ -96,11 +103,6 @@ const WalletsOverview = () => {
 
           setWallets(walletsWithType);
         } else {
-          // Handle non-array response
-          console.error(
-            "Expected an array for wallets, received:",
-            response.data
-          );
           setWallets([]);
           toast.info("You don't have any wallets.");
         }
@@ -115,7 +117,6 @@ const WalletsOverview = () => {
       setLoading(false);
     }
   };
-
   const handleDeleteWallet = async () => {
     try {
       await axios.delete(`/api/wallets/delete/${walletToDelete}`, {
@@ -191,12 +192,69 @@ const WalletsOverview = () => {
     handleWalletFormChange("type", walletTypeId);
   };
 
-  const handleSubmit = async () => {
+  const ErrorMessage = ({ message }) => {
+    return (
+      <Text color="red.500" fontSize="sm" mt={1}>
+        {message}
+      </Text>
+    );
+  };
+
+  const handleInputChange = (field, value) => {
+    handleWalletFormChange(field, value);
+
+    // Remove the validation error for the current field
+    setValidationErrors((prevErrors) => {
+      const updatedErrors = { ...prevErrors };
+      delete updatedErrors[field];
+      return updatedErrors;
+    });
+  };
+
+  const handleSubmit = async (e) => {
     const currentUser = AuthService.getCurrentUser();
     if (!currentUser || !currentUser.id) {
-      toast.error("You must be logged in to perform this action.");
+      setValidationErrors({
+        general: "You must be logged in to perform this action.",
+      });
       return;
     }
+
+    const errors = {};
+
+    // Validate form fields
+    if (!walletForm.name) {
+      errors.name = "Wallet name is required.";
+    }
+
+    if (!walletForm.balance) {
+      errors.balance = "Wallet balance is required.";
+    }
+
+    if (!walletForm.currency) {
+      errors.currency = "Wallet currency is required.";
+    }
+
+    if (!walletForm.type) {
+      errors.type = "Wallet type is required.";
+    }
+
+    if (showBankFields && (!walletForm.bankName || !walletForm.bankNumber)) {
+      if (!walletForm.bankName) {
+        errors.bankName = "Bank name is required.";
+      }
+      if (!walletForm.bankNumber) {
+        errors.bankNumber = "Bank number is required.";
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    // If no errors, reset the validationErrors state
+    setValidationErrors({});
 
     const walletData = {
       userId: currentUser.id,
@@ -226,9 +284,10 @@ const WalletsOverview = () => {
       }
       fetchWallets();
     } catch (error) {
-      toast.error(`Error ${isEditing ? "updating" : "adding"} wallet`);
+      const errorMessage = error.response?.data;
+      toast.error(`Error ${isEditing ? "updating" : "adding"} wallet: ${errorMessage}`);
     } finally {
-      onClose();
+      onEditModalClose();
     }
   };
 
@@ -313,7 +372,8 @@ const WalletsOverview = () => {
                       }
                     >
                       Seem like your lately transactions make wallet negative.
-                      Click <span fontWeight="600">here</span> to see lately transactions.
+                      Click <span fontWeight="600">here</span> to see lately
+                      transactions.
                     </Text>
                   )}
                 </Box>
@@ -361,9 +421,7 @@ const WalletsOverview = () => {
       >
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>
-            5 latest transactions
-          </ModalHeader>
+          <ModalHeader>5 latest transactions</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing={4} align="stretch">
@@ -382,9 +440,7 @@ const WalletsOverview = () => {
                       <Text mt={2}>
                         Amount: ${transaction.amount.toFixed(2)}
                       </Text>
-                      <Text mt={2}>
-                        Date: {transaction.transactionDate}
-                      </Text>
+                      <Text mt={2}>Date: {transaction.transactionDate}</Text>
                     </Box>
                   </Flex>
                 </Box>
@@ -412,38 +468,43 @@ const WalletsOverview = () => {
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <FormControl>
+            <Box>
               <FormLabel>Wallet Name</FormLabel>
               <Input
                 value={walletForm.name}
-                onChange={(e) => handleWalletFormChange("name", e.target.value)}
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Enter wallet name"
               />
-            </FormControl>
-            <FormControl mt={4}>
+              {validationErrors.name && (
+                <ErrorMessage message={validationErrors.name} />
+              )}
+            </Box>
+            <Box mt={4}>
               <FormLabel>Wallet Balance</FormLabel>
               <Input
                 type="number"
                 value={walletForm.balance}
-                onChange={(e) =>
-                  handleWalletFormChange("balance", e.target.value)
-                }
+                onChange={(e) => handleInputChange("balance", e.target.value)}
                 placeholder="Enter initial balance"
               />
-            </FormControl>
-            <FormControl mt={4}>
+              {validationErrors.balance && (
+                <ErrorMessage message={validationErrors.balance} />
+              )}
+            </Box>
+            <Box mt={4}>
               <FormLabel>Wallet Currency</FormLabel>
               <Select
                 placeholder="Select currency"
                 value={walletForm.currency}
-                onChange={(e) =>
-                  handleWalletFormChange("currency", e.target.value)
-                }
+                onChange={(e) => handleInputChange("currency", e.target.value)}
               >
                 <option value="USD">USD</option>
               </Select>
-            </FormControl>
-            <FormControl mt={4}>
+              {validationErrors.currency && (
+                <ErrorMessage message={validationErrors.currency} />
+              )}
+            </Box>
+            <Box mt={4}>
               <FormLabel>Wallet Type</FormLabel>
               <Select
                 placeholder="Select wallet type"
@@ -456,29 +517,38 @@ const WalletsOverview = () => {
                   </option>
                 ))}
               </Select>
-            </FormControl>
+              {validationErrors.type && (
+                <ErrorMessage message={validationErrors.type} />
+              )}
+            </Box>
             {showBankFields && (
               <>
-                <FormControl mt={4}>
+                <Box mt={4}>
                   <FormLabel>Bank Name</FormLabel>
                   <Input
                     value={walletForm.bankName}
                     onChange={(e) =>
-                      handleWalletFormChange("bankName", e.target.value)
+                      handleInputChange("bankName", e.target.value)
                     }
                     placeholder="Enter bank name"
                   />
-                </FormControl>
-                <FormControl mt={4}>
+                  {validationErrors.bankName && (
+                    <ErrorMessage message={validationErrors.bankName} />
+                  )}
+                </Box>
+                <Box mt={4}>
                   <FormLabel>Bank Number</FormLabel>
                   <Input
                     value={walletForm.bankNumber}
                     onChange={(e) =>
-                      handleWalletFormChange("bankNumber", e.target.value)
+                      handleInputChange("bankNumber", e.target.value)
                     }
                     placeholder="Enter bank number"
                   />
-                </FormControl>
+                  {validationErrors.bankNumber && (
+                    <ErrorMessage message={validationErrors.bankNumber} />
+                  )}
+                </Box>
               </>
             )}
           </ModalBody>
@@ -502,7 +572,8 @@ const WalletsOverview = () => {
               Delete Wallet
             </AlertDialogHeader>
             <AlertDialogBody>
-              Are you sure you want to delete this wallet? All things relate to this wallet like transaction will be delete. This action cannot be
+              Are you sure you want to delete this wallet? All things relate to
+              this wallet like transaction will be delete. This action cannot be
               undone.
             </AlertDialogBody>
             <AlertDialogFooter>
