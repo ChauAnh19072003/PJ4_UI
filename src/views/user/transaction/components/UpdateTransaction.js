@@ -52,8 +52,6 @@ const UpdateTransaction = ({
   const [changeNotes, setChangeNotes] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
   const [changeGoal, setChangeGoal] = useState(null);
-  const [goals, setGoals] = useState([]);
-  const [loadingGoals, setLoadingGoals] = useState(false);
 
   const handleUpdateTransaction = useCallback(async () => {
     const currentUser = AuthService.getCurrentUser();
@@ -158,45 +156,73 @@ const UpdateTransaction = ({
       (wallet) => wallet.walletId === changeWallet
     );
 
-    let filteredCategories;
     if (selectedWallet && selectedWallet.walletType === 3) {
-      filteredCategories = categories.filter(
-        (category) =>
-          category.name === "Incoming Transfer" ||
-          category.name === "Outgoing Transfer"
-      );
+      // Special handling for wallet type 3
+      return categories
+        .filter(
+          (category) =>
+            category.name === "Incoming Transfer" ||
+            category.name === "Outgoing Transfer"
+        )
+        .map((category) => (
+          <Box key={category.id} mb={2}>
+            <Text fontWeight="bold" mb={2}>
+              {category.type}
+            </Text>
+            <Button
+              variant="ghost"
+              w="100%"
+              textAlign="left"
+              justifyContent="start"
+              alignItems="center"
+              onClick={() => setChangeCategory(category.id)}
+            >
+              <img
+                src={`/assets/img/icons/${category.icon.path}`}
+                alt={category.name}
+                width="20"
+                height="20"
+                style={{ marginRight: "8px" }}
+              />
+              {category.name}
+            </Button>
+          </Box>
+        ));
     } else {
-      filteredCategories = categories;
+      // Default handling for other wallet types
+      return Object.keys(groupedCategories).map((type) => (
+        <Box key={type} mb={2}>
+          <Text fontWeight="bold" mb={2}>
+            {type === "EXPENSE"
+              ? "Expense"
+              : type === "DEBT"
+              ? "Debt"
+              : "Income"}
+          </Text>
+          {groupedCategories[type].map((category) => (
+            <Button
+              key={category.id}
+              variant="ghost"
+              w="100%"
+              textAlign="left"
+              justifyContent="start"
+              alignItems="center"
+              onClick={() => setChangeCategory(category.id)}
+            >
+              <img
+                src={`/assets/img/icons/${category.icon.path}`}
+                alt={category.name}
+                width="20"
+                height="20"
+                style={{ marginRight: "8px" }}
+              />
+              {category.name}
+            </Button>
+          ))}
+        </Box>
+      ));
     }
-    return filteredCategories.map((category) => (
-      <Box key={category.id} mb={2}>
-        <Text fontWeight="bold" mb={2}>
-          {category.type === "EXPENSE"
-            ? "Expense"
-            : category.type === "DEBT"
-            ? "Debt"
-            : "Income"}
-        </Text>
-        <Button
-          variant="ghost"
-          w="100%"
-          textAlign="left"
-          justifyContent="start"
-          alignItems="center"
-          onClick={() => setChangeCategory(category.id)}
-        >
-          <img
-            src={`/assets/img/icons/${category.icon.path}`}
-            alt={category.name}
-            width="20"
-            height="20"
-            style={{ marginRight: "8px" }}
-          />
-          {category.name}
-        </Button>
-      </Box>
-    ));
-  }, [changeWallet, wallets, categories]);
+  }, [changeWallet, wallets, categories, groupedCategories]);
 
   return (
     <>

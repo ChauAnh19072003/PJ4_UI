@@ -26,6 +26,8 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
+  Center,
+  Spinner,
 } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -67,7 +69,10 @@ function AddTransactionRecurring({
 
   const [untilDate, setUntilDate] = useState(() => adjustDateToUTC(new Date()));
   const [changeWallet, setChangeWallet] = useState("");
+  const [changeGoal, setChangeGoal] = useState(null);
   const [times, setTimes] = useState(0);
+  const [goals, setGoals] = useState([]);
+  const [loadingGoals, setLoadingGoals] = useState(false);
   const [selectedFrequency, setSelectedFrequency] = useState("repeat daily");
   const [selectedMonthOption, setSelectedMonthOption] = useState("SAMEDAY");
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState("MONDAY");
@@ -108,7 +113,7 @@ function AddTransactionRecurring({
       });
       return false;
     }
-    const currentDate = new Date();
+    const currentDate = adjustDateToUTC(new Date());
     if (changeStartDate < currentDate) {
       toast.error("Start date must be in present or future!", {
         position: "top-center",
@@ -135,8 +140,35 @@ function AddTransactionRecurring({
       });
       return false;
     }
+    if (
+      wallets.some(
+        (wallet) =>
+          wallet.walletId === changeWallet &&
+          wallet.walletType === 3 &&
+          !changeGoal
+      )
+    ) {
+      toast.error("Please select goal!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return false;
+    }
     return true;
-  }, [changeWallet, changeCategory, changeStartDate, selectedOption]);
+  }, [
+    changeWallet,
+    changeCategory,
+    changeStartDate,
+    selectedOption,
+    changeGoal,
+    wallets,
+  ]);
 
   const handleCreateTransaction = useCallback(async () => {
     if (!validateForm()) {
@@ -162,6 +194,7 @@ function AddTransactionRecurring({
           },
           walletId: changeWallet,
           categoryId: changeCategory,
+          savingGoalId: changeGoal,
         };
 
         await axios.post("/api/transactionsRecurring/create", transactionData, {
@@ -222,6 +255,7 @@ function AddTransactionRecurring({
     changeCategory,
     changeStartDate,
     changeWallet,
+    changeGoal,
     selectedDayOfWeek,
     selectedFrequency,
     selectedFrequencyValue,
@@ -233,41 +267,187 @@ function AddTransactionRecurring({
   ]);
 
   const categoryOptions = useMemo(() => {
-    return Object.keys(groupedCategories).map((type) => (
-      <Box key={type} mb={2}>
-        <Text fontWeight="bold" mb={2}>
-          {type === "EXPENSE" ? "Expense" : type === "DEBT" ? "Debt" : "Income"}
-        </Text>
-        {groupedCategories[type].map((category) => (
-          <Button
-            key={category.id}
-            variant="ghost"
-            w="100%"
-            textAlign="left"
-            justifyContent="start"
-            alignItems="center"
-            onClick={() => {
-              setChangeCategory(category.id);
-            }}
+    const selectedWallet = wallets.find(
+      (wallet) => wallet.walletId === changeWallet
+    );
+
+    if (selectedWallet && selectedWallet.walletType === 3) {
+      // Special handling for wallet type 3
+      return categories
+        .filter(
+          (category) =>
+            category.name === "Incoming Transfer" ||
+            category.name === "Outgoing Transfer"
+        )
+        .map((category) => (
+          <Box key={category.id} mb={2}>
+            <Text fontWeight="bold" mb={2}>
+              {category.type}
+            </Text>
+            <Button
+              variant="ghost"
+              w="100%"
+              textAlign="left"
+              justifyContent="start"
+              alignItems="center"
+              onClick={() => setChangeCategory(category.id)}
+            >
+              <img
+                src={`/assets/img/icons/${category.icon.path}`}
+                alt={category.name}
+                width="20"
+                height="20"
+                style={{ marginRight: "8px" }}
+              />
+              {category.name}
+            </Button>
+          </Box>
+        ));
+    } else {
+      // Default handling for other wallet types
+      return Object.keys(groupedCategories).map((type) => (
+        <Box key={type} mb={2}>
+          <Text fontWeight="bold" mb={2}>
+            {type === "EXPENSE"
+              ? "Expense"
+              : type === "DEBT"
+              ? "Debt"
+              : "Income"}
+          </Text>
+          {groupedCategories[type].map((category) => (
+            <Button
+              key={category.id}
+              variant="ghost"
+              w="100%"
+              textAlign="left"
+              justifyContent="start"
+              alignItems="center"
+              onClick={() => setChangeCategory(category.id)}
+            >
+              <img
+                src={`/assets/img/icons/${category.icon.path}`}
+                alt={category.name}
+                width="20"
+                height="20"
+                style={{ marginRight: "8px" }}
+              />
+              {category.name}
+            </Button>
+          ))}
+        </Box>
+      ));
+    }
+  }, [changeWallet, wallets, categories, groupedCategories]);
+  useEffect(() => {
+    let isActive = true;
+    setLoadingGoals(true);
+
+    const fetchGoalsIfApplicable = async () => {
+      const selectedWallet = wallets.find(
+        (wallet) => wallet.walletId === changeWallet
+      );
+      if (selectedWallet && selectedWallet.walletType === 3) {
+        try {
+          const response = await axios.get(
+            `/api/savinggoals/user/${AuthService.getCurrentUser().id}`,
+            { headers: AuthHeader() }
+          );
+          if (isActive) {
+            setGoals(response.data);
+            setLoadingGoals(false);
+          }
+        } catch (error) {
+          console.error("Error fetching goals:", error);
+          if (isActive) {
+            setGoals([]);
+            setLoadingGoals(false);
+          }
+        }
+      } else {
+        setGoals([]);
+        setLoadingGoals(false);
+      }
+    };
+
+    fetchGoalsIfApplicable();
+
+    return () => {
+      isActive = false;
+    };
+  }, [changeWallet, wallets]);
+
+  const goalSelection = useMemo(() => {
+    const wallet = wallets.find((wallet) => wallet.walletId === changeWallet);
+
+    if (loadingGoals) {
+      return (
+        <Center>
+          <Spinner />
+        </Center>
+      );
+    }
+
+    if (wallet && wallet.walletType === 3 && goals.length > 0) {
+      return (
+        <Box mb={4}>
+          <Text mb={2}>Select Goal:</Text>
+          <Select
+            placeholder="Select Goal"
+            value={changeGoal || ""}
+            onChange={(e) => setChangeGoal(e.target.value)}
           >
-            <img
-              src={`/assets/img/icons/${category.icon.path}`}
-              alt={category.name}
-              width="20"
-              height="20"
-              style={{ marginRight: "8px" }}
-            />
-            {category.name}
-          </Button>
-        ))}
-      </Box>
-    ));
-  }, [groupedCategories]);
+            {goals.map((goal) => (
+              <option key={goal.id} value={goal.id}>
+                {goal.name}
+              </option>
+            ))}
+          </Select>
+        </Box>
+      );
+    }
+    if (
+      wallet &&
+      wallet.walletType === 3 &&
+      goals.length === 0 &&
+      !loadingGoals
+    ) {
+      return (
+        <Box mb={4}>
+          <Text color="red" fontWeight="bold">
+            No goals available. Please create goals first.
+          </Text>
+        </Box>
+      );
+    }
+
+    return null;
+  }, [changeWallet, wallets, goals, changeGoal, loadingGoals]);
 
   return (
     <>
       <ModalBody>
         <Flex direction="column">
+          <Box mb={4}>
+            <Text mb={2}>Wallet:</Text>
+            {wallets && wallets.length > 0 ? (
+              <Select
+                placeholder="Select Wallet"
+                value={changeWallet}
+                onChange={(e) => setChangeWallet(Number(e.target.value))}
+              >
+                {wallets.map((wallet) => (
+                  <option key={wallet.walletId} value={wallet.walletId}>
+                    {wallet.walletName}
+                  </option>
+                ))}
+              </Select>
+            ) : (
+              <Text color="red.500">
+                No wallets available. Please create a wallet first.
+              </Text>
+            )}
+          </Box>
+          {goalSelection}
           <Box mb={4}>
             <Text mb={2}>Category:</Text>
             <Popover placement="right-start">
@@ -309,7 +489,6 @@ function AddTransactionRecurring({
               </PopoverContent>
             </Popover>
           </Box>
-
           <Box mb={4}>
             <Text mb={2}>Amount:</Text>
             <Input
@@ -320,28 +499,6 @@ function AddTransactionRecurring({
               min={1}
               color={inputText}
             />
-          </Box>
-          <Box mr={4}>
-            <Text mb={2}>Wallet:</Text>
-            {wallets && wallets.length > 0 ? (
-              <Select
-                w="385px"
-                color={inputText}
-                placeholder="Select Wallet"
-                value={changeWallet}
-                onChange={(e) => setChangeWallet(e.target.value)}
-              >
-                {wallets.map((wallet) => (
-                  <option key={wallet.walletId} value={wallet.walletId}>
-                    {wallet.walletName}
-                  </option>
-                ))}
-              </Select>
-            ) : (
-              <Text color="red.500">
-                No wallets available. Please create a wallet first.
-              </Text>
-            )}
           </Box>
           <Box mb={4} mt={3}>
             <Text mb={2}>Frequency:</Text>
