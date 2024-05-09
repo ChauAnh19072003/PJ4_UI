@@ -260,7 +260,7 @@ const CategoryList = () => {
                           <Text color={textColor}>{category.name}</Text>
                         </Flex>
                         {!["DEBT"].includes(category.type) &&
-                          !["Incoming Transfer", "Outgoing Transfer"].includes(
+                          !["Incoming Transfer", "Outgoing Transfer", "Other Income"].includes(
                             category.name
                           ) && ( // Kiểm tra nếu loại danh mục không phải là "DEBT"
                             <Flex mr={10}>

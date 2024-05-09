@@ -34,11 +34,12 @@ import {
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon, EditIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
-//import Card from "components/card/Card";
+
 import { MdWallet } from "react-icons/md";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthHeader from "services/auth/authHeader";
+import { useHistory } from "react-router-dom";
 
 const WalletsOverview = () => {
   const [wallets, setWallets] = useState([]);
@@ -62,20 +63,26 @@ const WalletsOverview = () => {
   const [walletForm, setWalletForm] = useState(initialWalletState);
   const [walletTypes, setWalletTypes] = useState([]);
   const [showBankFields, setShowBankFields] = useState(false);
+  const history = useHistory();
+
+  const onSeeAllTransactionsButtonClick = () => {
+    history.push("/user/transactions");
+  };
 
   useEffect(() => {
-    fetchWallets();
     fetchWalletTypes();
   }, []);
 
-  const fetchWalletTypes = async () => {
-    try {
-      const response = await axios.get(`/api/wallet_types`);
-      setWalletTypes(response.data);
-    } catch (error) {
-      console.error("Failed to fetch wallet types:", error);
-      toast.error("Failed to fetch wallet types.");
+  useEffect(() => {
+    if (walletTypes.length > 0) {
+      fetchWallets();
     }
+  }, [walletTypes]);
+
+  const fetchWalletTypes = async () => {
+    const response = await axios.get("/api/wallet_types");
+    console.log(response.data);
+    setWalletTypes(response.data);
   };
 
   const fetchWallets = async () => {
@@ -90,25 +97,19 @@ const WalletsOverview = () => {
           }
         );
 
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          const walletsWithType = response.data.map((wallet) => {
-            const walletType = walletTypes.find(
-              (type) => type.typeId === wallet.walletType
-            );
-            return {
-              ...wallet,
-              walletTypeName: walletType ? walletType.typeName : "Unknown",
-            };
-          });
+        const walletsWithTypeNames = response.data.map((wallet) => {
+          const walletType = walletTypes.find(
+            (type) => type.typeId === wallet.walletType
+          );
+          return {
+            ...wallet,
+            walletTypeName: walletType ? walletType.typeName : "Unknown",
+          };
+        });
 
-          setWallets(walletsWithType);
-        } else {
-          setWallets([]);
-          toast.info("You don't have any wallets.");
-        }
+        setWallets(walletsWithTypeNames);
       } catch (error) {
         console.error("Failed to fetch wallet data:", error);
-        setWallets([]);
         toast.error("Failed to fetch wallet data.");
       } finally {
         setLoading(false);
@@ -117,13 +118,18 @@ const WalletsOverview = () => {
       setLoading(false);
     }
   };
+
   const handleDeleteWallet = async () => {
     try {
       await axios.delete(`/api/wallets/delete/${walletToDelete}`, {
         headers: AuthHeader(),
       });
       toast.success("Wallet successfully deleted");
-      fetchWallets();
+
+      const updatedWallets = wallets.filter(
+        (wallet) => wallet.walletId !== walletToDelete
+      );
+      setWallets(updatedWallets);
     } catch (error) {
       toast.error("Could not delete wallet.");
     } finally {
@@ -163,12 +169,10 @@ const WalletsOverview = () => {
       bankNumber: wallet.bankAccountNum || "",
     });
 
-    // find the walletType to check if it's "Cash"
     const selectedWalletType = walletTypes.find(
       (type) => type.typeId === wallet.walletType
     );
 
-    //if bank fields should be shown based on the wallet type
     setShowBankFields(
       selectedWalletType && selectedWalletType.typeName !== "Cash"
     );
@@ -203,7 +207,6 @@ const WalletsOverview = () => {
   const handleInputChange = (field, value) => {
     handleWalletFormChange(field, value);
 
-    // Remove the validation error for the current field
     setValidationErrors((prevErrors) => {
       const updatedErrors = { ...prevErrors };
       delete updatedErrors[field];
@@ -222,7 +225,6 @@ const WalletsOverview = () => {
 
     const errors = {};
 
-    // Validate form fields
     if (!walletForm.name) {
       errors.name = "Wallet name is required.";
     }
@@ -253,7 +255,6 @@ const WalletsOverview = () => {
       return;
     }
 
-    // If no errors, reset the validationErrors state
     setValidationErrors({});
 
     const walletData = {
@@ -285,7 +286,9 @@ const WalletsOverview = () => {
       fetchWallets();
     } catch (error) {
       const errorMessage = error.response?.data;
-      toast.error(`Error ${isEditing ? "updating" : "adding"} wallet: ${errorMessage}`);
+      toast.error(
+        `Error ${isEditing ? "updating" : "adding"} wallet: ${errorMessage}`
+      );
     } finally {
       onEditModalClose();
     }
@@ -446,6 +449,14 @@ const WalletsOverview = () => {
                 </Box>
               ))}
             </VStack>
+            <Box textAlign="center" mt={4}>
+              <Button
+                colorScheme="blue"
+                onClick={onSeeAllTransactionsButtonClick}
+              >
+                See All Transactions
+              </Button>
+            </Box>
           </ModalBody>
           <ModalFooter>
             <Button

@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import AddTransaction from "./AddTransaction";
+import { useHistory } from "react-router-dom";
 import UpdateTransaction from "./UpdateTransaction";
 import DeleteConfirmationAlert from "./Delete";
 import {
@@ -23,6 +24,12 @@ import {
   useColorModeValue,
   Center,
   Spinner,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
 } from "@chakra-ui/react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -43,6 +50,7 @@ function ListTransactions() {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [isDataLoaded, setDataLoaded] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const {
     isOpen: isCreateModalOpen,
     onOpen: onCreateModalOpen,
@@ -54,7 +62,9 @@ function ListTransactions() {
     onClose: onUpdateModalClose,
   } = useDisclosure();
 
+  const cancelRef = useRef();
   const isMounted = useRef(true);
+  const history = useHistory();
 
   const fetchTransaction = useCallback(async (page) => {
     const currentUser = AuthService.getCurrentUser();
@@ -143,6 +153,24 @@ function ListTransactions() {
         setGroupedCategories(grouped);
         setWallets(walletsResponse.data);
         setDataLoaded(true);
+        // if (walletsResponse.data.length === 0) {
+        //   // Show notification
+        //   toast.warning(
+        //     "You need to create a wallet before creating a transaction. Redirecting...",
+        //     {
+        //       position: "top-center",
+        //       autoClose: 4000,
+        //       hideProgressBar: false,
+        //       closeOnClick: true,
+        //       pauseOnHover: true,
+        //       draggable: true,
+        //       progress: undefined,
+        //     }
+        //   );
+        //   setTimeout(() => {
+        //     history.push("/user/data-tables");
+        //   }, 1000); // Redirect after 4 seconds
+        // }
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -224,17 +252,20 @@ function ListTransactions() {
           borderRadius="30px"
           color="white"
           fontWeight="bold"
-          w={{ base: "60%", md: "20%", xl: "20%" }}
           bgGradient="linear(to-r, #2b71ad, green.500)"
           _hover={{
             bgGradient: "linear(to-r, #2b71ad, #422AFB)",
           }}
           onClick={(e) => {
             e.preventDefault();
-            resetCreateModalData();
-            onCreateModalOpen();
+            if (wallets.length > 0) {
+              onCreateModalOpen();
+            } else {
+              setShowConfirmDialog(true); // Show confirmation dialog
+            }
           }}
           mx="20px"
+          //disabled={wallets.length === 0} // Optional, based on your requirement
         >
           Add
         </Button>
@@ -488,6 +519,42 @@ function ListTransactions() {
           Next
         </Button>
       </Flex>
+
+      <AlertDialog
+        isOpen={showConfirmDialog}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setShowConfirmDialog(false)}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              You dont have any wallet
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              You need to create a wallet before adding a transaction. Do you
+              want to go to create wallet now?
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button
+                ref={cancelRef}
+                onClick={() => setShowConfirmDialog(false)}
+                mr={3}
+              >
+                Cancel
+              </Button>
+              <Button
+                colorScheme="blue"
+                onClick={() => history.push("/user/data-tables")}
+              >
+                Confirm
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </>
   );
 }
