@@ -19,10 +19,11 @@ import {
 import AuthService from "services/auth/auth.service";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Password from "./Password";
+import UpdatePassword from "./UpdatePassword";
 import { TfiWrite } from "react-icons/tfi";
 import { FaAngleRight } from "react-icons/fa";
 import AuthHeader from "services/auth/authHeader";
+import SetPassword from "./SetPassword";
 
 function UserProfile() {
   const inputText = useColorModeValue("gray.700", "gray.100");
@@ -35,6 +36,12 @@ function UserProfile() {
     isOpen: isPasswordOpen,
     onOpen: onPasswordOpen,
     onClose: onPasswordClose,
+  } = useDisclosure();
+
+  const {
+    isOpen: isSetPasswordOpen,
+    onOpen: onSetPasswordOpen,
+    onClose: onSetPasswordClose,
   } = useDisclosure();
 
   const [user, setUser] = useState({});
@@ -54,7 +61,6 @@ function UserProfile() {
       setEmail(response.data.email);
     }
   };
-
   useEffect(() => {
     fetchUser();
   }, []);
@@ -73,7 +79,7 @@ function UserProfile() {
         }
       );
       toast.success(response.data);
-      // onUpdateClose();
+      onUpdateClose();
     } catch (error) {
       if (
         error.response &&
@@ -108,10 +114,12 @@ function UserProfile() {
   const handleOpenPasswordModal = () => {
     onUpdateClose();
     onPasswordOpen();
+    onSetPasswordOpen();
   };
 
   const handleClosePasswordModal = () => {
     onUpdateOpen();
+    onSetPasswordClose();
     onPasswordClose();
   };
 
@@ -180,19 +188,38 @@ function UserProfile() {
             </ModalFooter>
           </ModalContent>
         </Modal>
-
-        <Modal isOpen={isPasswordOpen} onClose={handleClosePasswordModal}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Password Change</ModalHeader>
-            <ModalCloseButton />
-            <Password
-              handleClosePasswordModal={handleClosePasswordModal}
-              onPasswordOpen={onPasswordOpen}
-              onPasswordClose={onPasswordClose}
-            />
-          </ModalContent>
-        </Modal>
+        {user.password !== null ? (
+          <Modal isOpen={isPasswordOpen} onClose={handleClosePasswordModal}>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Password Change</ModalHeader>
+              <ModalCloseButton />
+              <UpdatePassword
+                handleClosePasswordModal={handleClosePasswordModal}
+                onPasswordOpen={onPasswordOpen}
+                onPasswordClose={onPasswordClose}
+                fetchUser={fetchUser}
+              />
+            </ModalContent>
+          </Modal>
+        ) : (
+          <Modal isOpen={isSetPasswordOpen} onClose={handleClosePasswordModal}>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Set Password</ModalHeader>
+              <Text color="red.500" justifyContent="center" margin="10px">
+                You have not set your local account password before, please set
+                it first.
+              </Text>
+              <ModalCloseButton />
+              <SetPassword
+                handleClosePasswordModal={handleClosePasswordModal}
+                onSetPasswordOpen={onSetPasswordOpen}
+                fetchUser={fetchUser}
+              />
+            </ModalContent>
+          </Modal>
+        )}
       </>
     </>
   );

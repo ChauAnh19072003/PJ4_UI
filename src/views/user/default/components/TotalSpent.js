@@ -1,19 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Line, Bar } from "react-chartjs-2";
-import {
-  Box,
-  Flex,
-  Select,
-  Button,
-  Text,
-  Icon,
-  useColorModeValue,
-} from "@chakra-ui/react";
+import { Bar } from "react-chartjs-2";
+import { Box, Flex, Select, Text, useColorModeValue } from "@chakra-ui/react";
 import Card from "components/card/Card";
-import { MdBarChart, MdOutlineCalendarToday } from "react-icons/md";
-import { RiArrowUpSFill } from "react-icons/ri";
-import { IoCheckmarkCircle } from "react-icons/io5";
 import AuthHeader from "services/auth/authHeader";
 import AuthService from "services/auth/auth.service";
 import {

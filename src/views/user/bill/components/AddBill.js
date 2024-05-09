@@ -332,11 +332,13 @@ function AddBill({
                 value={changeWallet}
                 onChange={(e) => setChangeWallet(e.target.value)}
               >
-                {wallets.map((wallet) => (
-                  <option key={wallet.walletId} value={wallet.walletId}>
-                    {wallet.walletName}
-                  </option>
-                ))}
+                {wallets
+                  .filter((wallet) => wallet.walletType !== 3)
+                  .map((wallet) => (
+                    <option key={wallet.walletId} value={wallet.walletId}>
+                      {wallet.walletName}
+                    </option>
+                  ))}
               </Select>
             ) : (
               <Text color="red.500">

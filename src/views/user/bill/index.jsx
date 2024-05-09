@@ -1,6 +1,6 @@
 import { Box } from "@chakra-ui/react";
 import Card from "components/card/Card";
-import ColumnsTable from "views/user/bill/components/ColumnsTable";
+import BillList from "./components/ListBills";
 import React from "react";
 export default function Bills() {
   // Chakra Color Mode
@@ -14,7 +14,7 @@ export default function Bills() {
         w={{ base: "100%", md: "80%" }}
         px={{ base: "10px", md: "50px" }}
       >
-        <ColumnsTable />
+        <BillList />
       </Card>
     </Box>
   );
