@@ -21,6 +21,8 @@ import {
   PopoverBody,
   ModalBody,
   ModalFooter,
+  Center,
+  Spinner,
 } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -34,7 +36,6 @@ const AddTransaction = ({
   groupedCategories,
   resetCreateModalData,
   currentPage,
-  goals,
 }) => {
   const inputText = "gray.700";
   const adjustDateToUTC = (date) => {
@@ -47,7 +48,9 @@ const AddTransaction = ({
   const [changeWallet, setChangeWallet] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
-  const [changeGoal, setChangeGoal] = useState("");
+  const [changeGoal, setChangeGoal] = useState(null);
+  const [goals, setGoals] = useState([]);
+  const [loadingGoals, setLoadingGoals] = useState(false);
   const [changeDate, setChangeDate] = useState(adjustDateToUTC(new Date()));
   const validateForm = useCallback(() => {
     if (!changeWallet) {
@@ -102,6 +105,7 @@ const AddTransaction = ({
           walletId: changeWallet,
           categoryId: changeCategory,
           notes: changeNotes,
+          savingGoalId: changeGoal,
         };
 
         await axios.post("/api/transactions/create", requestData, {
@@ -157,6 +161,7 @@ const AddTransaction = ({
     changeDate,
     changeNotes,
     changeWallet,
+    changeGoal,
     currentPage,
     fetchTransaction,
     onCreateModalClose,
@@ -164,72 +169,158 @@ const AddTransaction = ({
   ]);
 
   const categoryOptions = useMemo(() => {
-    return Object.keys(groupedCategories).map((type) => (
-      <Box key={type} mb={2}>
+    const selectedWallet = wallets.find(
+      (wallet) => wallet.walletId === changeWallet
+    );
+
+    let filteredCategories;
+    if (selectedWallet && selectedWallet.walletType === 3) {
+      filteredCategories = categories.filter(
+        (category) =>
+          category.name === "Incoming Transfer" ||
+          category.name === "Outgoing Transfer"
+      );
+    } else {
+      filteredCategories = categories;
+    }
+    return filteredCategories.map((category) => (
+      <Box key={category.id} mb={2}>
         <Text fontWeight="bold" mb={2}>
-          {type === "EXPENSE" ? "Expense" : type === "DEBT" ? "Debt" : "Income"}
+          {category.type === "EXPENSE"
+            ? "Expense"
+            : category.type === "DEBT"
+            ? "Debt"
+            : "Income"}
         </Text>
-        {groupedCategories[type].map((category) => (
-          <Button
-            key={category.id}
-            variant="ghost"
-            w="100%"
-            textAlign="left"
-            justifyContent="start"
-            alignItems="center"
-            onClick={() => {
-              setChangeCategory(category.id);
-            }}
-          >
-            <img
-              src={`/assets/img/icons/${category.icon.path}`}
-              alt={category.name}
-              width="20"
-              height="20"
-              style={{ marginRight: "8px" }}
-            />
-            {category.name}
-          </Button>
-        ))}
+        <Button
+          variant="ghost"
+          w="100%"
+          textAlign="left"
+          justifyContent="start"
+          alignItems="center"
+          onClick={() => setChangeCategory(category.id)}
+        >
+          <img
+            src={`/assets/img/icons/${category.icon.path}`}
+            alt={category.name}
+            width="20"
+            height="20"
+            style={{ marginRight: "8px" }}
+          />
+          {category.name}
+        </Button>
       </Box>
     ));
-  }, [groupedCategories]);
+  }, [changeWallet, wallets, categories]);
+
+  useEffect(() => {
+    let isActive = true;
+    setLoadingGoals(true);
+
+    const fetchGoalsIfApplicable = async () => {
+      const selectedWallet = wallets.find(
+        (wallet) => wallet.walletId === changeWallet
+      );
+      if (selectedWallet && selectedWallet.walletType === 3) {
+        try {
+          const response = await axios.get(
+            `/api/savinggoals/user/${AuthService.getCurrentUser().id}`,
+            { headers: AuthHeader() }
+          );
+          if (isActive) {
+            setGoals(response.data);
+            setLoadingGoals(false);
+          }
+        } catch (error) {
+          console.error("Error fetching goals:", error);
+          if (isActive) {
+            setGoals([]);
+            setLoadingGoals(false);
+          }
+        }
+      } else {
+        setGoals([]);
+        setLoadingGoals(false);
+      }
+    };
+
+    fetchGoalsIfApplicable();
+
+    return () => {
+      isActive = false;
+    };
+  }, [changeWallet, wallets]);
 
   const goalSelection = useMemo(() => {
     const wallet = wallets.find((wallet) => wallet.walletId === changeWallet);
 
-    if (wallet && wallet.walletType === 3) {
-      if (goals.length > 0) {
-        return (
-          <Box mr={4}>
-            <Text mb={2}>Select Goal:</Text>
-            <Select
-              placeholder="Select Goal"
-              value={changeGoal}
-              onChange={(e) => setChangeGoal(e.target.value)}
-            >
-              {goals.map((goal) => (
-                <option key={goal.id} value={goal.id}>
-                  {goal.name}
-                </option>
-              ))}
-            </Select>
-          </Box>
-        );
-      } else {
-        return (
-          <Box mr={4}>
-            <Text>You need to create goals to select a goal for saving.</Text>
-          </Box>
-        );
-      }
+    if (loadingGoals) {
+      return (
+        <Center>
+          <Spinner />
+        </Center>
+      );
     }
-    return null;
-  }, [changeWallet, wallets, goals, changeGoal]);
 
+    if (wallet && wallet.walletType === 3 && goals.length > 0) {
+      return (
+        <Box mb={4}>
+          <Text mb={2}>Select Goal:</Text>
+          <Select
+            placeholder="Select Goal"
+            value={changeGoal || ""}
+            onChange={(e) => setChangeGoal(e.target.value)}
+          >
+            {goals.map((goal) => (
+              <option key={goal.id} value={goal.id}>
+                {goal.name}
+              </option>
+            ))}
+          </Select>
+        </Box>
+      );
+    }
+    if (
+      wallet &&
+      wallet.walletType === 3 &&
+      goals.length === 0 &&
+      !loadingGoals
+    ) {
+      return (
+        <Box mb={4}>
+          <Text color="red" fontWeight="bold">
+            No goals available. Please create goals first.
+          </Text>
+        </Box>
+      );
+    }
+
+    return null;
+  }, [changeWallet, wallets, goals, changeGoal, loadingGoals]);
   return (
     <>
       <ModalBody>
+        <Box mb={4}>
+          <Text mb={2}>Wallet:</Text>
+          {wallets && wallets.length > 0 ? (
+            <Select
+              placeholder="Select Wallet"
+              value={changeWallet}
+              onChange={(e) => setChangeWallet(Number(e.target.value))}
+            >
+              {wallets.map((wallet) => (
+                <option key={wallet.walletId} value={wallet.walletId}>
+                  {wallet.walletName}
+                </option>
+              ))}
+            </Select>
+          ) : (
+            <Text color="red.500">
+              No wallets available. Please create a wallet first.
+            </Text>
+          )}
+        </Box>
+        {goalSelection}
         <Box mb={4}>
           <Text mb={2}>Category:</Text>
           <Popover placement="right-start">
@@ -271,27 +362,6 @@ const AddTransaction = ({
             </PopoverContent>
           </Popover>
         </Box>
-        <Box mr={4}>
-          <Text mb={2}>Wallet:</Text>
-          {wallets && wallets.length > 0 ? (
-            <Select
-              placeholder="Select Wallet"
-              value={changeWallet}
-              onChange={(e) => setChangeWallet(e.target.value)}
-            >
-              {wallets.map((wallet) => (
-                <option key={wallet.walletId} value={wallet.walletId}>
-                  {wallet.walletName}
-                </option>
-              ))}
-            </Select>
-          ) : (
-            <Text color="red.500">
-              No wallets available. Please create a wallet first.
-            </Text>
-          )}
-        </Box>
-        {goalSelection}
         <Box
           mb={4}
           display="flex"

@@ -39,7 +39,6 @@ function ListTransactions() {
   const [chooseTransactionId, setChooseTransactionId] = useState(null);
   const [wallets, setWallets] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [goals, setGoals] = useState([]);
   const [groupedCategories, setGroupedCategories] = useState({});
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
@@ -150,30 +149,10 @@ function ListTransactions() {
     }
   }, []);
 
-  const fetchGoals = useCallback(async () => {
-    const currentUser = AuthService.getCurrentUser();
-    if (currentUser) {
-      try {
-        let response = await axios.get(
-          `api/savinggoals/user/${currentUser.id}`,
-          {
-            headers: AuthHeader(),
-          }
-        );
-        setGoals(response.data);
-      } catch (error) {
-        console.error("Error fetching goals:", error);
-      }
-    }
-  });
-
   useEffect(() => {
     if (isMounted.current) {
       fetchData();
       fetchTransaction(currentPage);
-      // if (goals.length > 0) {
-      //   fetchGoals();
-      // }
     }
 
     return () => {
@@ -277,7 +256,6 @@ function ListTransactions() {
             groupedCategories={groupedCategories}
             resetCreateModalData={resetCreateModalData}
             currentPage={currentPage}
-            goals={goals}
           />
         </ModalContent>
       </Modal>

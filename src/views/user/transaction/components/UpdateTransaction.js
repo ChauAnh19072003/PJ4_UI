@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import AuthService from "services/auth/auth.service";
 import DatePicker from "react-datepicker";
@@ -51,6 +51,9 @@ const UpdateTransaction = ({
   const [changeWallet, setChangeWallet] = useState("");
   const [changeNotes, setChangeNotes] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
+  const [changeGoal, setChangeGoal] = useState(null);
+  const [goals, setGoals] = useState([]);
+  const [loadingGoals, setLoadingGoals] = useState(false);
 
   const handleUpdateTransaction = useCallback(async () => {
     const currentUser = AuthService.getCurrentUser();
@@ -64,6 +67,7 @@ const UpdateTransaction = ({
           walletId: changeWallet,
           categoryId: changeCategory,
           notes: changeNotes,
+          savingGoalId: changeGoal,
         };
 
         const response = await axios.put(
@@ -145,8 +149,54 @@ const UpdateTransaction = ({
       });
 
       setChangeNotes(selectedTransaction.notes);
+      setChangeGoal(selectedTransaction.savingGoalId);
     }
   }, [selectedTransaction, setChooseTransactionId]);
+
+  const categoryOptions = useMemo(() => {
+    const selectedWallet = wallets.find(
+      (wallet) => wallet.walletId === changeWallet
+    );
+
+    let filteredCategories;
+    if (selectedWallet && selectedWallet.walletType === 3) {
+      filteredCategories = categories.filter(
+        (category) =>
+          category.name === "Incoming Transfer" ||
+          category.name === "Outgoing Transfer"
+      );
+    } else {
+      filteredCategories = categories;
+    }
+    return filteredCategories.map((category) => (
+      <Box key={category.id} mb={2}>
+        <Text fontWeight="bold" mb={2}>
+          {category.type === "EXPENSE"
+            ? "Expense"
+            : category.type === "DEBT"
+            ? "Debt"
+            : "Income"}
+        </Text>
+        <Button
+          variant="ghost"
+          w="100%"
+          textAlign="left"
+          justifyContent="start"
+          alignItems="center"
+          onClick={() => setChangeCategory(category.id)}
+        >
+          <img
+            src={`/assets/img/icons/${category.icon.path}`}
+            alt={category.name}
+            width="20"
+            height="20"
+            style={{ marginRight: "8px" }}
+          />
+          {category.name}
+        </Button>
+      </Box>
+    ));
+  }, [changeWallet, wallets, categories]);
 
   return (
     <>
@@ -188,42 +238,7 @@ const UpdateTransaction = ({
               <PopoverArrow />
               <PopoverCloseButton />
               <PopoverHeader>Select Category</PopoverHeader>
-              <PopoverBody>
-                {Object.keys(groupedCategories).map((type) => (
-                  <Box key={type} mb={2}>
-                    <Text fontWeight="bold" mb={2}>
-                      {type === "EXPENSE"
-                        ? "Expense"
-                        : type === "DEBT"
-                        ? "Debt"
-                        : "Income"}
-                    </Text>
-                    {groupedCategories[type].map((category) => (
-                      <Button
-                        key={category.id}
-                        variant="ghost"
-                        w="100%"
-                        textAlign="left"
-                        justifyContent="start"
-                        alignItems="center"
-                        onClick={() => {
-                          setChangeCategory(category.id);
-                        }}
-                        isActive={category.id === changeCategory}
-                      >
-                        <img
-                          src={`/assets/img/icons/${category.icon.path}`}
-                          alt={category.name}
-                          width="20"
-                          height="20"
-                          style={{ marginRight: "8px" }}
-                        />
-                        {category.name}
-                      </Button>
-                    ))}
-                  </Box>
-                ))}
-              </PopoverBody>
+              <PopoverBody>{categoryOptions}</PopoverBody>
             </PopoverContent>
           </Popover>
         </Box>
