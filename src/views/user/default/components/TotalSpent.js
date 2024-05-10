@@ -199,16 +199,16 @@ const TotalSpent = ({ selectedWallet }) => {
       mb="0px"
       {...selectedWallet}
     >
-      <Select value={selectedOption} onChange={handleChange} w="100%">
+      {/* <Select value={selectedOption} onChange={handleChange} w="100%">
         <option value="">Select total</option>
         <option value="Total Income">Total Income</option>
         <option value="Total Expense">Total Expense</option>
-      </Select>
+      </Select> */}
       <Flex w="100%" flexDirection="column">
         <Flex flexDirection="column" me="20px" mt="28px">
-          <Text color={textColor} fontSize="34px" fontWeight="700">
+          {/* <Text color={textColor} fontSize="34px" fontWeight="700">
             ${new Intl.NumberFormat().format(selectedTotal)}
-          </Text>
+          </Text> */}
           {/* <Flex align="center" mb="20px">
             <Icon as={RiArrowUpSFill} color="green.500" me="2px" mt="2px" />
             <Text color="green.500" fontSize="sm" fontWeight="700">

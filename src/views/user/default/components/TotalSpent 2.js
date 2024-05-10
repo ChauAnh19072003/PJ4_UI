@@ -27,6 +27,26 @@ import {
 } from "chart.js";
 import "chartjs-adapter-date-fns";
 
+import { format, parseISO, startOfMonth } from 'date-fns';
+
+const groupByMonth = (transactions) => {
+  const totalsByMonth = transactions.reduce((acc, { transactionDate, amount }) => {
+    const month = format(startOfMonth(parseISO(transactionDate)), 'yyyy-MM');
+    acc[month] = (acc[month] || 0) + amount;
+    return acc;
+  }, {});
+
+  // Create arrays for labels and data
+  const sortedMonths = Object.keys(totalsByMonth).sort();
+  const totals = sortedMonths.map(month => totalsByMonth[month]);
+
+  return {
+    labels: sortedMonths, 
+    totals
+  };
+};
+
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -49,32 +69,31 @@ const TotalSpent2 = ({ selectedWallet }) => {
   const [selectedOption, setSelectedOption] = useState("month");
   const [incomeData, setIncomeData] = useState([]);
   const [expenseData, setExpenseData] = useState([]);
+  const { labels, totals } = groupByMonth([...incomeData, ...expenseData]);
 
   const getAllDates = [...incomeData, ...expenseData]
     .map((data) => data.transactionDate)
     .filter((value, index, self) => self.indexOf(value) === index)
     .sort();
 
-  const prepareChartData = (dates, data) => {
-    if (!Array.isArray(dates) || !Array.isArray(data)) {
-      console.error('Expecting "dates" and "data" to be arrays.');
-      return [];
-    }
-
-    const amountsByDate = data.reduce((acc, transaction) => {
-      const date = transaction.transactionDate;
-
-      if (acc[date]) {
-        acc[date] += transaction.amount;
-      } else {
-        acc[date] = transaction.amount;
+    const prepareChartData = (dates, data) => {
+      if (!Array.isArray(dates) || !Array.isArray(data)) {
+        console.error('Expecting "dates" and "data" to be arrays.');
+        return [];
       }
-      return acc;
-    }, {});
-
-    const amounts = dates.map((date) => amountsByDate[date] || 0);
-    return amounts;
-  };
+    
+      // Group data by month
+      const dataByMonth = groupByMonth(data);
+    
+      // Map the data to match the provided dates
+      const amounts = dates.map((date) => {
+        const month = format(startOfMonth(parseISO(date)), 'yyyy-MM');
+        return dataByMonth.totals[dataByMonth.labels.indexOf(month)] || 0;
+      });
+    
+      return amounts;
+    };
+    
 
   const incomeAmounts = prepareChartData(getAllDates, incomeData);
   const expenseAmounts = prepareChartData(getAllDates, expenseData);
@@ -120,27 +139,6 @@ const TotalSpent2 = ({ selectedWallet }) => {
     };
   }, [selectedWallet]);
 
-  useEffect(() => {
-    if (selectedOption === "Total Income") {
-      setSelectedTotal(calculateTotal(incomeData));
-    } else if (selectedOption === "Total Expense") {
-      setSelectedTotal(calculateTotal(expenseData));
-    }
-  }, [selectedOption, incomeData, expenseData]);
-
-  const handleChange = (event) => {
-    const { value } = event.target;
-    setSelectedOption(value);
-
-    if (value === "Total Income") {
-      setSelectedTotal(calculateTotal(incomeData));
-    } else if (value === "Total Expense") {
-      setSelectedTotal(calculateTotal(expenseData));
-    } else {
-      setSelectedTotal(0);
-    }
-  };
-
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -176,7 +174,7 @@ const TotalSpent2 = ({ selectedWallet }) => {
   };
 
   const chartData = {
-    labels: getAllDates,
+    labels: labels,
     datasets: [
       {
         label: "Total Income",
@@ -205,16 +203,16 @@ const TotalSpent2 = ({ selectedWallet }) => {
       mb="0px"
       {...selectedWallet}
     >
-      <Select value={selectedOption} onChange={handleChange} w="100%">
+      {/* <Select value={selectedOption} onChange={handleChange} w="100%">
         <option value="">Select total</option>
         <option value="Total Income">Total Income</option>
         <option value="Total Expense">Total Expense</option>
-      </Select>
+      </Select> */}
       <Flex w="100%" flexDirection="column">
         <Flex flexDirection="column" me="20px" mt="28px">
-          <Text color={textColor} fontSize="34px" fontWeight="700">
+          {/* <Text color={textColor} fontSize="34px" fontWeight="700">
             ${new Intl.NumberFormat().format(selectedTotal)}
-          </Text>
+          </Text> */}
           {/* <Flex align="center" mb="20px">
             <Icon as={RiArrowUpSFill} color="green.500" me="2px" mt="2px" />
             <Text color="green.500" fontSize="sm" fontWeight="700">
