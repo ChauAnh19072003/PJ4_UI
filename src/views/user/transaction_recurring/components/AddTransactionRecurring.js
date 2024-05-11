@@ -366,6 +366,7 @@ function AddTransactionRecurring({
         ));
     }
   }, [changeWallet, wallets, categories, groupedCategories]);
+
   useEffect(() => {
     let isActive = true;
     setLoadingGoals(true);
