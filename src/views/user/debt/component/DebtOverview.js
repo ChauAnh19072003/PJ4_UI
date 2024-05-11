@@ -41,8 +41,16 @@ import "react-toastify/dist/ReactToastify.css";
 import AuthService from "services/auth/auth.service";
 import { DeleteIcon, AddIcon, EditIcon } from "@chakra-ui/icons";
 import AuthHeader from "services/auth/authHeader";
+import { Tab, Tabs, TabList, TabPanels, TabPanel } from "@chakra-ui/tabs";
+import { Pie } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const DebtsOverview = () => {
+  const [tabIndex, setTabIndex] = useState(0); // 0: Debt, 1: Loan
+  const [debtCategoryId, setDebtCategoryId] = useState(null);
+  const [loanCategoryId, setLoanCategoryId] = useState(null);
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { onClose } = useDisclosure();
@@ -51,6 +59,12 @@ const DebtsOverview = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentDebt, setCurrentDebt] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [showChart, setShowChart] = useState(false);
+  
+
   const initialDebtState = {
     name: "",
     amount: "",
@@ -62,10 +76,47 @@ const DebtsOverview = () => {
   };
   const [debtForm, setDebtForm] = useState(initialDebtState);
 
+  const debtOverdueTotal = debts.reduce((acc, debt) => {
+    const dueDatePassed = new Date(debt.dueDate) < new Date();
+    const unpaid = !debt.isPaid;
+    if (dueDatePassed && unpaid) {
+      return acc + parseFloat(debt.amount);
+    }
+    return acc;
+  }, 0);
+
+  const debtPaidBeforeDueTotal = debts.reduce((acc, debt) => {
+    const paidBeforeDue =
+      debt.isPaid && new Date(debt.paidDate) < new Date(debt.dueDate);
+    if (paidBeforeDue) {
+      return acc + parseFloat(debt.amount);
+    }
+    return acc;
+  }, 0);
+
+  const data = {
+    labels: ["Debt Overdue", "Debt Paid Before Due"],
+    datasets: [
+      {
+        label: "Debt Report",
+        data: [debtOverdueTotal, debtPaidBeforeDueTotal],
+        backgroundColor: ["#FF6384", "#4BC0C0"],
+        hoverOffset: 4,
+      },
+    ],
+  };
+
+  useEffect(() => {
+    const debtCategory = categories.find((cat) => cat.name === "Debt");
+    const loanCategory = categories.find((cat) => cat.name === "Loan");
+    setDebtCategoryId(debtCategory ? debtCategory.id : null);
+    setLoanCategoryId(loanCategory ? loanCategory.id : null);
+  }, [categories]);
+
   useEffect(() => {
     fetchDebts();
     fetchCategories();
-  }, []);
+  }, [currentPage, pageSize]);
 
   const fetchCategories = async () => {
     const currentUser = AuthService.getCurrentUser();
@@ -74,7 +125,10 @@ const DebtsOverview = () => {
         `/api/categories/user/${currentUser.id}`,
         { headers: AuthHeader() }
       );
-      setCategories(response.data);
+      const filteredCategories = response.data.filter(
+        (category) => category.name === "Debt" || category.name === "Loan"
+      );
+      setCategories(filteredCategories);
     } catch (error) {
       toast.error("Error fetching categories");
     }
@@ -82,22 +136,46 @@ const DebtsOverview = () => {
 
   const fetchDebts = async () => {
     setLoading(true);
-    const currentUser = AuthService.getCurrentUser();
-    const userId = currentUser.id;
+    const userId = AuthService.getCurrentUser().id;
     try {
-      const response = await axios.get(`/api/debts/user/${userId}`, {
-        headers: AuthHeader(),
-      });
-      setDebts(response.data);
+      const response = await axios.get(
+        `/api/debts/user/${userId}?page=${currentPage}&size=${pageSize}`,
+        {
+          headers: AuthHeader(),
+        }
+      );
+      setDebts(response.data.content);
+      setTotalPages(response.data.totalPages);
+      setLoading(false);
     } catch (error) {
       if (error.response && error.response.status === 404) {
         toast.info("No debt record found.");
       } else {
         toast.error("Failed to fetch debts.");
       }
-    } finally {
       setLoading(false);
     }
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => (prev > 0 ? prev - 1 : 0));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => (prev + 1 < totalPages ? prev + 1 : prev));
+  };
+
+  const filteredDebts = {
+    Debt: debts.filter((debt) =>
+      categories.some(
+        (cat) => cat.id === debt.categoryId && cat.name === "Debt"
+      )
+    ),
+    Loan: debts.filter((debt) =>
+      categories.some(
+        (cat) => cat.id === debt.categoryId && cat.name === "Loan"
+      )
+    ),
   };
 
   const handleDeleteDebt = async () => {
@@ -255,138 +333,200 @@ const DebtsOverview = () => {
     <>
       <ToastContainer newestOnTop />
       <Box p={5}>
+        <Button onClick={() => setShowChart((prev) => !prev)} mt={4}>
+          {showChart ? "Hide Chart" : "Show Chart"}
+        </Button>
+
+        {showChart && (
+          <Flex justifyContent="center" mt="6">
+            <Box width="50%">
+              <Pie data={data} />
+            </Box>
+          </Flex>
+        )}
         <Flex justifyContent="space-between" alignItems="center" mb={5}>
           <Heading as="h2" size="lg">
             Debts Overview
           </Heading>
           <Button
             onClick={openAddModal}
-            size="md"
+            size="sm"
             colorScheme="teal"
             leftIcon={<AddIcon />}
           >
             Add New Debt
           </Button>
         </Flex>
-        {debts.length > 0 ? (
-          debts.map((debt) => (
-            <Box
-              key={debt.id}
-              mb={4}
-              p={6}
-              borderWidth="1px"
-              borderRadius="xl"
-              overflow="hidden"
-              boxShadow="base"
-              bg="white"
-              transition="all 0.3s ease"
-              _hover={{ transform: "translateY(-5px)", boxShadow: "lg" }}
-            >
-              <Flex justifyContent="space-between" alignItems="center">
-                <Box flex="1">
-                  <Text fontWeight="bold" fontSize="xl" mb={2}>
-                    {debt.name} -{" "}
-                    <Badge colorScheme={debt.isPaid ? "green" : "orange"}>
-                      {debt.isPaid ? "Paid" : "Due"}
-                    </Badge>
-                  </Text>
-                  <Flex align="center" mt={1} wrap="wrap">
-                    {categories.find(
-                      (category) => category.id === debt.categoryId
-                    ) ? (
-                      <>
-                        <Image
-                          boxSize="24px"
-                          src={`/assets/img/icons/${
-                            categories.find(
-                              (category) => category.id === debt.categoryId
-                            ).icon.path
-                          }`}
-                          alt={
-                            categories.find(
-                              (category) => category.id === debt.categoryId
-                            ).name
-                          }
-                          mr={2}
-                        />
-                        <Text
-                          fontSize="md"
-                          fontWeight="semibold"
-                          color="#4A5568"
+        <Tabs isFitted variant="enclosed">
+          <TabList>
+            <Tab>Debt</Tab>
+            <Tab>Loan</Tab>
+          </TabList>
+          <TabPanels>
+            {Object.entries(filteredDebts).map(([category, debts], index) => (
+              <TabPanel key={index}>
+                {debts.length > 0 ? (
+                  <>
+                    {debts.map((debt) => (
+                      <Box
+                        key={debt.id}
+                        mb={4}
+                        p={6}
+                        borderWidth="1px"
+                        borderRadius="xl"
+                        overflow="hidden"
+                        boxShadow="base"
+                        bg="white"
+                        transition="all 0.3s ease"
+                        _hover={{
+                          transform: "translateY(-5px)",
+                          boxShadow: "lg",
+                        }}
+                      >
+                        <Flex
+                          justifyContent="space-between"
+                          alignItems="center"
                         >
-                          {
-                            categories.find(
-                              (category) => category.id === debt.categoryId
-                            ).name
-                          }
-                        </Text>
-                      </>
-                    ) : (
-                      <Text fontSize="md" color="gray.500">
-                        Uncategorized
-                      </Text>
-                    )}
-                  </Flex>
-                  <Text fontSize="md" mt={2}>
-                    Amount: <strong>${debt.amount}</strong>
-                  </Text>
-                  <Text fontSize="md">
-                    Due Date:{" "}
-                    <strong>
-                      {debt.dueDate
-                        ? new Date(debt.dueDate).toLocaleDateString()
-                        : "Not set"}
-                    </strong>
-                  </Text>
-                  {debt.paidDate && (
-                    <Text fontSize="md">
-                      Paid Date:{" "}
-                      <strong>
-                        {new Date(debt.paidDate).toLocaleDateString()}
-                      </strong>
-                    </Text>
-                  )}
-                  <Text fontSize="md">
-                    Creditor: <strong>{debt.creditor}</strong>
-                  </Text>
-                </Box>
-                <Flex alignItems="center">
-                  {!debt.isPaid && (
-                    <Button
-                      colorScheme="green"
-                      onClick={() => markAsPaid(debt.id)}
-                      mr={2}
-                    >
-                      Mark as Paid
-                    </Button>
-                  )}
-                  <Button
-                    leftIcon={<EditIcon />}
-                    colorScheme="blue"
-                    onClick={() => openEditModal(debt)}
-                    mr={2}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    leftIcon={<DeleteIcon />}
-                    colorScheme="red"
-                    onClick={() => {
-                      setDebtToDelete(debt.id);
-                      setIsDeleteAlertOpen(true);
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </Flex>
-              </Flex>
-            </Box>
-          ))
-        ) : (
-          <Center p={10}>
-            <Text>No debts found.</Text>
-          </Center>
-        )}
+                          <Box flex="1">
+                            <Text fontWeight="bold" fontSize="xl" mb={2}>
+                              {debt.name} -{" "}
+                              <Badge
+                                colorScheme={debt.isPaid ? "green" : "orange"}
+                              >
+                                {debt.isPaid ? "Paid" : "Due"}
+                              </Badge>
+                            </Text>
+                            <Flex align="center" mt={1} wrap="wrap">
+                              {categories.find(
+                                (category) => category.id === debt.categoryId
+                              ) ? (
+                                <>
+                                  <Image
+                                    boxSize="24px"
+                                    src={`/assets/img/icons/${
+                                      categories.find(
+                                        (category) =>
+                                          category.id === debt.categoryId
+                                      ).icon.path
+                                    }`}
+                                    alt={
+                                      categories.find(
+                                        (category) =>
+                                          category.id === debt.categoryId
+                                      ).name
+                                    }
+                                    mr={2}
+                                  />
+                                  <Text
+                                    fontSize="md"
+                                    fontWeight="semibold"
+                                    color="#4A5568"
+                                  >
+                                    {
+                                      categories.find(
+                                        (category) =>
+                                          category.id === debt.categoryId
+                                      ).name
+                                    }
+                                  </Text>
+                                </>
+                              ) : (
+                                <Text fontSize="md" color="gray.500">
+                                  Uncategorized
+                                </Text>
+                              )}
+                            </Flex>
+                            <Text fontSize="md" mt={2}>
+                              Amount: <strong>${debt.amount}</strong>
+                            </Text>
+                            <Text fontSize="md">
+                              Due Date:{" "}
+                              <strong>
+                                {debt.dueDate
+                                  ? new Date(debt.dueDate).toLocaleDateString()
+                                  : "Not set"}
+                              </strong>
+                            </Text>
+                            {debt.paidDate && (
+                              <Text fontSize="md">
+                                Paid Date:{" "}
+                                <strong>
+                                  {new Date(debt.paidDate).toLocaleDateString()}
+                                </strong>
+                              </Text>
+                            )}
+                            <Text fontSize="md">
+                              Creditor: <strong>{debt.creditor}</strong>
+                            </Text>
+                          </Box>
+                          <Flex alignItems="center">
+                            {!debt.isPaid && (
+                              <Button
+                                colorScheme="green"
+                                onClick={() => markAsPaid(debt.id)}
+                                mr={2}
+                                size="sm"
+                              >
+                                Mark as Paid
+                              </Button>
+                            )}
+                            {!debt.isPaid && (
+                              <Button
+                                leftIcon={<EditIcon />}
+                                colorScheme="blue"
+                                onClick={() => openEditModal(debt)}
+                                mr={2}
+                                size="sm"
+                              >
+                                Edit
+                              </Button>
+                            )}
+                            <Button
+                              leftIcon={<DeleteIcon />}
+                              colorScheme="red"
+                              onClick={() => {
+                                setDebtToDelete(debt.id);
+                                setIsDeleteAlertOpen(true);
+                              }}
+                              size="sm"
+                            >
+                              Delete
+                            </Button>
+                          </Flex>
+                        </Flex>
+                      </Box>
+                    ))}
+                    <Flex justifyContent="center" mt="4">
+                      <Button
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 0}
+                      >
+                        Previous
+                      </Button>
+                      {[...Array(totalPages).keys()].map((number) => (
+                        <Button
+                          key={number}
+                          onClick={() => setCurrentPage(number)}
+                          colorScheme={number === currentPage ? "teal" : "gray"}
+                        >
+                          {number + 1}
+                        </Button>
+                      ))}
+                      <Button
+                        onClick={handleNextPage}
+                        disabled={currentPage + 1 >= totalPages}
+                      >
+                        Next
+                      </Button>
+                    </Flex>
+                  </>
+                ) : (
+                  <Text>No {category.toLowerCase()} found.</Text>
+                )}
+              </TabPanel>
+            ))}
+          </TabPanels>
+        </Tabs>
       </Box>
 
       {/* Add/Edit Debt Modal */}
@@ -503,29 +643,6 @@ const DebtsOverview = () => {
               />
             </FormControl>
             <FormControl mt={4}>
-              <Checkbox
-                isChecked={debtForm.isPaid}
-                onChange={(e) =>
-                  handleDebtFormChange("isPaid", e.target.checked)
-                }
-              >
-                Is Paid?
-              </Checkbox>
-            </FormControl>
-            {debtForm.isPaid && (
-              <FormControl mt={4}>
-                <FormLabel>Paid Date</FormLabel>
-                <Input
-                  type="date"
-                  value={debtForm.paidDate}
-                  onChange={(e) =>
-                    handleDebtFormChange("paidDate", e.target.value)
-                  }
-                  min={new Date().toISOString().split("T")[0]}
-                />
-              </FormControl>
-            )}
-            <FormControl mt={4}>
               <FormLabel>Notes</FormLabel>
               <Input
                 placeholder="Enter any notes"
@@ -542,6 +659,7 @@ const DebtsOverview = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
       {/* Delete Debt Alert Dialog */}
       <AlertDialog
         isOpen={isDeleteAlertOpen}
