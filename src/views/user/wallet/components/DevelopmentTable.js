@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import {
   Box,
@@ -31,6 +31,9 @@ import {
   VStack,
   Image,
   FormErrorMessage,
+  InputLeftAddon,
+  InputGroup,
+  InputRightAddon,
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon, EditIcon, MinusIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
@@ -67,6 +70,7 @@ const WalletsOverview = () => {
   const [showBankFields, setShowBankFields] = useState(false);
   const [transferAmount, setTransferAmount] = useState("");
   const [selectedVNDBalance, setSelectedVNDBalance] = useState("");
+  const [exchangeRate, setExchangeRate] = useState(0);
   const history = useHistory();
 
   const onSeeAllTransactionsButtonClick = () => {
@@ -325,6 +329,36 @@ const WalletsOverview = () => {
     }
   };
 
+  const fetchExchangeRate = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        "https://portal.vietcombank.com.vn/Usercontrols/TVPortal.TyGia/pXML.aspx?b=10"
+      );
+      const xmlData = response.data;
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlData, "text/xml");
+      const usdToVndRateNode = xmlDoc.querySelector(
+        'Exrate[CurrencyCode="USD"]'
+      );
+      if (!usdToVndRateNode) {
+        throw new Error("USD exchange rate not found");
+      }
+      const rate = parseFloat(
+        usdToVndRateNode.getAttribute("Buy").replace(/,/g, "")
+      );
+      console.log("Exchange Rate fetched:", rate);
+      setExchangeRate(rate); // Cập nhật state exchangeRate
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching exchange rate:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchExchangeRate();
+  }, []);
+
   const fetchSavingGoalsForWallet = async (walletId) => {
     const currentUser = AuthService.getCurrentUser();
     try {
@@ -354,6 +388,7 @@ const WalletsOverview = () => {
         sourceWalletId: currentWallet.walletId,
         destinationWalletId: selectedVNDBalance, // Sử dụng ví VND được chọn
         amount: transferAmount,
+        exchangeRate: exchangeRate,
       };
 
       const response = await axios.post("/api/wallets/transfer", transferData, {
@@ -476,7 +511,6 @@ const WalletsOverview = () => {
           </Center>
         )}
       </Box>
-
       {/* Modal to show transactions */}
       <Modal
         isOpen={isTransactionsModalOpen}
@@ -530,7 +564,6 @@ const WalletsOverview = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
       {/*Add/Edit Wallet Modal */}
       <Modal isOpen={isEditModalOpen} onClose={onEditModalClose}>
         <ModalOverlay />
@@ -572,8 +605,11 @@ const WalletsOverview = () => {
                   onChange={(e) =>
                     handleInputChange("currency", e.target.value)
                   }
+                  display={walletForm.currency > 0 ? "none" : "block"}
                 >
-                  <option value="USD">USD</option>
+                  {!wallets.some((wallet) => wallet.currency === "USD") && (
+                    <option value="USD">USD</option>
+                  )}
                   <option value="VND">VND</option>
                 </Select>
                 {validationErrors.currency && (
@@ -644,7 +680,7 @@ const WalletsOverview = () => {
             )}
           </ModalBody>
           <ModalFooter>
-            {walletForm.currency === "USD" && (
+            {isEditing && walletForm.currency === "USD" && (
               <Button
                 colorScheme="green"
                 onClick={() => {
@@ -663,7 +699,6 @@ const WalletsOverview = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
       <Modal isOpen={isTransferModalOpen} onClose={onTransferModalClose}>
         <ModalOverlay />
         <ModalContent>
@@ -671,13 +706,26 @@ const WalletsOverview = () => {
           <ModalCloseButton />
           <ModalBody>
             <FormControl isRequired>
-              <FormLabel>Amount</FormLabel>
+              <FormLabel>Amount (USD)</FormLabel>
               <Input
                 type="number"
                 value={transferAmount}
                 onChange={(e) => setTransferAmount(e.target.value)}
                 placeholder="Enter amount to transfer"
               />
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>Exchange Rate (1 USD = ? VND)</FormLabel>
+              <InputGroup>
+                <InputLeftAddon children="1 USD =" />
+                <Input
+                  type="number"
+                  value={exchangeRate}
+                  onChange={(e) => setExchangeRate(e.target.value)}
+                  placeholder="Enter exchange rate"
+                />
+                <InputRightAddon children="VND" />
+              </InputGroup>
             </FormControl>
             <FormControl isRequired>
               <FormLabel>Transfer to</FormLabel>
@@ -704,7 +752,6 @@ const WalletsOverview = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
       {/*Delete alert */}
       <AlertDialog
         isOpen={isDeleteAlertOpen}
