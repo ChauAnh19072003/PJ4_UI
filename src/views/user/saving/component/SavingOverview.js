@@ -69,6 +69,11 @@ const SavingGoalsView = () => {
   };
   const [savingGoalForm, setSavingGoalForm] = useState(initialSavingGoalState);
 
+  const openModalToAdd = () => {
+    setSavingGoalForm(initialSavingGoalState);
+    onOpen();
+  };
+
   const validateForm = useCallback(() => {
     if (!savingGoalForm.walletId) {
       toast.error("Please select wallet!", {
@@ -253,7 +258,7 @@ const SavingGoalsView = () => {
           Saving Goals
         </Heading>
         <Button
-          onClick={onOpen}
+          onClick={openModalToAdd}
           my={4}
           size="lg"
           colorScheme="teal"

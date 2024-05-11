@@ -157,10 +157,10 @@ function BillList() {
   }, []);
 
   useEffect(() => {
-    if (isMounted.current) {
-      fetchBills(currentPage);
-      fetchData();
-    }
+    isMounted.current = true;
+    fetchData();
+    fetchBills(currentPage);
+
     return () => {
       isMounted.current = false;
     };
