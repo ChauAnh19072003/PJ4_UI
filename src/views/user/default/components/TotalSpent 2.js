@@ -147,7 +147,7 @@ const TotalSpent2 = ({ selectedWallet }) => {
         beginAtZero: true,
         title: {
           display: true,
-          text: "Date",
+          text: "Month",
         },
       },
       y: {

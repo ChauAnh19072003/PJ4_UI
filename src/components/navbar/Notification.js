@@ -28,6 +28,7 @@ function Notification() {
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [stompClient, setStompClient] = useState(null);
 
   useEffect(() => {
     const currentUser = AuthService.getCurrentUser();
@@ -73,6 +74,7 @@ function Notification() {
     });
 
     stompClient.activate();
+    setStompClient(stompClient);
 
     fetchUnreadNotifications();
     return () => {
