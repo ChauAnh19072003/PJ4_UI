@@ -72,6 +72,7 @@ const BudgetsOverview = ({ userId }) => {
     recurrenceId: null,
   };
   const [budgetForm, setBudgetForm] = useState(initialBudgetState);
+  const [tabIndex, setTabIndex] = useState(1); // Start from 0, so '1' would be the second tab
 
   const resetFormAndErrors = () => {
     setBudgetForm(initialBudgetState);
@@ -420,7 +421,7 @@ const BudgetsOverview = ({ userId }) => {
             Add New Budget
           </Button>
         </VStack>
-        <Tabs isFitted variant="enclosed">
+        <Tabs isFitted variant="enclosed" index={tabIndex} onChange={index => setTabIndex(index)}>
           <TabList mb="1em">
             <Tab>Old Budgets</Tab>
             <Tab>This month</Tab>

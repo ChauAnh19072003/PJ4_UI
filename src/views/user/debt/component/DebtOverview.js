@@ -63,7 +63,7 @@ const DebtsOverview = () => {
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [showChart, setShowChart] = useState(false);
-  
+  const [reportData, setReportData] = useState([]);
 
   const initialDebtState = {
     name: "",
@@ -94,16 +94,80 @@ const DebtsOverview = () => {
     return acc;
   }, 0);
 
+  const fetchReportData = async () => {
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      try {
+        const response = await axios.get(
+          `/api/debts/reportDebt/user/${currentUser.id}`,
+          {
+            headers: AuthHeader(),
+          }
+        );
+        setReportData(response.data);
+      } catch (error) {
+        console.error("Error fetching report data:", error);
+        toast.error("Failed to fetch report data.");
+      }
+    }
+  };
+
   const data = {
-    labels: ["Debt Overdue", "Debt Paid Before Due"],
+    labels: [
+      "Debt Paid Before Due",
+      "Debt Paid After Due",
+      "Debt Not Paid Before Due",
+      "Debt Overdue",
+      "Loan Received Before Due",
+      "Loan Received After Due",
+      "Loan Not Received Before Due",
+      "Loan Overdue",
+    ],
     datasets: [
       {
-        label: "Debt Report",
-        data: [debtOverdueTotal, debtPaidBeforeDueTotal],
-        backgroundColor: ["#FF6384", "#4BC0C0"],
-        hoverOffset: 4,
+        data: reportData.map((item) => item.number),
+        backgroundColor: [
+          "#FF6384",
+          "#36A2EB",
+          "#FFCE56",
+          "#E7E9ED",
+          "#8CE0A2",
+          "#4BC0C0",
+          "#9966FF",
+          "#FF9F40",
+        ],
+        hoverBackgroundColor: [
+          "#FF6384",
+          "#36A2EB",
+          "#FFCE56",
+          "#E7E9ED",
+          "#8CE0A2",
+          "#4BC0C0",
+          "#9966FF",
+          "#FF9F40",
+        ],
       },
     ],
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: "top",
+      },
+      tooltip: {
+        callbacks: {
+          label: function (context) {
+            const label = context.label || "";
+            const count = context.raw;
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percentage = ((count / total) * 100).toFixed(2) + "%";
+            return label + ": " + count + " (" + percentage + ")";
+          },
+        },
+      },
+    },
   };
 
   useEffect(() => {
@@ -111,7 +175,11 @@ const DebtsOverview = () => {
     const loanCategory = categories.find((cat) => cat.name === "Loan");
     setDebtCategoryId(debtCategory ? debtCategory.id : null);
     setLoanCategoryId(loanCategory ? loanCategory.id : null);
-  }, [categories]);
+
+    fetchDebts();
+    fetchCategories();
+    fetchReportData();
+  }, [currentPage, pageSize]);
 
   useEffect(() => {
     fetchDebts();
@@ -193,6 +261,8 @@ const DebtsOverview = () => {
     } finally {
       setIsDeleteAlertOpen(false);
       setDebtToDelete(null);
+      fetchDebts();
+      fetchReportData();
     }
   };
 
@@ -285,7 +355,8 @@ const DebtsOverview = () => {
         });
       }
     } finally {
-      setIsEditModalOpen(true);
+      setIsEditModalOpen(false);
+      fetchReportData();
     }
   };
 
@@ -314,11 +385,21 @@ const DebtsOverview = () => {
       });
       toast.success("Paid successfully");
       fetchDebts();
+      fetchReportData();
     } catch (error) {
       toast.error(
         `Error updating debt: ${error.response?.data?.message || error.message}`
       );
     }
+  };
+
+  const renderDebtStatus = (debt) => {
+    if (debt.category && debt.category.name === "Debt") {
+      return debt.isPaid ? "Paid" : "Due";
+    } else if (debt.category && debt.category.name === "Loan") {
+      return debt.isPaid ? "Received" : "Due";
+    }
+    return "";
   };
 
   if (loading) {
@@ -340,7 +421,7 @@ const DebtsOverview = () => {
         {showChart && (
           <Flex justifyContent="center" mt="6">
             <Box width="50%">
-              <Pie data={data} />
+              <Pie data={data} options={options} />
             </Box>
           </Flex>
         )}
@@ -393,7 +474,16 @@ const DebtsOverview = () => {
                               <Badge
                                 colorScheme={debt.isPaid ? "green" : "orange"}
                               >
-                                {debt.isPaid ? "Paid" : "Due"}
+                                {debt.categoryId === debtCategoryId &&
+                                debt.isPaid
+                                  ? "Paid"
+                                  : debt.categoryId === debtCategoryId &&
+                                    !debt.isPaid
+                                  ? "Due"
+                                  : debt.categoryId === loanCategoryId &&
+                                    debt.isPaid
+                                  ? "Received"
+                                  : "Due"}
                               </Badge>
                             </Text>
                             <Flex align="center" mt={1} wrap="wrap">
@@ -659,7 +749,6 @@ const DebtsOverview = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
       {/* Delete Debt Alert Dialog */}
       <AlertDialog
         isOpen={isDeleteAlertOpen}

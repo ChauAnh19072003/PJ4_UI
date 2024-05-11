@@ -16,7 +16,6 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   Input,
-  FormControl,
   FormLabel,
   Modal,
   ModalBody,
@@ -30,7 +29,6 @@ import {
   Icon,
   VStack,
   Image,
-  FormErrorMessage,
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon, EditIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
@@ -48,7 +46,6 @@ const WalletsOverview = () => {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentWallet, setCurrentWallet] = useState(null);
-  const { onClose } = useDisclosure();
   const [validationErrors, setValidationErrors] = useState({});
   const cancelRef = useRef();
   const [transactions, setTransactions] = useState([]);
