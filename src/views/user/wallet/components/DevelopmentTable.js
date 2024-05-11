@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import {
   Box,
@@ -29,8 +29,11 @@ import {
   Icon,
   VStack,
   Image,
+  InputLeftAddon,
+  InputGroup,
+  InputRightAddon,
 } from "@chakra-ui/react";
-import { DeleteIcon, AddIcon, EditIcon } from "@chakra-ui/icons";
+import { DeleteIcon, AddIcon, EditIcon, MinusIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
 
 import { MdWallet } from "react-icons/md";
@@ -47,6 +50,7 @@ const WalletsOverview = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentWallet, setCurrentWallet] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
+  const [savingGoals, setSavingGoals] = useState([]);
   const cancelRef = useRef();
   const [transactions, setTransactions] = useState([]);
   const initialWalletState = {
@@ -56,10 +60,14 @@ const WalletsOverview = () => {
     type: "",
     bankName: "",
     bankNumber: "",
+    savingGoalId: "",
   };
   const [walletForm, setWalletForm] = useState(initialWalletState);
   const [walletTypes, setWalletTypes] = useState([]);
   const [showBankFields, setShowBankFields] = useState(false);
+  const [transferAmount, setTransferAmount] = useState("");
+  const [selectedVNDBalance, setSelectedVNDBalance] = useState("");
+  const [exchangeRate, setExchangeRate] = useState(0);
   const history = useHistory();
 
   const onSeeAllTransactionsButtonClick = () => {
@@ -105,14 +113,12 @@ const WalletsOverview = () => {
         });
 
         setWallets(walletsWithTypeNames);
+        setLoading(false);
       } catch (error) {
         console.error("Failed to fetch wallet data:", error);
         toast.error("Failed to fetch wallet data.");
-      } finally {
         setLoading(false);
       }
-    } else {
-      setLoading(false);
     }
   };
 
@@ -142,6 +148,12 @@ const WalletsOverview = () => {
   } = useDisclosure();
 
   const {
+    isOpen: isTransferModalOpen,
+    onOpen: onTransferModalOpen,
+    onClose: onTransferModalClose,
+  } = useDisclosure();
+
+  const {
     isOpen: isTransactionsModalOpen,
     onOpen: onTransactionsModalOpen,
     onClose: onTransactionsModalClose,
@@ -164,6 +176,7 @@ const WalletsOverview = () => {
       type: wallet.walletType,
       bankName: wallet.bankName || "",
       bankNumber: wallet.bankAccountNum || "",
+      savingGoalId: wallet.savingGoalId || "",
     });
 
     const selectedWalletType = walletTypes.find(
@@ -171,7 +184,9 @@ const WalletsOverview = () => {
     );
 
     setShowBankFields(
-      selectedWalletType && selectedWalletType.typeName !== "Cash"
+      selectedWalletType &&
+        selectedWalletType.typeName !== "Cash" &&
+        selectedWalletType.typeName !== "Goals"
     );
 
     onEditModalOpen();
@@ -209,6 +224,13 @@ const WalletsOverview = () => {
       delete updatedErrors[field];
       return updatedErrors;
     });
+
+    // const selectedWalletType = walletTypes.find(
+    //   (type) => type.typeId === currentWallet.walletType
+    // );
+    // if (field === "balance" && selectedWalletType.typeName === "Goals") {
+    //   fetchSavingGoalsForWallet(currentWallet.walletId);
+    // }
   };
 
   const handleSubmit = async (e) => {
@@ -274,6 +296,7 @@ const WalletsOverview = () => {
           }
         );
         toast.success("Wallet updated successfully");
+        onEditModalClose();
       } else {
         await axios.post("/api/wallets/create", walletData, {
           headers: AuthHeader(),
@@ -281,13 +304,12 @@ const WalletsOverview = () => {
         toast.success("Wallet added successfully");
       }
       fetchWallets();
+      onEditModalClose();
     } catch (error) {
       const errorMessage = error.response?.data;
       toast.error(
         `Error ${isEditing ? "updating" : "adding"} wallet: ${errorMessage}`
       );
-    } finally {
-      onEditModalClose();
     }
   };
 
@@ -301,6 +323,80 @@ const WalletsOverview = () => {
       onTransactionsModalOpen();
     } catch (error) {
       toast.error("Could not fetch transactions.");
+    }
+  };
+
+  const fetchExchangeRate = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        "https://portal.vietcombank.com.vn/Usercontrols/TVPortal.TyGia/pXML.aspx?b=10"
+      );
+      const xmlData = response.data;
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlData, "text/xml");
+      const usdToVndRateNode = xmlDoc.querySelector(
+        'Exrate[CurrencyCode="USD"]'
+      );
+      if (!usdToVndRateNode) {
+        throw new Error("USD exchange rate not found");
+      }
+      const rate = parseFloat(
+        usdToVndRateNode.getAttribute("Buy").replace(/,/g, "")
+      );
+      console.log("Exchange Rate fetched:", rate);
+      setExchangeRate(rate); // Cập nhật state exchangeRate
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching exchange rate:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchExchangeRate();
+  }, []);
+
+  const fetchSavingGoalsForWallet = async (walletId) => {
+    const currentUser = AuthService.getCurrentUser();
+    try {
+      const response = await axios.get(
+        `/api/savinggoals/wallets/${walletId}/users/${currentUser.id}`,
+        { headers: AuthHeader() }
+      );
+      setSavingGoals(response.data);
+    } catch (error) {
+      console.error("Error fetching saving goals:", error);
+      toast.error("Failed to fetch saving goals.");
+      setSavingGoals([]);
+    }
+  };
+
+  const handleTransfer = async () => {
+    const currentUser = AuthService.getCurrentUser();
+    try {
+      // Kiểm tra nếu người dùng đã chọn ví VND
+      if (!selectedVNDBalance) {
+        toast.error("Please select a VND wallet to transfer to.");
+        return;
+      }
+
+      const transferData = {
+        userId: currentUser.id,
+        sourceWalletId: currentWallet.walletId,
+        destinationWalletId: selectedVNDBalance, // Sử dụng ví VND được chọn
+        amount: transferAmount,
+        exchangeRate: exchangeRate,
+      };
+
+      const response = await axios.post("/api/wallets/transfer", transferData, {
+        header: AuthHeader(),
+      });
+      toast.success(response.data);
+      fetchWallets();
+      onTransferModalClose();
+      onEditModalClose();
+    } catch (error) {
+      toast.error(error.response.data);
     }
   };
 
@@ -412,7 +508,6 @@ const WalletsOverview = () => {
           </Center>
         )}
       </Box>
-
       {/* Modal to show transactions */}
       <Modal
         isOpen={isTransactionsModalOpen}
@@ -466,7 +561,6 @@ const WalletsOverview = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
       {/*Add/Edit Wallet Modal */}
       <Modal isOpen={isEditModalOpen} onClose={onEditModalClose}>
         <ModalOverlay />
@@ -499,19 +593,41 @@ const WalletsOverview = () => {
                 <ErrorMessage message={validationErrors.balance} />
               )}
             </Box>
-            <Box mt={4}>
-              <FormLabel>Wallet Currency</FormLabel>
-              <Select
-                placeholder="Select currency"
-                value={walletForm.currency}
-                onChange={(e) => handleInputChange("currency", e.target.value)}
-              >
-                <option value="USD">USD</option>
-              </Select>
-              {validationErrors.currency && (
-                <ErrorMessage message={validationErrors.currency} />
-              )}
-            </Box>
+            {!isEditing && (
+              <Box mt={4}>
+                <FormLabel>Wallet Currency</FormLabel>
+                <Select
+                  placeholder="Select currency"
+                  value={walletForm.currency}
+                  onChange={(e) =>
+                    handleInputChange("currency", e.target.value)
+                  }
+                  display={walletForm.currency > 0 ? "none" : "block"}
+                >
+                  {!wallets.some((wallet) => wallet.currency === "USD") && (
+                    <option value="USD">USD</option>
+                  )}
+                  <option value="VND">VND</option>
+                </Select>
+                {validationErrors.currency && (
+                  <ErrorMessage message={validationErrors.currency} />
+                )}
+              </Box>
+            )}
+            {savingGoals.map((goal) => (
+              <Box mb={4} key={goal.id}>
+                <Text mb={2}>Select Goal:</Text>
+                <Select
+                  placeholder="Select Goal"
+                  value={walletForm.savingGoalId || ""}
+                  onChange={(e) =>
+                    handleInputChange("savingGoalId", e.target.value)
+                  }
+                >
+                  <option value={goal.id}>{goal.name}</option>
+                </Select>
+              </Box>
+            ))}
             <Box mt={4}>
               <FormLabel>Wallet Type</FormLabel>
               <Select
@@ -561,10 +677,75 @@ const WalletsOverview = () => {
             )}
           </ModalBody>
           <ModalFooter>
+            {isEditing && walletForm.currency === "USD" && (
+              <Button
+                colorScheme="green"
+                onClick={() => {
+                  setTransferAmount("");
+                  onTransferModalOpen();
+                }}
+                mr={3}
+              >
+                Transfer Money
+              </Button>
+            )}
             <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
               {isEditing ? "Save Changes" : "Add"}
             </Button>
             <Button onClick={onEditModalClose}>Cancel</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <Modal isOpen={isTransferModalOpen} onClose={onTransferModalClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Transfer Money</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl isRequired>
+              <FormLabel>Amount (USD)</FormLabel>
+              <Input
+                type="number"
+                value={transferAmount}
+                onChange={(e) => setTransferAmount(e.target.value)}
+                placeholder="Enter amount to transfer"
+              />
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>Exchange Rate (1 USD = ? VND)</FormLabel>
+              <InputGroup>
+                <InputLeftAddon children="1 USD =" />
+                <Input
+                  type="number"
+                  value={exchangeRate}
+                  onChange={(e) => setExchangeRate(e.target.value)}
+                  placeholder="Enter exchange rate"
+                />
+                <InputRightAddon children="VND" />
+              </InputGroup>
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>Transfer to</FormLabel>
+              <Select
+                placeholder="Select VND wallet"
+                value={selectedVNDBalance}
+                onChange={(e) => setSelectedVNDBalance(e.target.value)}
+              >
+                {wallets
+                  .filter((wallet) => wallet.currency === "VND")
+                  .map((wallet) => (
+                    <option key={wallet.walletId} value={wallet.walletId}>
+                      {wallet.walletName}
+                    </option>
+                  ))}
+              </Select>
+            </FormControl>
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={handleTransfer}>
+              Transfer
+            </Button>
+            <Button onClick={onTransferModalClose}>Cancel</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

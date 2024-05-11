@@ -234,41 +234,71 @@ function AddBill({
   ]);
 
   const categoryOptions = useMemo(() => {
-    return Object.keys(groupedCategories).map((type) => (
-      <Box key={type} mb={2}>
-        <Text fontWeight="bold" mb={2}>
-          {type === "EXPENSE" ? "Expense" : type === "DEBT" ? "Debt" : "Income"}
-        </Text>
-        {groupedCategories[type].map((category) => (
-          <Button
-            key={category.id}
-            variant="ghost"
-            w="100%"
-            textAlign="left"
-            justifyContent="start"
-            alignItems="center"
-            onClick={() => {
-              setChangeCategoryId(category.id);
-            }}
-          >
-            <img
-              src={`/assets/img/icons/${category.icon.path}`}
-              alt={category.name}
-              width="20"
-              height="20"
-              style={{ marginRight: "8px" }}
-            />
-            {category.name}
-          </Button>
-        ))}
-      </Box>
-    ));
+    return Object.keys(groupedCategories).map(
+      (type) =>
+        type === "EXPENSE" && (
+          <Box key={type} mb={2}>
+            <Text fontWeight="bold" mb={2}>
+              Expense
+            </Text>
+            {groupedCategories[type].map((category) => (
+              <Button
+                key={category.id}
+                variant="ghost"
+                w="100%"
+                textAlign="left"
+                justifyContent="start"
+                alignItems="center"
+                onClick={() => {
+                  setChangeCategoryId(category.id);
+                }}
+              >
+                <img
+                  src={`/assets/img/icons/${category.icon.path}`}
+                  alt={category.name}
+                  width="20"
+                  height="20"
+                  style={{ marginRight: "8px" }}
+                />
+                {category.name}
+              </Button>
+            ))}
+          </Box>
+        )
+    );
   }, [groupedCategories]);
 
   return (
     <>
       <ModalBody>
         <Flex direction="column">
+          <Box mr={4}>
+            <Text mb={2}>Wallet:</Text>
+            {wallets && wallets.length > 0 ? (
+              <Select
+                w="385px"
+                color={inputText}
+                placeholder="Select Wallet"
+                value={changeWallet}
+                onChange={(e) => setChangeWallet(e.target.value)}
+              >
+                {wallets
+                  .filter(
+                    (wallet) =>
+                      wallet.walletType !== 3 && wallet.currency !== "USD"
+                  )
+                  .map((wallet) => (
+                    <option key={wallet.walletId} value={wallet.walletId}>
+                      {wallet.walletName}
+                    </option>
+                  ))}
+              </Select>
+            ) : (
+              <Text color="red.500">
+                No wallets available. Please create a wallet first.
+              </Text>
+            )}
+          </Box>
           <Box mb={4}>
             <Text mb={2}>Category:</Text>
             <Popover placement="right-start">
@@ -321,30 +351,6 @@ function AddBill({
               min={1}
               color={inputText}
             />
-          </Box>
-          <Box mr={4}>
-            <Text mb={2}>Wallet:</Text>
-            {wallets && wallets.length > 0 ? (
-              <Select
-                w="385px"
-                color={inputText}
-                placeholder="Select Wallet"
-                value={changeWallet}
-                onChange={(e) => setChangeWallet(e.target.value)}
-              >
-                {wallets
-                  .filter((wallet) => wallet.walletType !== 3)
-                  .map((wallet) => (
-                    <option key={wallet.walletId} value={wallet.walletId}>
-                      {wallet.walletName}
-                    </option>
-                  ))}
-              </Select>
-            ) : (
-              <Text color="red.500">
-                No wallets available. Please create a wallet first.
-              </Text>
-            )}
           </Box>
           <Box mb={4} mt={3}>
             <Text mb={2}>Frequency:</Text>

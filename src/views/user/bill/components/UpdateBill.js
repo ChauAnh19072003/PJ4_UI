@@ -262,37 +262,75 @@ function UpdateBill({
   ]);
 
   const categoryOptions = useMemo(() => {
-    return Object.keys(groupedCategories).map((type) => (
-      <Box key={type} mb={2}>
-        <Text fontWeight="bold" mb={2}>
-          {type === "EXPENSE"}
-        </Text>
-        <SimpleGrid columns={5} spacing={2}>
-          {groupedCategories[type].map((category) => (
+    const selectedWallet = wallets.find(
+      (wallet) => wallet.walletId === changeWallet
+    );
+
+    if (selectedWallet && selectedWallet.walletType === 3) {
+      // Special handling for wallet type 3
+      return categories
+        .filter(
+          (category) =>
+            category.name === "Incoming Transfer" ||
+            category.name === "Outgoing Transfer"
+        )
+        .map((category) => (
+          <Box key={category.id} mb={2}>
+            <Text fontWeight="bold" mb={2}>
+              {category.type}
+            </Text>
             <Button
-              key={category.id}
               variant="ghost"
               w="100%"
               textAlign="left"
               justifyContent="start"
               alignItems="center"
-              onClick={() => {
-                setChangeCategory(category.id.toString());
-              }}
+              onClick={() => setChangeCategory(category.id)}
             >
               <img
                 src={`/assets/img/icons/${category.icon.path}`}
                 alt={category.name}
-                width="40"
-                height="40"
+                width="20"
+                height="20"
                 style={{ marginRight: "8px" }}
               />
+              {category.name}
             </Button>
-          ))}
-        </SimpleGrid>
-      </Box>
-    ));
-  }, [groupedCategories]);
+          </Box>
+        ));
+    } else {
+      // Default handling for other wallet types
+      return Object.keys(groupedCategories)
+        .filter((type) => type !== "DEBT")
+        .map((type) => (
+          <Box key={type} mb={2}>
+            <Text fontWeight="bold" mb={2}>
+              {type === "EXPENSE" ? "Expense" : "Income"}
+            </Text>
+            {groupedCategories[type].map((category) => (
+              <Button
+                key={category.id}
+                variant="ghost"
+                w="100%"
+                textAlign="left"
+                justifyContent="start"
+                alignItems="center"
+                onClick={() => setChangeCategory(category.id)}
+              >
+                <img
+                  src={`/assets/img/icons/${category.icon.path}`}
+                  alt={category.name}
+                  width="20"
+                  height="20"
+                  style={{ marginRight: "8px" }}
+                />
+                {category.name}
+              </Button>
+            ))}
+          </Box>
+        ));
+    }
+  }, [changeWallet, wallets, categories, groupedCategories]);
 
   return (
     <>

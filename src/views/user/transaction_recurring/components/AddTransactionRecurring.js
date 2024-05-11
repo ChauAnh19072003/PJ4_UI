@@ -303,39 +303,67 @@ function AddTransactionRecurring({
             </Button>
           </Box>
         ));
+    } else if (selectedWallet && selectedWallet.currency == "USD") {
+      return (
+        <Box mb={2}>
+          <Text fontWeight="bold" mb={2}>
+            Income
+          </Text>
+          {categories
+            .filter((category) => category.type === "INCOME")
+            .map((category) => (
+              <Button
+                key={category.id}
+                variant="ghost"
+                w="100%"
+                textAlign="left"
+                justifyContent="start"
+                alignItems="center"
+                onClick={() => setChangeCategory(category.id)}
+              >
+                <img
+                  src={`/assets/img/icons/${category.icon.path}`}
+                  alt={category.name}
+                  width="20"
+                  height="20"
+                  style={{ marginRight: "8px" }}
+                />
+                {category.name}
+              </Button>
+            ))}
+        </Box>
+      );
     } else {
       // Default handling for other wallet types
-      return Object.keys(groupedCategories).map((type) => (
-        <Box key={type} mb={2}>
-          <Text fontWeight="bold" mb={2}>
-            {type === "EXPENSE"
-              ? "Expense"
-              : type === "DEBT"
-              ? "Debt"
-              : "Income"}
-          </Text>
-          {groupedCategories[type].map((category) => (
-            <Button
-              key={category.id}
-              variant="ghost"
-              w="100%"
-              textAlign="left"
-              justifyContent="start"
-              alignItems="center"
-              onClick={() => setChangeCategory(category.id)}
-            >
-              <img
-                src={`/assets/img/icons/${category.icon.path}`}
-                alt={category.name}
-                width="20"
-                height="20"
-                style={{ marginRight: "8px" }}
-              />
-              {category.name}
-            </Button>
-          ))}
-        </Box>
-      ));
+      return Object.keys(groupedCategories)
+        .filter((type) => type !== "DEBT")
+        .map((type) => (
+          <Box key={type} mb={2}>
+            <Text fontWeight="bold" mb={2}>
+              {type === "EXPENSE" ? "Expense" : "Income"}
+            </Text>
+            {groupedCategories[type].map((category) => (
+              <Button
+                key={category.id}
+                variant="ghost"
+                w="100%"
+                textAlign="left"
+                justifyContent="start"
+                alignItems="center"
+                onClick={() => setChangeCategory(category.id)}
+              >
+                <img
+                  src={`/assets/img/icons/${category.icon.path}`}
+                  alt={category.name}
+                  width="20"
+                  height="20"
+                  style={{ marginRight: "8px" }}
+                />
+                {category.name}
+              </Button>
+            ))}
+          </Box>
+        ));
     }
   }, [changeWallet, wallets, categories, groupedCategories]);
   useEffect(() => {
@@ -349,7 +377,9 @@ function AddTransactionRecurring({
       if (selectedWallet && selectedWallet.walletType === 3) {
         try {
           const response = await axios.get(
-            `/api/savinggoals/user/${AuthService.getCurrentUser().id}`,
+            `/api/savinggoals/wallets/${changeWallet}/users/${
+              AuthService.getCurrentUser().id
+            }`,
             { headers: AuthHeader() }
           );
           if (isActive) {

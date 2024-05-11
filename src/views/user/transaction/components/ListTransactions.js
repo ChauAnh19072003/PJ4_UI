@@ -63,7 +63,7 @@ function ListTransactions() {
   } = useDisclosure();
 
   const cancelRef = useRef();
-  const isMounted = useRef(true);
+  const isMounted = useRef(false);
   const history = useHistory();
 
   const fetchTransaction = useCallback(async (page) => {
@@ -127,6 +127,7 @@ function ListTransactions() {
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
+    fetchTransaction(pageNumber);
   };
 
   const fetchData = useCallback(async () => {
@@ -178,10 +179,9 @@ function ListTransactions() {
   }, []);
 
   useEffect(() => {
-    if (isMounted.current) {
-      fetchData();
-      fetchTransaction(currentPage);
-    }
+    isMounted.current = true;
+    fetchData();
+    fetchTransaction(currentPage);
 
     return () => {
       isMounted.current = false;

@@ -138,16 +138,18 @@ const UpdateTransaction = ({
   useEffect(() => {
     if (selectedTransaction) {
       setChooseTransactionId(selectedTransaction.transactionId);
-      setChangeWallet(selectedTransaction.walletId);
-      setChangeAmount(selectedTransaction.amount.toString());
-      setChangeCategory(selectedTransaction.categoryId);
+      setChangeWallet(selectedTransaction.walletId || ""); // Use empty string if null
+      setChangeAmount(selectedTransaction.amount?.toString() || ""); // Convert to string, use empty if null
+      setChangeCategory(selectedTransaction.categoryId || ""); // Use empty string if null
 
-      setChangeDate(() => {
-        return adjustDateToUTC(new Date(selectedTransaction.transactionDate));
-      });
+      setChangeDate(
+        selectedTransaction.transactionDate
+          ? adjustDateToUTC(new Date(selectedTransaction.transactionDate))
+          : new Date()
+      );
 
-      setChangeNotes(selectedTransaction.notes);
-      setChangeGoal(selectedTransaction.savingGoalId);
+      setChangeNotes(selectedTransaction.notes || ""); // Use empty string if null
+      setChangeGoal(selectedTransaction.savingGoalId || ""); // Use empty string if null
     }
   }, [selectedTransaction, setChooseTransactionId]);
 
@@ -188,41 +190,77 @@ const UpdateTransaction = ({
             </Button>
           </Box>
         ));
+    } else if (selectedWallet && selectedWallet.currency == "USD") {
+      return (
+        <Box mb={2}>
+          <Text fontWeight="bold" mb={2}>
+            Income
+          </Text>
+          {categories
+            .filter((category) => category.type === "INCOME")
+            .map((category) => (
+              <Button
+                key={category.id}
+                variant="ghost"
+                w="100%"
+                textAlign="left"
+                justifyContent="start"
+                alignItems="center"
+                onClick={() => setChangeCategory(category.id)}
+              >
+                <img
+                  src={`/assets/img/icons/${category.icon.path}`}
+                  alt={category.name}
+                  width="20"
+                  height="20"
+                  style={{ marginRight: "8px" }}
+                />
+                {category.name}
+              </Button>
+            ))}
+        </Box>
+      );
     } else {
       // Default handling for other wallet types
-      return Object.keys(groupedCategories).map((type) => (
-        <Box key={type} mb={2}>
-          <Text fontWeight="bold" mb={2}>
-            {type === "EXPENSE"
-              ? "Expense"
-              : type === "DEBT"
-              ? "Debt"
-              : "Income"}
-          </Text>
-          {groupedCategories[type].map((category) => (
-            <Button
-              key={category.id}
-              variant="ghost"
-              w="100%"
-              textAlign="left"
-              justifyContent="start"
-              alignItems="center"
-              onClick={() => setChangeCategory(category.id)}
-            >
-              <img
-                src={`/assets/img/icons/${category.icon.path}`}
-                alt={category.name}
-                width="20"
-                height="20"
-                style={{ marginRight: "8px" }}
-              />
-              {category.name}
-            </Button>
-          ))}
-        </Box>
-      ));
+      return Object.keys(groupedCategories)
+        .filter((type) => type !== "DEBT")
+        .map((type) => (
+          <Box key={type} mb={2}>
+            <Text fontWeight="bold" mb={2}>
+              {type === "EXPENSE" ? "Expense" : "Income"}
+            </Text>
+            {groupedCategories[type].map((category) => (
+              <Button
+                key={category.id}
+                variant="ghost"
+                w="100%"
+                textAlign="left"
+                justifyContent="start"
+                alignItems="center"
+                onClick={() => setChangeCategory(category.id)}
+              >
+                <img
+                  src={`/assets/img/icons/${category.icon.path}`}
+                  alt={category.name}
+                  width="20"
+                  height="20"
+                  style={{ marginRight: "8px" }}
+                />
+                {category.name}
+              </Button>
+            ))}
+          </Box>
+        ));
     }
   }, [changeWallet, wallets, categories, groupedCategories]);
+
+  const isTransferTransaction = changeNotes
+    .toLowerCase()
+    .includes("transfer money");
+
+  const isDisabled = useMemo(() => {
+    return isTransferTransaction;
+  }, [isTransferTransaction]);
 
   return (
     <>
@@ -231,7 +269,12 @@ const UpdateTransaction = ({
           <Text mb={2}>Category:</Text>
           <Popover placement="right-start">
             <PopoverTrigger>
-              <Button color={inputText} textAlign="left" w="100%">
+              <Button
+                color={inputText}
+                textAlign="left"
+                w="100%"
+                isDisabled={isDisabled}
+              >
                 {changeCategory ? (
                   <Flex alignItems="center">
                     <img
@@ -275,6 +318,7 @@ const UpdateTransaction = ({
             onChange={(e) => setChangeWallet(e.target.value)}
             color={inputText}
             placeholder="Select Wallet"
+            isDisabled={isDisabled}
           >
             {wallets.map((wallet) => (
               <option key={wallet.walletId} value={wallet.walletId}>
@@ -297,6 +341,7 @@ const UpdateTransaction = ({
               onChange={(e) => setChangeAmount(e.target.value)}
               placeholder="00.0"
               color={inputText}
+              isDisabled={isDisabled}
             />
           </FormControl>
         </Box>
@@ -311,6 +356,7 @@ const UpdateTransaction = ({
                 customInput={<Input color={inputText} />}
                 wrapperClassName="custom-datepicker"
                 color={inputText}
+                disabled={isDisabled}
               />
             </DatePickerStyle>
           </FormControl>
@@ -323,6 +369,7 @@ const UpdateTransaction = ({
             onChange={(e) => setChangeNotes(e.target.value)}
             placeholder="Notes"
             color={inputText}
+            isDisabled={isDisabled}
           />
         </Box>
       </ModalBody>

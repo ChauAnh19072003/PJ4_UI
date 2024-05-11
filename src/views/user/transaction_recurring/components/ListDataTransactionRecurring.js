@@ -158,10 +158,10 @@ function ListDataTransactionRecurring() {
   }, []);
 
   useEffect(() => {
-    if (isMounted.current) {
-      fetchTransactions(currentPage);
-      fetchData();
-    }
+    isMounted.current = true;
+    fetchData();
+    fetchTransactions(currentPage);
+
     return () => {
       isMounted.current = false;
     };
