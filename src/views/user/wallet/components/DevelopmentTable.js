@@ -791,7 +791,7 @@ const WalletsOverview = () => {
                   ))}
               </Select>
             </FormControl>
-            {isSavingGoalAmountChanged && savingGoals > 0 && (
+            {isSavingGoalAmountChanged && savingGoals.length > 0 && (
               <FormControl isRequired>
                 <FormLabel>Select Goal:</FormLabel>
                 <Select
