@@ -375,6 +375,7 @@ const UpdateTransaction = ({
       </ModalBody>
       <ModalFooter justifyContent="center">
         <Button
+          isDisabled={isDisabled}
           colorScheme="red"
           mr={2}
           onClick={() => {
@@ -383,7 +384,12 @@ const UpdateTransaction = ({
         >
           Delete
         </Button>
-        <Button colorScheme="blue" mr={2} onClick={handleUpdateTransaction}>
+        <Button
+          colorScheme="blue"
+          mr={2}
+          onClick={handleUpdateTransaction}
+          isDisabled={isDisabled}
+        >
           Save Changes
         </Button>
         <Button color="gray.700" onClick={onUpdateModalClose}>

@@ -69,6 +69,7 @@ const WalletsOverview = () => {
   const [transferAmount, setTransferAmount] = useState("");
   const [selectedVNDBalance, setSelectedVNDBalance] = useState("");
   const [exchangeRate, setExchangeRate] = useState(0);
+  const [isSavingGoalAmountChanged, setIsSavingGoalSelected] = useState(false);
   const history = useHistory();
 
   const onSeeAllTransactionsButtonClick = () => {
@@ -226,12 +227,19 @@ const WalletsOverview = () => {
       return updatedErrors;
     });
 
-    // const selectedWalletType = walletTypes.find(
-    //   (type) => type.typeId === currentWallet.walletType
-    // );
-    // if (field === "balance" && selectedWalletType.typeName === "Goals") {
-    //   fetchSavingGoalsForWallet(currentWallet.walletId);
-    // }
+    if (currentWallet && currentWallet.walletType) {
+      const selectedWalletType = walletTypes.find(
+        (type) => type.typeId === currentWallet.walletType
+      );
+      if (
+        field === "balance" &&
+        selectedWalletType &&
+        selectedWalletType.typeName === "Goals"
+      ) {
+        fetchSavingGoalsForWallet(currentWallet.walletId);
+        setIsSavingGoalSelected(true);
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -270,6 +278,14 @@ const WalletsOverview = () => {
       }
     }
 
+    if (isSavingGoalAmountChanged) {
+      if (!walletForm.savingGoalId) {
+        // setIsSavingGoalSelected(false);
+        toast.error("Please select a saving goal.");
+        return;
+      }
+    }
+
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;
@@ -285,6 +301,7 @@ const WalletsOverview = () => {
       walletType: walletForm.type,
       bankName: walletForm.bankName,
       bankAccountNum: walletForm.bankNumber,
+      savingGoalId: walletForm.savingGoalId,
     };
 
     try {
@@ -387,6 +404,7 @@ const WalletsOverview = () => {
         destinationWalletId: selectedVNDBalance, // Sử dụng ví VND được chọn
         amount: transferAmount,
         exchangeRate: exchangeRate,
+        savingGoalId: walletForm.savingGoalId,
       };
 
       const response = await axios.post("/api/wallets/transfer", transferData, {
@@ -398,6 +416,31 @@ const WalletsOverview = () => {
       onEditModalClose();
     } catch (error) {
       toast.error(error.response.data);
+    }
+  };
+
+  const handleWalletChange = async (walletId) => {
+    setSelectedVNDBalance(walletId);
+    const selectedWallet = wallets.find(
+      (wallet) => wallet.walletId === walletId
+    );
+    if (!selectedWallet) {
+      console.error("No wallet found with ID:", walletId);
+      setSavingGoals([]); // Clear goals if no wallet is found
+      setIsSavingGoalSelected(false);
+      return;
+    }
+
+    const selectedWalletType = walletTypes.find(
+      (type) => type.typeId === selectedWallet.walletType
+    );
+
+    const isGoalType = selectedWalletType && selectedWalletType.typeId === 3;
+    setIsSavingGoalSelected(isGoalType);
+    if (isGoalType) {
+      await fetchSavingGoalsForWallet(walletId);
+    } else {
+      setSavingGoals([]); // Clear goals if the selected wallet is not of type 'Goals'
     }
   };
 
@@ -594,41 +637,6 @@ const WalletsOverview = () => {
                 <ErrorMessage message={validationErrors.balance} />
               )}
             </Box>
-            {!isEditing && (
-              <Box mt={4}>
-                <FormLabel>Wallet Currency</FormLabel>
-                <Select
-                  placeholder="Select currency"
-                  value={walletForm.currency}
-                  onChange={(e) =>
-                    handleInputChange("currency", e.target.value)
-                  }
-                  display={walletForm.currency > 0 ? "none" : "block"}
-                >
-                  {!wallets.some((wallet) => wallet.currency === "USD") && (
-                    <option value="USD">USD</option>
-                  )}
-                  <option value="VND">VND</option>
-                </Select>
-                {validationErrors.currency && (
-                  <ErrorMessage message={validationErrors.currency} />
-                )}
-              </Box>
-            )}
-            {savingGoals.map((goal) => (
-              <Box mb={4} key={goal.id}>
-                <Text mb={2}>Select Goal:</Text>
-                <Select
-                  placeholder="Select Goal"
-                  value={walletForm.savingGoalId || ""}
-                  onChange={(e) =>
-                    handleInputChange("savingGoalId", e.target.value)
-                  }
-                >
-                  <option value={goal.id}>{goal.name}</option>
-                </Select>
-              </Box>
-            ))}
             <Box mt={4}>
               <FormLabel>Wallet Type</FormLabel>
               <Select
@@ -646,6 +654,48 @@ const WalletsOverview = () => {
                 <ErrorMessage message={validationErrors.type} />
               )}
             </Box>
+            {!isEditing && (
+              <Box mt={4}>
+                <FormLabel>Wallet Currency</FormLabel>
+                <Select
+                  placeholder="Select currency"
+                  value={walletForm.currency}
+                  onChange={(e) =>
+                    handleInputChange("currency", e.target.value)
+                  }
+                  display={walletForm.currency > 0 ? "none" : "block"}
+                >
+                  {!walletForm.type.includes(3) &&
+                    !wallets.some((wallet) => wallet.currency === "USD") && (
+                      <option value="USD">USD</option>
+                    )}
+                  <option value="VND">VND</option>
+                </Select>
+                {validationErrors.currency && (
+                  <ErrorMessage message={validationErrors.currency} />
+                )}
+              </Box>
+            )}
+            {isSavingGoalAmountChanged && (
+              <FormControl isRequired>
+                <Box mb={4}>
+                  <Text mb={2}>Select Goal:</Text>
+                  <Select
+                    placeholder="Select Goal"
+                    value={walletForm.savingGoalId || ""}
+                    onChange={(e) =>
+                      handleInputChange("savingGoalId", e.target.value)
+                    }
+                  >
+                    {savingGoals.map((goal) => (
+                      <option key={goal.id} value={goal.id}>
+                        {goal.name}
+                      </option>
+                    ))}
+                  </Select>
+                </Box>
+              </FormControl>
+            )}
             {showBankFields && (
               <>
                 <Box mt={4}>
@@ -730,7 +780,7 @@ const WalletsOverview = () => {
               <Select
                 placeholder="Select VND wallet"
                 value={selectedVNDBalance}
-                onChange={(e) => setSelectedVNDBalance(e.target.value)}
+                onChange={(e) => handleWalletChange(Number(e.target.value))} // Corrected this line
               >
                 {wallets
                   .filter((wallet) => wallet.currency === "VND")
@@ -741,6 +791,24 @@ const WalletsOverview = () => {
                   ))}
               </Select>
             </FormControl>
+            {selectedVNDBalance && (
+              <FormControl isRequired>
+                <FormLabel>Select Goal:</FormLabel>
+                <Select
+                  placeholder="Select Goal"
+                  value={walletForm.savingGoalId || ""}
+                  onChange={(e) =>
+                    handleWalletFormChange("savingGoalId", e.target.value)
+                  }
+                >
+                  {savingGoals.map((goal) => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </ModalBody>
           <ModalFooter>
             <Button colorScheme="blue" mr={3} onClick={handleTransfer}>

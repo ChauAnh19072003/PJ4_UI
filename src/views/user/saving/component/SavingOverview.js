@@ -41,6 +41,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthHeader from "services/auth/authHeader";
 import GoalDetails from "./GoalDetails";
+import ProgressChart from "./CircleChart";
 
 const SavingGoalsView = () => {
   const [savingGoals, setSavingGoals] = useState([]);
@@ -282,7 +283,7 @@ const SavingGoalsView = () => {
               borderRadius="lg"
               overflow="hidden"
               boxShadow="lg"
-              bg="gray.50"
+              bg={goal.currentAmount < 0 ? "red.100" : "gray.50"}
               position="relative"
               cursor="pointer"
               transition="transform 0.2s"
@@ -306,8 +307,8 @@ const SavingGoalsView = () => {
                   isRound
                 />
               </Flex>
-              <Text mb={2}>Target Amount: ${goal.targetAmount}</Text>
-              <Text mb={2}>Current Amount: ${goal.currentAmount}</Text>
+              <Text mb={2}>Target Amount: {goal.targetAmount}VND</Text>
+              <Text mb={2}>Current Amount: {goal.currentAmount}VND</Text>
               {savingGoalForm.endDateType === "END_DATE" ? (
                 <Text mb={2}>
                   Start Date: {savingGoalForm.startDate} - End Date:{" "}
@@ -318,7 +319,7 @@ const SavingGoalsView = () => {
               )}
 
               <Progress
-                value={goal.currentAmount}
+                value={goal.currentAmount < 0 ? 0 : goal.currentAmount}
                 max={goal.targetAmount}
                 colorScheme={isGoalCompleted ? "green" : "blue"}
                 size="lg"
@@ -331,10 +332,17 @@ const SavingGoalsView = () => {
                   },
                 }}
               />
+
               <Text
                 mb={4}
                 fontWeight="bold"
-                color={isGoalCompleted ? "green.600" : "blue.600"}
+                color={
+                  isGoalCompleted
+                    ? "green.600"
+                    : goal.currentAmount < 0
+                    ? "red.500"
+                    : "blue.600"
+                }
               >
                 {completionPercentage}% Complete
               </Text>
@@ -482,7 +490,8 @@ const SavingGoalsView = () => {
         isOpen={isUpdateOpen}
         onClose={onUpdateClose}
         isCentered
-        size="4xl"
+        scrollBehavior="inside"
+        size="3xl"
       >
         <ModalOverlay />
         <ModalContent>

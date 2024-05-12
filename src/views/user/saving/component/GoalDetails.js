@@ -14,6 +14,7 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import AuthService from "services/auth/auth.service";
 import AuthHeader from "services/auth/authHeader";
+import CircleChart from "./CircleChart";
 
 function GoalDetails({
   setSavingGoalForm,
@@ -111,7 +112,19 @@ function GoalDetails({
 
   return (
     <>
-      <ModalBody>
+      <ModalBody
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <FormControl w="50%">
+          <CircleChart
+            currentAmount={savingGoalForm.currentAmount}
+            targetAmount={savingGoalForm.targetAmount}
+          />
+        </FormControl>
         <FormControl>
           <FormLabel>Name</FormLabel>
           <Input
