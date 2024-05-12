@@ -278,13 +278,13 @@ const WalletsOverview = () => {
       }
     }
 
-    if (isSavingGoalAmountChanged) {
-      if (!walletForm.savingGoalId) {
-        // setIsSavingGoalSelected(false);
-        toast.error("Please select a saving goal.");
-        return;
-      }
-    }
+    // if (isSavingGoalAmountChanged) {
+    //   if (!walletForm.savingGoalId) {
+    //     // setIsSavingGoalSelected(false);
+    //     toast.error("Please select a saving goal.");
+    //     return;
+    //   }
+    // }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -676,7 +676,7 @@ const WalletsOverview = () => {
                 )}
               </Box>
             )}
-            {isSavingGoalAmountChanged && (
+            {isSavingGoalAmountChanged && savingGoals.length > 0 && (
               <FormControl isRequired>
                 <Box mb={4}>
                   <Text mb={2}>Select Goal:</Text>
@@ -791,7 +791,7 @@ const WalletsOverview = () => {
                   ))}
               </Select>
             </FormControl>
-            {isSavingGoalAmountChanged && (
+            {isSavingGoalAmountChanged && savingGoals > 0 && (
               <FormControl isRequired>
                 <FormLabel>Select Goal:</FormLabel>
                 <Select
