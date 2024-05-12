@@ -393,13 +393,22 @@ const DebtsOverview = () => {
     }
   };
 
+  // Utility function to render debt or loan status
   const renderDebtStatus = (debt) => {
-    if (debt.category && debt.category.name === "Debt") {
+    const isDebtCategory = categories.some(
+      (cat) => cat.id === debt.categoryId && cat.name === "Debt"
+    );
+    const isLoanCategory = categories.some(
+      (cat) => cat.id === debt.categoryId && cat.name === "Loan"
+    );
+
+    if (isDebtCategory) {
       return debt.isPaid ? "Paid" : "Due";
-    } else if (debt.category && debt.category.name === "Loan") {
+    }
+    if (isLoanCategory) {
       return debt.isPaid ? "Received" : "Due";
     }
-    return "";
+    return ""; // or a default status if needed
   };
 
   if (loading) {
@@ -474,16 +483,7 @@ const DebtsOverview = () => {
                               <Badge
                                 colorScheme={debt.isPaid ? "green" : "orange"}
                               >
-                                {debt.categoryId === debtCategoryId &&
-                                debt.isPaid
-                                  ? "Paid"
-                                  : debt.categoryId === debtCategoryId &&
-                                    !debt.isPaid
-                                  ? "Due"
-                                  : debt.categoryId === loanCategoryId &&
-                                    debt.isPaid
-                                  ? "Received"
-                                  : "Due"}
+                                {renderDebtStatus(debt)}
                               </Badge>
                             </Text>
                             <Flex align="center" mt={1} wrap="wrap">
