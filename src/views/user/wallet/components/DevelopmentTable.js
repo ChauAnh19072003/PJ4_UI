@@ -32,7 +32,7 @@ import {
   InputLeftAddon,
   InputGroup,
   InputRightAddon,
-  FormControl
+  FormControl,
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon, EditIcon, MinusIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
@@ -791,7 +791,7 @@ const WalletsOverview = () => {
                   ))}
               </Select>
             </FormControl>
-            {selectedVNDBalance && (
+            {isSavingGoalAmountChanged && (
               <FormControl isRequired>
                 <FormLabel>Select Goal:</FormLabel>
                 <Select
