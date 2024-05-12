@@ -322,6 +322,7 @@ const WalletsOverview = () => {
         toast.success("Wallet added successfully");
       }
       fetchWallets();
+      setIsSavingGoalSelected(false);
       onEditModalClose();
     } catch (error) {
       const errorMessage = error.response?.data;
@@ -413,6 +414,7 @@ const WalletsOverview = () => {
       toast.success(response.data);
       fetchWallets();
       onTransferModalClose();
+      setIsSavingGoalSelected(false);
       onEditModalClose();
     } catch (error) {
       toast.error(error.response.data);
@@ -643,6 +645,7 @@ const WalletsOverview = () => {
                 placeholder="Select wallet type"
                 value={walletForm.type}
                 onChange={(e) => handleWalletTypeChange(e.target.value)}
+                isDisabled={isEditing}
               >
                 {walletTypes.map((type) => (
                   <option key={type.typeId} value={type.typeId}>
