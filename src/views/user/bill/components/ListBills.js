@@ -53,7 +53,8 @@ function BillList() {
   } = useDisclosure();
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchDate, setSearchDate] = useState(null);
+  const [searchStartDate, setSearchStartDate] = useState(null);
+  const [searchEndDate, setSearchEndDate] = useState(null);
   const [selectedBill, setSelectedBill] = useState(null);
   const inputText = useColorModeValue("gray.700", "gray.100");
   const [categories, setCategories] = useState([]);
@@ -185,18 +186,32 @@ function BillList() {
         />
         <Box
           mr={4}
-          w={{ base: "100%", md: "40%", xl: "40%" }}
-          mx={{ base: 0, md: "20px" }}
-          mb={{ base: "20px", md: 0, xl: 0 }}
+          w={{ base: "100%", md: "20%", xl: "20%" }}
           textAlign="center"
+          mb={{ base: "20px", md: 0, xl: 0 }}
         >
           <DatePicker
-            selected={searchDate}
-            onChange={(date) => setSearchDate(date)}
+            selected={searchStartDate}
+            onChange={(date) => setSearchStartDate(date)}
             dateFormat="yyyy-MM-dd"
             customInput={<Input color={inputText} />}
             wrapperClassName="custom-datepicker"
-            placeholderText="Select Due Date"
+            placeholderText="From Date"
+          />
+        </Box>
+        <Box
+          mr={4}
+          w={{ base: "100%", md: "20%", xl: "20%" }}
+          textAlign="center"
+          mb={{ base: "20px", md: 0, xl: 0 }}
+        >
+          <DatePicker
+            selected={searchEndDate}
+            onChange={(date) => setSearchEndDate(date)}
+            dateFormat="yyyy-MM-dd"
+            customInput={<Input color={inputText} />}
+            wrapperClassName="custom-datepicker"
+            placeholderText="To Date"
           />
         </Box>
 
@@ -308,16 +323,12 @@ function BillList() {
               bills.content &&
               bills.content
                 .filter((bill) => {
-                  if (searchDate) {
-                    const formattedDate = format(
-                      new Date(bill.recurrence.dueDate),
-                      "yyyy-MM-dd"
+                  if (searchStartDate && searchEndDate) {
+                    const transactionDate = new Date(bill.recurrence.dueDate);
+                    return (
+                      transactionDate >= searchStartDate &&
+                      transactionDate <= searchEndDate
                     );
-                    const formattedSearchDate = format(
-                      searchDate,
-                      "yyyy-MM-dd"
-                    );
-                    return formattedDate === formattedSearchDate;
                   } else {
                     return true;
                   }
