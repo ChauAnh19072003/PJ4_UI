@@ -255,40 +255,7 @@ function AddTransactionRecurring({
     const selectedWallet = wallets.find(
       (wallet) => wallet.walletId === changeWallet
     );
-
-    if (selectedWallet && selectedWallet.walletType === 3) {
-      // Special handling for wallet type 3
-      return categories
-        .filter(
-          (category) =>
-            category.name === "Incoming Transfer" ||
-            category.name === "Outgoing Transfer"
-        )
-        .map((category) => (
-          <Box key={category.id} mb={2}>
-            <Text fontWeight="bold" mb={2}>
-              {category.type}
-            </Text>
-            <Button
-              variant="ghost"
-              w="100%"
-              textAlign="left"
-              justifyContent="start"
-              alignItems="center"
-              onClick={() => setChangeCategory(category.id)}
-            >
-              <img
-                src={`/assets/img/icons/${category.icon.path}`}
-                alt={category.name}
-                width="20"
-                height="20"
-                style={{ marginRight: "8px" }}
-              />
-              {category.name}
-            </Button>
-          </Box>
-        ));
-    } else if (selectedWallet && selectedWallet.currency == "USD") {
+    if (selectedWallet && selectedWallet.currency == "USD") {
       return (
         <Box mb={2}>
           <Text fontWeight="bold" mb={2}>
@@ -352,78 +319,6 @@ function AddTransactionRecurring({
     }
   }, [changeWallet, wallets, categories, groupedCategories]);
 
-  useEffect(() => {
-    let isActive = true;
-    setLoadingGoals(true);
-
-    const fetchGoalsIfApplicable = async () => {
-      const selectedWallet = wallets.find(
-        (wallet) => wallet.walletId === changeWallet
-      );
-      if (selectedWallet && selectedWallet.walletType === 3) {
-        try {
-          const response = await axios.get(
-            `/api/savinggoals/wallets/${changeWallet}/users/${
-              AuthService.getCurrentUser().id
-            }`,
-            { headers: AuthHeader() }
-          );
-          if (isActive) {
-            setGoals(response.data);
-            setLoadingGoals(false);
-          }
-        } catch (error) {
-          console.error("Error fetching goals:", error);
-          if (isActive) {
-            setGoals([]);
-            setLoadingGoals(false);
-          }
-        }
-      } else {
-        setGoals([]);
-        setLoadingGoals(false);
-      }
-    };
-
-    fetchGoalsIfApplicable();
-
-    return () => {
-      isActive = false;
-    };
-  }, [changeWallet, wallets]);
-
-  const goalSelection = useMemo(() => {
-    const wallet = wallets.find((wallet) => wallet.walletId === changeWallet);
-
-    if (loadingGoals) {
-      return (
-        <Center>
-          <Spinner />
-        </Center>
-      );
-    }
-
-    if (wallet && wallet.walletType === 3 && goals.length > 0) {
-      return (
-        <Box mb={4}>
-          <Text mb={2}>Select Goal:</Text>
-          <Select
-            placeholder="Select Goal"
-            value={changeGoal || ""}
-            onChange={(e) => setChangeGoal(e.target.value)}
-          >
-            {goals.map((goal) => (
-              <option key={goal.id} value={goal.id}>
-                {goal.name}
-              </option>
-            ))}
-          </Select>
-        </Box>
-      );
-    }
-    return null;
-  }, [changeWallet, wallets, goals, changeGoal, loadingGoals]);
-
   return (
     <>
       <ModalBody>
@@ -439,11 +334,13 @@ function AddTransactionRecurring({
                   handleWalletChange(newWalletId);
                 }}
               >
-                {wallets.map((wallet) => (
-                  <option key={wallet.walletId} value={wallet.walletId}>
-                    {wallet.walletName}
-                  </option>
-                ))}
+                {wallets
+                  .filter((wallet) => wallet.walletType !== 3)
+                  .map((wallet) => (
+                    <option key={wallet.walletId} value={wallet.walletId}>
+                      {wallet.walletName}
+                    </option>
+                  ))}
               </Select>
             ) : (
               <Text color="red.500">
@@ -451,7 +348,6 @@ function AddTransactionRecurring({
               </Text>
             )}
           </Box>
-          {goalSelection}
           <Box mb={4}>
             <Text mb={2}>Category:</Text>
             <Popover placement="right-start">

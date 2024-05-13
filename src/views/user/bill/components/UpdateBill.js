@@ -157,9 +157,9 @@ function UpdateBill({
   }, [changeWallet, changeCategory, changeStartDate]);
 
   const handleUpdateBill = useCallback(async () => {
-    if (!validateForm()) {
-      return;
-    }
+    // if (!validateForm()) {
+    //   return;
+    // }
     const currentUser = AuthService.getCurrentUser();
     try {
       if (currentUser) {
@@ -336,6 +336,33 @@ function UpdateBill({
     <>
       <ModalBody>
         <Flex direction="column">
+          <Box mr={4}>
+            <Text mb={2}>Wallet:</Text>
+            {wallets && wallets.length > 0 ? (
+              <Select
+                w="385px"
+                color={inputText}
+                placeholder="Select Wallet"
+                value={changeWallet}
+                onChange={(e) => setChangeWallet(e.target.value)}
+              >
+                {wallets
+                  .filter(
+                    (wallet) =>
+                      wallet.walletType !== 3 && wallet.currency !== "USD"
+                  )
+                  .map((wallet) => (
+                    <option key={wallet.walletId} value={wallet.walletId}>
+                      {wallet.walletName}
+                    </option>
+                  ))}
+              </Select>
+            ) : (
+              <Text color="red.500">
+                No wallets available. Please create a wallet first.
+              </Text>
+            )}
+          </Box>
           <Box mb={4}>
             <Text mb={2}>Category:</Text>
             <Popover placement="right-start">
@@ -388,30 +415,6 @@ function UpdateBill({
               min={1}
               color={inputText}
             />
-          </Box>
-          <Box mr={4}>
-            <Text mb={2}>Wallet:</Text>
-            {wallets && wallets.length > 0 ? (
-              <Select
-                w="385px"
-                color={inputText}
-                placeholder="Select Wallet"
-                value={changeWallet}
-                onChange={(e) => setChangeWallet(e.target.value)}
-              >
-                {wallets
-                  .filter((wallet) => wallet.walletType !== 3)
-                  .map((wallet) => (
-                    <option key={wallet.walletId} value={wallet.walletId}>
-                      {wallet.walletName}
-                    </option>
-                  ))}
-              </Select>
-            ) : (
-              <Text color="red.500">
-                No wallets available. Please create a wallet first.
-              </Text>
-            )}
           </Box>
           <Box mb={4} mt={3}>
             <Text mb={2}>Frequency:</Text>

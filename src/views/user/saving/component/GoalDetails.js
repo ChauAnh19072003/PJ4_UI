@@ -71,7 +71,7 @@ function GoalDetails({
           headers: AuthHeader(),
         }
       );
-      toast.success("Saving goal added successfully");
+      toast.success("Saving goal update successfully");
       fetchSavingGoals();
       onUpdateClose();
     } catch (error) {
