@@ -278,13 +278,13 @@ const WalletsOverview = () => {
       }
     }
 
-    if (isSavingGoalAmountChanged) {
-      if (!walletForm.savingGoalId) {
-        // setIsSavingGoalSelected(false);
-        toast.error("Please select a saving goal.");
-        return;
-      }
-    }
+    // if (isSavingGoalAmountChanged) {
+    //   if (!walletForm.savingGoalId) {
+    //     // setIsSavingGoalSelected(false);
+    //     toast.error("Please select a saving goal.");
+    //     return;
+    //   }
+    // }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -322,6 +322,7 @@ const WalletsOverview = () => {
         toast.success("Wallet added successfully");
       }
       fetchWallets();
+      setIsSavingGoalSelected(false);
       onEditModalClose();
     } catch (error) {
       const errorMessage = error.response?.data;
@@ -413,6 +414,7 @@ const WalletsOverview = () => {
       toast.success(response.data);
       fetchWallets();
       onTransferModalClose();
+      setIsSavingGoalSelected(false);
       onEditModalClose();
     } catch (error) {
       toast.error(error.response.data);
@@ -643,6 +645,7 @@ const WalletsOverview = () => {
                 placeholder="Select wallet type"
                 value={walletForm.type}
                 onChange={(e) => handleWalletTypeChange(e.target.value)}
+                isDisabled={isEditing}
               >
                 {walletTypes.map((type) => (
                   <option key={type.typeId} value={type.typeId}>
@@ -676,7 +679,7 @@ const WalletsOverview = () => {
                 )}
               </Box>
             )}
-            {isSavingGoalAmountChanged && (
+            {isSavingGoalAmountChanged && savingGoals.length > 0 && (
               <FormControl isRequired>
                 <Box mb={4}>
                   <Text mb={2}>Select Goal:</Text>
@@ -791,7 +794,7 @@ const WalletsOverview = () => {
                   ))}
               </Select>
             </FormControl>
-            {isSavingGoalAmountChanged && (
+            {isSavingGoalAmountChanged && savingGoals.length > 0 && (
               <FormControl isRequired>
                 <FormLabel>Select Goal:</FormLabel>
                 <Select

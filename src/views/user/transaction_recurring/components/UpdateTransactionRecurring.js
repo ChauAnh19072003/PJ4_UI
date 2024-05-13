@@ -165,28 +165,8 @@ function UpdateTransactionRecurring({
       });
       return false;
     }
-    if (
-      wallets.some(
-        (wallet) =>
-          wallet.walletId === changeWallet &&
-          wallet.walletType === 3 &&
-          !changeGoal
-      )
-    ) {
-      toast.error("Please select goal!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return false;
-    }
     return true;
-  }, [changeWallet, changeCategory, changeStartDate, changeGoal, wallets]);
+  }, [changeWallet, changeCategory, changeStartDate, wallets]);
 
   const handleUpdateTransaction = useCallback(async () => {
     if (!validateForm()) {
@@ -424,7 +404,6 @@ function UpdateTransactionRecurring({
             placeholder="Select Goal"
             value={changeGoal || ""}
             onChange={(e) => setChangeGoal(e.target.value)}
-            isDisabled
           >
             {goals.map((goal) => (
               <option key={goal.id} value={goal.id}>

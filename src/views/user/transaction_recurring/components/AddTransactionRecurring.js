@@ -140,26 +140,6 @@ function AddTransactionRecurring({
       });
       return false;
     }
-    if (
-      wallets.some(
-        (wallet) =>
-          wallet.walletId === changeWallet &&
-          wallet.walletType === 3 &&
-          !changeGoal
-      )
-    ) {
-      toast.error("Please select goal!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return false;
-    }
     return true;
   }, [
     changeWallet,
@@ -436,21 +416,6 @@ function AddTransactionRecurring({
         </Box>
       );
     }
-    if (
-      wallet &&
-      wallet.walletType === 3 &&
-      goals.length === 0 &&
-      !loadingGoals
-    ) {
-      return (
-        <Box mb={4}>
-          <Text color="red" fontWeight="bold">
-            No goals available. Please create goals first.
-          </Text>
-        </Box>
-      );
-    }
-
     return null;
   }, [changeWallet, wallets, goals, changeGoal, loadingGoals]);
 
