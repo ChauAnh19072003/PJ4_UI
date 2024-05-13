@@ -39,7 +39,8 @@ function ListTransactions() {
   const inputText = useColorModeValue("gray.700", "gray.100");
   const [searchCateType, setSearchCateType] = useState("");
   const [searchWallet, setSearchWallet] = useState("");
-  const [searchDate, setSearchDate] = useState(null);
+  const [searchStartDate, setSearchStartDate] = useState(null);
+  const [searchEndDate, setSearchEndDate] = useState(null);
   const [transaction, setTransaction] = useState({ content: [] });
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -232,6 +233,7 @@ function ListTransactions() {
             <option value="expense">Expense</option>
           </Select>
         </Box>
+
         <Box
           mr={4}
           w={{ base: "100%", md: "20%", xl: "20%" }}
@@ -239,12 +241,27 @@ function ListTransactions() {
           mb={{ base: "20px", md: 0, xl: 0 }}
         >
           <DatePicker
-            selected={searchDate}
-            onChange={(date) => setSearchDate(date)}
+            selected={searchStartDate}
+            onChange={(date) => setSearchStartDate(date)}
             dateFormat="yyyy-MM-dd"
             customInput={<Input color={inputText} />}
             wrapperClassName="custom-datepicker"
-            placeholderText="Select Date"
+            placeholderText="From Date"
+          />
+        </Box>
+        <Box
+          mr={4}
+          w={{ base: "100%", md: "20%", xl: "20%" }}
+          textAlign="center"
+          mb={{ base: "20px", md: 0, xl: 0 }}
+        >
+          <DatePicker
+            selected={searchEndDate}
+            onChange={(date) => setSearchEndDate(date)}
+            dateFormat="yyyy-MM-dd"
+            customInput={<Input color={inputText} />}
+            wrapperClassName="custom-datepicker"
+            placeholderText="To Date"
           />
         </Box>
 
@@ -385,13 +402,12 @@ function ListTransactions() {
               }
             })
             .filter((transaction) => {
-              if (searchDate) {
-                const formattedDate = format(
-                  new Date(transaction.transactionDate),
-                  "yyyy-MM-dd"
+              if (searchStartDate && searchEndDate) {
+                const transactionDate = new Date(transaction.transactionDate);
+                return (
+                  transactionDate >= searchStartDate &&
+                  transactionDate <= searchEndDate
                 );
-                const formattedSearchDate = format(searchDate, "yyyy-MM-dd");
-                return formattedDate === formattedSearchDate;
               } else {
                 return true;
               }
