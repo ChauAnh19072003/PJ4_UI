@@ -274,6 +274,11 @@ function UpdateTransactionRecurring({
     validateForm,
   ]);
 
+  const handleWalletChange = (newWalletId) => {
+    setChangeWallet(newWalletId);
+    setChangeCategory(null);
+  };
+
   const categoryOptions = useMemo(() => {
     const selectedWallet = wallets.find(
       (wallet) => wallet.walletId === changeWallet
@@ -414,21 +419,6 @@ function UpdateTransactionRecurring({
         </Box>
       );
     }
-    if (
-      wallet &&
-      wallet.walletType === 3 &&
-      goals.length === 0 &&
-      !loadingGoals
-    ) {
-      return (
-        <Box mb={4}>
-          <Text color="red" fontWeight="bold">
-            No goals available. Please create goals first.
-          </Text>
-        </Box>
-      );
-    }
-
     return null;
   }, [changeWallet, wallets, goals, changeGoal, loadingGoals]);
 
@@ -442,8 +432,10 @@ function UpdateTransactionRecurring({
               <Select
                 placeholder="Select Wallet"
                 value={changeWallet}
-                onChange={(e) => setChangeWallet(Number(e.target.value))}
-                isDisabled
+                onChange={(e) => {
+                  const newWalletId = Number(e.target.value);
+                  handleWalletChange(newWalletId);
+                }}
               >
                 {wallets.map((wallet) => (
                   <option key={wallet.walletId} value={wallet.walletId}>

@@ -168,6 +168,11 @@ const AddTransaction = ({
     validateForm,
   ]);
 
+  const handleWalletChange = (newWalletId) => {
+    setChangeWallet(newWalletId);
+    setChangeCategory(null);
+  };
+
   const categoryOptions = useMemo(() => {
     const selectedWallet = wallets.find(
       (wallet) => wallet.walletId === changeWallet
@@ -349,7 +354,10 @@ const AddTransaction = ({
             <Select
               placeholder="Select Wallet"
               value={changeWallet}
-              onChange={(e) => setChangeWallet(Number(e.target.value))}
+              onChange={(e) => {
+                const newWalletId = Number(e.target.value);
+                handleWalletChange(newWalletId);
+              }}
             >
               {wallets.map((wallet) => (
                 <option key={wallet.walletId} value={wallet.walletId}>
