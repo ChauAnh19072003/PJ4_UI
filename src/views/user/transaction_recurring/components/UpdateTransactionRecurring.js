@@ -414,20 +414,6 @@ function UpdateTransactionRecurring({
         </Box>
       );
     }
-    if (
-      wallet &&
-      wallet.walletType === 3 &&
-      goals.length === 0 &&
-      !loadingGoals
-    ) {
-      return (
-        <Box mb={4}>
-          <Text color="red" fontWeight="bold">
-            No goals available. Please create goals first.
-          </Text>
-        </Box>
-      );
-    }
 
     return null;
   }, [changeWallet, wallets, goals, changeGoal, loadingGoals]);

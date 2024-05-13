@@ -246,6 +246,11 @@ function AddTransactionRecurring({
     validateForm,
   ]);
 
+  const handleWalletChange = (newWalletId) => {
+    setChangeWallet(newWalletId);
+    setChangeCategory(null);
+  };
+
   const categoryOptions = useMemo(() => {
     const selectedWallet = wallets.find(
       (wallet) => wallet.walletId === changeWallet
@@ -429,7 +434,10 @@ function AddTransactionRecurring({
               <Select
                 placeholder="Select Wallet"
                 value={changeWallet}
-                onChange={(e) => setChangeWallet(Number(e.target.value))}
+                onChange={(e) => {
+                  const newWalletId = Number(e.target.value);
+                  handleWalletChange(newWalletId);
+                }}
               >
                 {wallets.map((wallet) => (
                   <option key={wallet.walletId} value={wallet.walletId}>
@@ -449,8 +457,10 @@ function AddTransactionRecurring({
             <Popover placement="right-start">
               <PopoverTrigger>
                 <Button color={inputText} textAlign="left" w="100%">
+                  {/* Hiển thị tên danh mục đã chọn */}
                   {changeCategory ? (
                     <Flex alignItems="center">
+                      {/* Hiển thị biểu tượng danh mục đã chọn */}
                       <img
                         src={`/assets/img/icons/${
                           categories.find(
