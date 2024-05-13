@@ -436,7 +436,7 @@ function AddTransactionRecurring({
                 value={changeWallet}
                 onChange={(e) => {
                   const newWalletId = Number(e.target.value);
-                  handleWalletChange(newWalletId); // Gọi hàm xử lý sự kiện chuyển đổi ví
+                  handleWalletChange(newWalletId);
                 }}
               >
                 {wallets.map((wallet) => (
