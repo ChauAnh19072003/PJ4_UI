@@ -38,8 +38,17 @@ import "react-toastify/dist/ReactToastify.css";
 import AuthHeader from "services/auth/authHeader";
 import GoalDetails from "./GoalDetails";
 import { FaEye } from "react-icons/fa";
+import DatePicker from "react-datepicker";
+import { DatePickerStyle } from "views/user/bill/Styles";
+import "react-datepicker/dist/react-datepicker.css";
 
 const SavingGoalsView = () => {
+  const inputText = "gray.700";
+  const adjustDateToUTC = (date) => {
+    date.setHours(date.getHours() + 7);
+    date.setUTCHours(0, 0, 0, 0);
+    return date;
+  };
   const [savingGoals, setSavingGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const cancelRef = useRef();
@@ -453,15 +462,19 @@ const SavingGoalsView = () => {
             </FormControl>
             <FormControl mt={4}>
               <FormLabel>Start Date: </FormLabel>
-              <Input
-                type="date"
-                value={savingGoalForm.startDate}
-                onChange={(e) =>
-                  handleSavingGoalFormChange("startDate", e.target.value)
-                }
-                min={new Date().toISOString().split("T")[0]}
-                isDisabled
-              />
+              <DatePickerStyle>
+                <DatePicker
+                  selected={savingGoalForm.startDate}
+                  onChange={(e) =>
+                    handleSavingGoalFormChange("startDate", e.target.value)
+                  }
+                  dateFormat="yyyy-MM-dd"
+                  customInput={<Input color={inputText} />}
+                  wrapperClassName="custom-datepicker"
+                  placeholderText="YYYY/MM/DD"
+                  disabled
+                />
+              </DatePickerStyle>
             </FormControl>
             <FormControl mt={4}>
               <FormLabel>Ending Date: </FormLabel>

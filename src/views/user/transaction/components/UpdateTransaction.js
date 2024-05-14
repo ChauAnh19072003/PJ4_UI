@@ -375,7 +375,6 @@ const UpdateTransaction = ({
       </ModalBody>
       <ModalFooter justifyContent="center">
         <Button
-          isDisabled={isDisabled}
           colorScheme="red"
           mr={2}
           onClick={() => {
