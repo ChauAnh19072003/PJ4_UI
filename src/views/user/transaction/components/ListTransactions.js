@@ -476,7 +476,7 @@ function ListTransactions() {
                       {walletName}
                     </Box>
                     <Box flex="2" color="secondaryGray.900" fontWeight="bold">
-                      {transaction.amount}
+                      {transaction.amount.toLocaleString()}
                     </Box>
                     <Box flex="2" color="secondaryGray.900" fontWeight="bold">
                       {transaction.transactionDate}
