@@ -38,6 +38,7 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
   Progress,
+  Image,
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon, EditIcon } from "@chakra-ui/icons";
 import { toast, ToastContainer } from "react-toastify";
@@ -73,6 +74,41 @@ const BudgetsOverview = ({ userId }) => {
   };
   const [budgetForm, setBudgetForm] = useState(initialBudgetState);
   const [tabIndex, setTabIndex] = useState(1); // Start from 0, so '1' would be the second tab
+  const [isTransactionsModalOpen, setIsTransactionsModalOpen] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+
+  const fetchTransactionsForBudget = async (budget) => {
+    const currentUser = AuthService.getCurrentUser();
+    if (!currentUser || !currentUser.id) {
+      toast.error("You must be logged in to perform this action.");
+      return;
+    }
+
+    const paramBudget = {
+      userId: currentUser.id,
+      fromDate: new Date(budget.periodStart).toISOString().split("T")[0],
+      toDate: new Date(budget.periodEnd).toISOString().split("T")[0],
+      categoryId: budget.categoryId,
+    };
+
+    try {
+      const response = await axios.post(
+        `/api/transactions/getTransactionWithBudget`,
+        paramBudget,
+        {
+          headers: AuthHeader(),
+        }
+      );
+      setTransactions(response.data);
+      setIsTransactionsModalOpen(true);
+    } catch (error) {
+      toast.error(`Error fetching transactions for budget: ${error.message}`);
+    }
+  };
+
+  const onTransactionsModalClose = () => {
+    setIsTransactionsModalOpen(false);
+  };
 
   const resetFormAndErrors = () => {
     setBudgetForm(initialBudgetState);
@@ -332,6 +368,8 @@ const BudgetsOverview = ({ userId }) => {
       borderWidth="1px"
       borderRadius="lg"
       mb={4}
+      onClick={() => fetchTransactionsForBudget(budget)}
+      cursor="pointer"
     >
       <Flex justifyContent="space-between" alignItems="center">
         <Flex alignItems="center" maxWidth="70%">
@@ -368,7 +406,10 @@ const BudgetsOverview = ({ userId }) => {
         <Flex alignItems="center">
           <IconButton
             icon={<EditIcon />}
-            onClick={() => openModalToEdit(budget)}
+            onClick={(e) => {
+              e.stopPropagation();
+              openModalToEdit(budget);
+            }}
             aria-label="Edit"
             colorScheme="blue"
             size="sm"
@@ -376,7 +417,8 @@ const BudgetsOverview = ({ userId }) => {
           />
           <IconButton
             icon={<DeleteIcon />}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               setBudgetToDelete(budget.budgetId);
               setIsDeleteAlertOpen(true);
             }}
@@ -421,7 +463,12 @@ const BudgetsOverview = ({ userId }) => {
             Add New Budget
           </Button>
         </VStack>
-        <Tabs isFitted variant="enclosed" index={tabIndex} onChange={index => setTabIndex(index)}>
+        <Tabs
+          isFitted
+          variant="enclosed"
+          index={tabIndex}
+          onChange={(index) => setTabIndex(index)}
+        >
           <TabList mb="1em">
             <Tab>Old Budgets</Tab>
             <Tab>This month</Tab>
@@ -597,7 +644,55 @@ const BudgetsOverview = ({ userId }) => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-
+      {/* Modal show transaction */}
+      <Modal
+        isOpen={isTransactionsModalOpen}
+        onClose={onTransactionsModalClose}
+        size="xl"
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Budget transactions</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Box maxH="400px" overflowY="auto">
+              <VStack spacing={4} align="stretch">
+                {transactions.map((transaction, index) => (
+                  <Box key={index} p={5} shadow="md" borderWidth="1px">
+                    <Flex align="center">
+                      <Box mr={3}>
+                        <Image
+                          boxSize="50px"
+                          src={`/assets/img/icons/${transaction.cateIcon}`}
+                          alt={transaction.categoryName}
+                        />
+                      </Box>
+                      <Box>
+                        <Heading size="md">{transaction.categoryName}</Heading>
+                        <Text mt={2}>
+                          Amount:{" "}
+                          {transaction.amount.toFixed(2).toLocaleString()}
+                        </Text>
+                        <Text mt={2}>Date: {transaction.transactionDate}</Text>
+                      </Box>
+                    </Flex>
+                  </Box>
+                ))}
+              </VStack>
+            </Box>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              colorScheme="blue"
+              mr={3}
+              onClick={onTransactionsModalClose}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      {/*Alert*/}
       <AlertDialog
         isOpen={isDeleteAlertOpen}
         leastDestructiveRef={cancelRef}
