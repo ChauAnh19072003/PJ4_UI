@@ -1,13 +1,23 @@
 import {
   Box,
   Button,
+  Flex,
   FormControl,
   FormLabel,
+  Heading,
+  Image,
   Input,
+  Modal,
   ModalBody,
+  ModalCloseButton,
+  ModalContent,
   ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Select,
   Text,
+  VStack,
+  useDisclosure,
 } from "@chakra-ui/react";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
@@ -190,6 +200,7 @@ function GoalDetails({
               handleSavingGoalFormChange("startDate", e.target.value)
             }
             min={new Date().toISOString().split("T")[0]}
+            isDisabled
           />
         </FormControl>
         <FormControl mt={4}>

@@ -78,7 +78,7 @@ function UserProfile() {
           headers: AuthHeader(),
         }
       );
-      toast.success(response.data);
+      toast.success("Update User Successfull");
       onUpdateClose();
     } catch (error) {
       if (
