@@ -455,7 +455,7 @@ const WalletsOverview = () => {
                     fontSize="md"
                     color={wallet.balance < 0 ? "red.600" : "#4A5568"}
                   >
-                    {wallet.balance} {wallet.currency}
+                    {wallet.balance.toLocaleString()} {wallet.currency}
                     <Text as="span" fontWeight="bold" ml={2}>
                       • {wallet.walletTypeName}
                     </Text>
@@ -534,7 +534,7 @@ const WalletsOverview = () => {
                     <Box>
                       <Heading size="md">{transaction.categoryName}</Heading>
                       <Text mt={2}>
-                        Amount: ${transaction.amount.toFixed(2)}
+                        Amount: {transaction.amount.toFixed(2).toLocaleString()}
                       </Text>
                       <Text mt={2}>Date: {transaction.transactionDate}</Text>
                     </Box>

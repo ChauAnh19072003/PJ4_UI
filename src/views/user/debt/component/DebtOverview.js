@@ -48,7 +48,21 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const DebtsOverview = () => {
-  const [tabIndex, setTabIndex] = useState(0); // 0: Debt, 1: Loan
+  const getFirstDayOfMonth = () => {
+    const date = new Date();
+    return new Date(date.getFullYear(), date.getMonth(), 1)
+      .toISOString()
+      .split("T")[0];
+  };
+
+  const getLastDayOfMonth = () => {
+    const date = new Date();
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0)
+      .toISOString()
+      .split("T")[0];
+  };
+  
+  const [tabIndex, setTabIndex] = useState(0);
   const [debtCategoryId, setDebtCategoryId] = useState(null);
   const [loanCategoryId, setLoanCategoryId] = useState(null);
   const [debts, setDebts] = useState([]);
@@ -64,6 +78,10 @@ const DebtsOverview = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [showChart, setShowChart] = useState(false);
   const [reportData, setReportData] = useState([]);
+  const [fromDate, setFromDate] = useState(getFirstDayOfMonth());
+  const [toDate, setToDate] = useState(getLastDayOfMonth());
+  const [shouldFetchDetailedReport, setShouldFetchDetailedReport] =
+    useState(false);
 
   const initialDebtState = {
     name: "",
@@ -76,38 +94,63 @@ const DebtsOverview = () => {
   };
   const [debtForm, setDebtForm] = useState(initialDebtState);
 
-  const debtOverdueTotal = debts.reduce((acc, debt) => {
-    const dueDatePassed = new Date(debt.dueDate) < new Date();
-    const unpaid = !debt.isPaid;
-    if (dueDatePassed && unpaid) {
-      return acc + parseFloat(debt.amount);
-    }
-    return acc;
-  }, 0);
-
-  const debtPaidBeforeDueTotal = debts.reduce((acc, debt) => {
-    const paidBeforeDue =
-      debt.isPaid && new Date(debt.paidDate) < new Date(debt.dueDate);
-    if (paidBeforeDue) {
-      return acc + parseFloat(debt.amount);
-    }
-    return acc;
-  }, 0);
-
-  const fetchReportData = async () => {
+  const fetchReportData = async (fromDate = getFirstDayOfMonth(), toDate = getLastDayOfMonth()) => {
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
-        const response = await axios.get(
-          `/api/debts/reportDebt/user/${currentUser.id}`,
+        const reportDebtParam = {
+          userId: currentUser.id,
+          fromDate: fromDate ? fromDate : null, // Use fromDate if provided, otherwise set to null
+          toDate: toDate ? toDate : null, // Use toDate if provided, otherwise set to null
+        };
+
+        const response = await axios.post(
+          "/api/debts/reportDebt",
+          reportDebtParam,
           {
             headers: AuthHeader(),
           }
         );
-        setReportData(response.data);
+
+        if (response.status === 200) {
+          setReportData(response.data);
+        } else {
+          toast.error("Failed to fetch report data.");
+        }
       } catch (error) {
         console.error("Error fetching report data:", error);
         toast.error("Failed to fetch report data.");
+      }
+    }
+  };
+
+  const fetchDetailedReportData = async (fromDate = getFirstDayOfMonth(), toDate = getLastDayOfMonth()) => {
+    const currentUser = AuthService.getCurrentUser();
+    if (currentUser) {
+      try {
+        const detailReportDebtParam = {
+          userId: currentUser.id,
+          fromDate: fromDate ? fromDate : null, // Use fromDate if provided, otherwise set to null
+          toDate: toDate ? toDate : null, // Use toDate if provided, otherwise set to null
+        };
+
+        const response = await axios.post(
+          "/api/debts/getDetailReportDebtParam",
+          detailReportDebtParam,
+          {
+            headers: AuthHeader(),
+          }
+        );
+
+        if (response.status === 200) {
+          // Handle the detailed report data as needed
+          console.log("Detailed report data:", response.data);
+        } else {
+          toast.error("Failed to fetch detailed report data.");
+        }
+      } catch (error) {
+        console.error("Error fetching detailed report data:", error);
+        toast.error("Failed to fetch detailed report data.");
       }
     }
   };
@@ -178,8 +221,13 @@ const DebtsOverview = () => {
 
     fetchDebts();
     fetchCategories();
-    fetchReportData();
-  }, [currentPage, pageSize]);
+    fetchReportData(fromDate, toDate);
+
+    if (shouldFetchDetailedReport) {
+      fetchDetailedReportData(fromDate, toDate);
+      setShouldFetchDetailedReport(false); // Reset the flag after fetching data
+    }
+  }, [currentPage, pageSize, fromDate, toDate, shouldFetchDetailedReport]);
 
   useEffect(() => {
     fetchDebts();
@@ -223,6 +271,10 @@ const DebtsOverview = () => {
       }
       setLoading(false);
     }
+  };
+
+  const handleSearch = () => {
+    setShouldFetchDetailedReport(true);
   };
 
   const handlePrevPage = () => {
@@ -394,9 +446,17 @@ const DebtsOverview = () => {
   };
 
   const renderDebtStatus = (debt) => {
-    if (debt.category && debt.category.name === "Debt") {
+    const isDebtCategory = categories.some(
+      (cat) => cat.id === debt.categoryId && cat.name === "Debt"
+    );
+    const isLoanCategory = categories.some(
+      (cat) => cat.id === debt.categoryId && cat.name === "Loan"
+    );
+
+    if (isDebtCategory) {
       return debt.isPaid ? "Paid" : "Due";
-    } else if (debt.category && debt.category.name === "Loan") {
+    }
+    if (isLoanCategory) {
       return debt.isPaid ? "Received" : "Due";
     }
     return "";
@@ -421,6 +481,25 @@ const DebtsOverview = () => {
         {showChart && (
           <Flex justifyContent="center" mt="6">
             <Box width="50%">
+              <FormControl mt={4}>
+                <FormLabel>From Date</FormLabel>
+                <Input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </FormControl>
+              <FormControl mt={4}>
+                <FormLabel>To Date</FormLabel>
+                <Input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </FormControl>
+              <Button onClick={handleSearch} mt={4} colorScheme="teal">
+                Search
+              </Button>
               <Pie data={data} options={options} />
             </Box>
           </Flex>
@@ -474,16 +553,7 @@ const DebtsOverview = () => {
                               <Badge
                                 colorScheme={debt.isPaid ? "green" : "orange"}
                               >
-                                {debt.categoryId === debtCategoryId &&
-                                debt.isPaid
-                                  ? "Paid"
-                                  : debt.categoryId === debtCategoryId &&
-                                    !debt.isPaid
-                                  ? "Due"
-                                  : debt.categoryId === loanCategoryId &&
-                                    debt.isPaid
-                                  ? "Received"
-                                  : "Due"}
+                                {renderDebtStatus(debt)}
                               </Badge>
                             </Text>
                             <Flex align="center" mt={1} wrap="wrap">
