@@ -1,7 +1,6 @@
 import axios from "axios";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import AuthService from "services/auth/auth.service";
-import { format } from "date-fns";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import AddTransaction from "./AddTransaction";

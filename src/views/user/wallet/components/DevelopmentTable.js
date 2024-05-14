@@ -40,7 +40,7 @@ import {
   InputRightAddon,
   FormControl,
 } from "@chakra-ui/react";
-import { DeleteIcon, AddIcon, EditIcon, MinusIcon } from "@chakra-ui/icons";
+import { DeleteIcon, AddIcon, EditIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
 
 import { MdWallet } from "react-icons/md";

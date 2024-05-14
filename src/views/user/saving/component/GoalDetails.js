@@ -1,26 +1,15 @@
 import {
-  Box,
   Button,
-  Flex,
   FormControl,
   FormLabel,
-  Heading,
-  Image,
   Input,
-  Modal,
   ModalBody,
-  ModalCloseButton,
-  ModalContent,
   ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Select,
   Text,
-  VStack,
-  useDisclosure,
 } from "@chakra-ui/react";
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { toast } from "react-toastify";
 import AuthService from "services/auth/auth.service";
 import AuthHeader from "services/auth/authHeader";

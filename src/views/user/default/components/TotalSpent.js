@@ -4,7 +4,6 @@ import { Bar } from "react-chartjs-2";
 import {
   Box,
   Flex,
-  Select,
   Text,
   useColorModeValue,
   Input,
@@ -51,7 +50,6 @@ const calculateTotal = (data) => {
 };
 
 const TotalSpent = ({ selectedWallet }) => {
-  const textColor = useColorModeValue("secondaryGray.900", "white");
   const [selectedTotal, setSelectedTotal] = useState(0);
   const [selectedOption, setSelectedOption] = useState("month");
   const [incomeData, setIncomeData] = useState([]);
