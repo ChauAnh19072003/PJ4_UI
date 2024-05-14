@@ -34,6 +34,8 @@ import {
   useDisclosure,
   Progress,
   Select,
+  VStack,
+  Image,
 } from "@chakra-ui/react";
 import { DeleteIcon, AddIcon } from "@chakra-ui/icons";
 import AuthService from "services/auth/auth.service";
@@ -41,7 +43,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthHeader from "services/auth/authHeader";
 import GoalDetails from "./GoalDetails";
-import ProgressChart from "./CircleChart";
+import { FaEye } from "react-icons/fa";
 
 const SavingGoalsView = () => {
   const [savingGoals, setSavingGoals] = useState([]);
@@ -57,6 +59,13 @@ const SavingGoalsView = () => {
     onOpen: onUpdateOpen,
     onClose: onUpdateClose,
   } = useDisclosure();
+  const {
+    onOpen: onTransactionsModalOpen,
+    onClose: onTransactionsModalClose,
+    isOpen: isTransactionsModalOpen,
+  } = useDisclosure();
+  const [transactions, setTransactions] = useState([]);
+
   const initialSavingGoalState = {
     id: 0,
     name: "",
@@ -243,6 +252,19 @@ const SavingGoalsView = () => {
     onUpdateOpen();
   };
 
+  const fetchTransactions = async (id, userId) => {
+    try {
+      const response = await axios.get(
+        `/api/transactions/savingGoals/${id}/users/${userId}`,
+        { headers: AuthHeader() }
+      );
+      setTransactions(response.data);
+      onTransactionsModalOpen();
+    } catch (error) {
+      toast.error("Could not fetch transactions.");
+    }
+  };
+
   if (loading) {
     return (
       <Center p={10}>
@@ -293,19 +315,33 @@ const SavingGoalsView = () => {
                 <Heading size="md" fontWeight="semibold">
                   {goal.name}
                 </Heading>
-                <IconButton
-                  icon={<DeleteIcon />}
-                  size="sm"
-                  variant="ghost"
-                  colorScheme="red"
-                  aria-label="Delete saving goal"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSavingGoalToDelete(goal.id);
-                    setIsDeleteAlertOpen(true);
-                  }}
-                  isRound
-                />
+                <Flex>
+                  <IconButton
+                    icon={<FaEye />}
+                    size="sm"
+                    variant="ghost"
+                    colorScheme="blue"
+                    aria-label="Show transaction history"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fetchTransactions(goal.id, goal.userId);
+                    }}
+                    isRound
+                  />
+                  <IconButton
+                    icon={<DeleteIcon />}
+                    size="sm"
+                    variant="ghost"
+                    colorScheme="red"
+                    aria-label="Delete saving goal"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSavingGoalToDelete(goal.id);
+                      setIsDeleteAlertOpen(true);
+                    }}
+                    isRound
+                  />
+                </Flex>
               </Flex>
               <Text mb={2}>Target Amount: {goal.targetAmount}VND</Text>
               <Text mb={2}>Current Amount: {goal.currentAmount}VND</Text>
@@ -430,6 +466,7 @@ const SavingGoalsView = () => {
                   handleSavingGoalFormChange("startDate", e.target.value)
                 }
                 min={new Date().toISOString().split("T")[0]}
+                isDisabled
               />
             </FormControl>
             <FormControl mt={4}>
@@ -535,6 +572,60 @@ const SavingGoalsView = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Modal
+        isOpen={isTransactionsModalOpen}
+        onClose={onTransactionsModalClose}
+        size="xl"
+        scrollBehavior="inside"
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>History transactions</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4} align="stretch">
+              {transactions.map((transaction, index) => (
+                <Box key={index} p={5} shadow="md" borderWidth="1px">
+                  <Flex align="center">
+                    <Box mr={3}>
+                      <Image
+                        boxSize="50px"
+                        src={`/assets/img/icons/${transaction.cateIcon}`}
+                        alt={transaction.categoryName}
+                      />
+                    </Box>
+                    <Box>
+                      <Heading size="md">{transaction.categoryName}</Heading>
+                      <Text mt={2}>
+                        Amount: ${transaction.amount.toFixed(2)}
+                      </Text>
+                      <Text mt={2}>Date: {transaction.transactionDate}</Text>
+                    </Box>
+                  </Flex>
+                </Box>
+              ))}
+            </VStack>
+            {/* <Box textAlign="center" mt={4}>
+              <Button
+                colorScheme="blue"
+                onClick={onSeeAllTransactionsButtonClick}
+              >
+                See All Transactions
+              </Button>
+            </Box> */}
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              colorScheme="blue"
+              mr={3}
+              onClick={onTransactionsModalClose}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 };

@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import axios from "axios";
 import {
   Box,
@@ -51,12 +57,11 @@ const WalletsOverview = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentWallet, setCurrentWallet] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
-  const [savingGoals, setSavingGoals] = useState([]);
   const cancelRef = useRef();
   const [transactions, setTransactions] = useState([]);
   const initialWalletState = {
     name: "",
-    balance: "",
+    balance: 0,
     currency: "",
     type: "",
     bankName: "",
@@ -69,7 +74,6 @@ const WalletsOverview = () => {
   const [transferAmount, setTransferAmount] = useState("");
   const [selectedVNDBalance, setSelectedVNDBalance] = useState("");
   const [exchangeRate, setExchangeRate] = useState(0);
-  const [isSavingGoalAmountChanged, setIsSavingGoalSelected] = useState(false);
   const history = useHistory();
 
   const onSeeAllTransactionsButtonClick = () => {
@@ -219,27 +223,16 @@ const WalletsOverview = () => {
   };
 
   const handleInputChange = (field, value) => {
-    handleWalletFormChange(field, value);
+    const parsedValue = field === "balance" ? parseFloat(value) || 0 : value;
+    setWalletForm((prev) => ({ ...prev, [field]: parsedValue }));
 
     setValidationErrors((prevErrors) => {
       const updatedErrors = { ...prevErrors };
-      delete updatedErrors[field];
+      if (parsedValue !== null && parsedValue !== "") {
+        delete updatedErrors[field];
+      }
       return updatedErrors;
     });
-
-    if (currentWallet && currentWallet.walletType) {
-      const selectedWalletType = walletTypes.find(
-        (type) => type.typeId === currentWallet.walletType
-      );
-      if (
-        field === "balance" &&
-        selectedWalletType &&
-        selectedWalletType.typeName === "Goals"
-      ) {
-        fetchSavingGoalsForWallet(currentWallet.walletId);
-        setIsSavingGoalSelected(true);
-      }
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -257,8 +250,10 @@ const WalletsOverview = () => {
       errors.name = "Wallet name is required.";
     }
 
-    if (!walletForm.balance) {
+    if (walletForm.balance === null || walletForm.balance === "") {
       errors.balance = "Wallet balance is required.";
+    } else if (isNaN(walletForm.balance)) {
+      errors.balance = "Wallet balance must be a number.";
     }
 
     if (!walletForm.currency) {
@@ -277,14 +272,6 @@ const WalletsOverview = () => {
         errors.bankNumber = "Bank number is required.";
       }
     }
-
-    // if (isSavingGoalAmountChanged) {
-    //   if (!walletForm.savingGoalId) {
-    //     // setIsSavingGoalSelected(false);
-    //     toast.error("Please select a saving goal.");
-    //     return;
-    //   }
-    // }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -322,7 +309,6 @@ const WalletsOverview = () => {
         toast.success("Wallet added successfully");
       }
       fetchWallets();
-      setIsSavingGoalSelected(false);
       onEditModalClose();
     } catch (error) {
       const errorMessage = error.response?.data;
@@ -375,21 +361,6 @@ const WalletsOverview = () => {
     fetchExchangeRate();
   }, []);
 
-  const fetchSavingGoalsForWallet = async (walletId) => {
-    const currentUser = AuthService.getCurrentUser();
-    try {
-      const response = await axios.get(
-        `/api/savinggoals/wallets/${walletId}/users/${currentUser.id}`,
-        { headers: AuthHeader() }
-      );
-      setSavingGoals(response.data);
-    } catch (error) {
-      console.error("Error fetching saving goals:", error);
-      toast.error("Failed to fetch saving goals.");
-      setSavingGoals([]);
-    }
-  };
-
   const handleTransfer = async () => {
     const currentUser = AuthService.getCurrentUser();
     try {
@@ -405,7 +376,6 @@ const WalletsOverview = () => {
         destinationWalletId: selectedVNDBalance, // Sử dụng ví VND được chọn
         amount: transferAmount,
         exchangeRate: exchangeRate,
-        savingGoalId: walletForm.savingGoalId,
       };
 
       const response = await axios.post("/api/wallets/transfer", transferData, {
@@ -414,7 +384,6 @@ const WalletsOverview = () => {
       toast.success(response.data);
       fetchWallets();
       onTransferModalClose();
-      setIsSavingGoalSelected(false);
       onEditModalClose();
     } catch (error) {
       toast.error(error.response.data);
@@ -426,25 +395,11 @@ const WalletsOverview = () => {
     const selectedWallet = wallets.find(
       (wallet) => wallet.walletId === walletId
     );
-    if (!selectedWallet) {
-      console.error("No wallet found with ID:", walletId);
-      setSavingGoals([]); // Clear goals if no wallet is found
-      setIsSavingGoalSelected(false);
-      return;
-    }
-
-    const selectedWalletType = walletTypes.find(
-      (type) => type.typeId === selectedWallet.walletType
-    );
-
-    const isGoalType = selectedWalletType && selectedWalletType.typeId === 3;
-    setIsSavingGoalSelected(isGoalType);
-    if (isGoalType) {
-      await fetchSavingGoalsForWallet(walletId);
-    } else {
-      setSavingGoals([]); // Clear goals if the selected wallet is not of type 'Goals'
-    }
   };
+
+  const isDisabled = useMemo(() => {
+    return isEditing && walletForm.type === 3;
+  }, [isEditing, walletForm.type]);
 
   if (loading) {
     return (
@@ -622,21 +577,10 @@ const WalletsOverview = () => {
                 value={walletForm.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Enter wallet name"
+                isDisabled={isDisabled}
               />
               {validationErrors.name && (
                 <ErrorMessage message={validationErrors.name} />
-              )}
-            </Box>
-            <Box mt={4}>
-              <FormLabel>Wallet Balance</FormLabel>
-              <Input
-                type="number"
-                value={walletForm.balance}
-                onChange={(e) => handleInputChange("balance", e.target.value)}
-                placeholder="Enter initial balance"
-              />
-              {validationErrors.balance && (
-                <ErrorMessage message={validationErrors.balance} />
               )}
             </Box>
             <Box mt={4}>
@@ -657,6 +601,59 @@ const WalletsOverview = () => {
                 <ErrorMessage message={validationErrors.type} />
               )}
             </Box>
+
+            {!isEditing && (
+              <>
+                {walletForm.type.includes(3) ? (
+                  <Box mt={4}>
+                    <FormLabel>Wallet Balance</FormLabel>
+                    <Input
+                      type="number"
+                      value={walletForm.balance || 0}
+                      onChange={(e) =>
+                        handleInputChange("balance", e.target.value)
+                      }
+                      placeholder="Enter initial balance"
+                      isDisabled
+                    />
+                    {validationErrors.balance && (
+                      <ErrorMessage message={validationErrors.balance} />
+                    )}
+                  </Box>
+                ) : (
+                  <Box mt={4}>
+                    <FormLabel>Wallet Balance</FormLabel>
+                    <Input
+                      type="number"
+                      value={walletForm.balance}
+                      onChange={(e) =>
+                        handleInputChange("balance", e.target.value)
+                      }
+                      placeholder="Enter initial balance"
+                    />
+                    {validationErrors.balance && (
+                      <ErrorMessage message={validationErrors.balance} />
+                    )}
+                  </Box>
+                )}{" "}
+              </>
+            )}
+            {isEditing && (
+              <Box mt={4}>
+                <FormLabel>Wallet Balance</FormLabel>
+                <Input
+                  type="number"
+                  value={walletForm.balance}
+                  onChange={(e) => handleInputChange("balance", e.target.value)}
+                  placeholder="Enter initial balance"
+                  isDisabled={isDisabled}
+                />
+                {validationErrors.balance && (
+                  <ErrorMessage message={validationErrors.balance} />
+                )}
+              </Box>
+            )}
+
             {!isEditing && (
               <Box mt={4}>
                 <FormLabel>Wallet Currency</FormLabel>
@@ -678,26 +675,6 @@ const WalletsOverview = () => {
                   <ErrorMessage message={validationErrors.currency} />
                 )}
               </Box>
-            )}
-            {isSavingGoalAmountChanged && savingGoals.length > 0 && (
-              <FormControl isRequired>
-                <Box mb={4}>
-                  <Text mb={2}>Select Goal:</Text>
-                  <Select
-                    placeholder="Select Goal"
-                    value={walletForm.savingGoalId || ""}
-                    onChange={(e) =>
-                      handleInputChange("savingGoalId", e.target.value)
-                    }
-                  >
-                    {savingGoals.map((goal) => (
-                      <option key={goal.id} value={goal.id}>
-                        {goal.name}
-                      </option>
-                    ))}
-                  </Select>
-                </Box>
-              </FormControl>
             )}
             {showBankFields && (
               <>
@@ -786,7 +763,10 @@ const WalletsOverview = () => {
                 onChange={(e) => handleWalletChange(Number(e.target.value))} // Corrected this line
               >
                 {wallets
-                  .filter((wallet) => wallet.currency === "VND")
+                  .filter(
+                    (wallet) =>
+                      wallet.currency === "VND" && wallet.walletType !== 3
+                  )
                   .map((wallet) => (
                     <option key={wallet.walletId} value={wallet.walletId}>
                       {wallet.walletName}
@@ -794,24 +774,6 @@ const WalletsOverview = () => {
                   ))}
               </Select>
             </FormControl>
-            {isSavingGoalAmountChanged && savingGoals.length > 0 && (
-              <FormControl isRequired>
-                <FormLabel>Select Goal:</FormLabel>
-                <Select
-                  placeholder="Select Goal"
-                  value={walletForm.savingGoalId || ""}
-                  onChange={(e) =>
-                    handleWalletFormChange("savingGoalId", e.target.value)
-                  }
-                >
-                  {savingGoals.map((goal) => (
-                    <option key={goal.id} value={goal.id}>
-                      {goal.name}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
           </ModalBody>
           <ModalFooter>
             <Button colorScheme="blue" mr={3} onClick={handleTransfer}>
