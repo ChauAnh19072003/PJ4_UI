@@ -134,7 +134,6 @@ const UpdateCategory = ({ onClose, selectedCategory, fetchCategories }) => {
           >
             <option value="EXPENSE">Expense</option>
             <option value="INCOME">Income</option>
-            <option value="DEBT">Debt</option>
           </Select>
         </Flex>
       </ModalBody>
