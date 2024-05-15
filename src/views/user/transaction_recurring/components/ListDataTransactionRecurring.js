@@ -4,7 +4,6 @@ import AuthService from "services/auth/auth.service";
 import DatePicker from "react-datepicker";
 import { format } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
-import { SearchBar } from "components/navbar/searchBar/SearchBar";
 import DeleteConfirmationAlert from "./DeleteTransactionRecurring";
 import {
   Text,
@@ -52,8 +51,8 @@ function ListDataTransactionRecurring() {
     onClose: onCreateModalClose,
   } = useDisclosure();
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchDate, setSearchDate] = useState(null);
+  const [searchStartDate, setSearchStartDate] = useState(null);
+  const [searchEndDate, setSearchEndDate] = useState(null);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const inputText = useColorModeValue("gray.700", "gray.100");
   const [categories, setCategories] = useState([]);
@@ -176,28 +175,34 @@ function ListDataTransactionRecurring() {
         direction={{ base: "column", md: "row" }}
         alignItems="center"
       >
-        <SearchBar
-          w={{ base: "60%", md: "40%", xl: "40%" }}
-          marginLeft={{ base: 0, md: "20px" }}
-          borderRadius="30px"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          mb={{ base: "20px", md: 0, xl: 0 }}
-        />
         <Box
           mr={4}
-          w={{ base: "100%", md: "40%", xl: "40%" }}
-          mx={{ base: 0, md: "20px" }}
-          mb={{ base: "20px", md: 0, xl: 0 }}
+          w={{ base: "100%", md: "20%", xl: "20%" }}
           textAlign="center"
+          mb={{ base: "20px", md: 0, xl: 0 }}
         >
           <DatePicker
-            selected={searchDate}
-            onChange={(date) => setSearchDate(date)}
+            selected={searchStartDate}
+            onChange={(date) => setSearchStartDate(date)}
             dateFormat="yyyy-MM-dd"
             customInput={<Input color={inputText} />}
             wrapperClassName="custom-datepicker"
-            placeholderText="Select Due Date"
+            placeholderText="From Date"
+          />
+        </Box>
+        <Box
+          mr={4}
+          w={{ base: "100%", md: "20%", xl: "20%" }}
+          textAlign="center"
+          mb={{ base: "20px", md: 0, xl: 0 }}
+        >
+          <DatePicker
+            selected={searchEndDate}
+            onChange={(date) => setSearchEndDate(date)}
+            dateFormat="yyyy-MM-dd"
+            customInput={<Input color={inputText} />}
+            wrapperClassName="custom-datepicker"
+            placeholderText="To Date"
           />
         </Box>
 
@@ -283,42 +288,31 @@ function ListDataTransactionRecurring() {
         </Center>
       ) : wallets && wallets.length === 0 ? (
         <Text textAlign="center" fontSize="xl" mt={5}>
-          You need to create wallet before create bill
+          You need to create wallet before create transaction
         </Text>
       ) : (
         <TableContainer>
           <Table variant="simple">
             <Thead>
               <Tr>
-                <Th cursor={"pointer"} onClick={() => sortBy("id")}>
-                  Id
-                </Th>
+                <Th>Id</Th>
                 <Th>Category</Th>
-                <Th cursor={"pointer"} onClick={() => sortBy("amount")}>
-                  Amount
-                </Th>
-                <Th cursor={"pointer"} onClick={() => sortBy("dueDate")}>
-                  Due Date
-                </Th>
-                <Th cursor={"pointer"} onClick={() => sortBy("dueDate")}>
-                  Bill Recurring
-                </Th>
+                <Th>Amount</Th>
+                <Th>Transaction Recurring</Th>
               </Tr>
             </Thead>
             {transactions &&
               transactions.content &&
               transactions.content
                 .filter((transaction) => {
-                  if (searchDate) {
-                    const formattedDate = format(
-                      new Date(transaction.recurrence.dueDate),
-                      "yyyy-MM-dd"
+                  if (searchStartDate && searchEndDate) {
+                    const transactionDate = new Date(
+                      transaction.recurrence.dueDate
                     );
-                    const formattedSearchDate = format(
-                      searchDate,
-                      "yyyy-MM-dd"
+                    return (
+                      transactionDate >= searchStartDate &&
+                      transactionDate <= searchEndDate
                     );
-                    return formattedDate === formattedSearchDate;
                   } else {
                     return true;
                   }
@@ -374,29 +368,16 @@ function ListDataTransactionRecurring() {
                           {transaction.amount}
                         </Td>
                         <Td color="secondaryGray.900" fontWeight="bold">
-                          {transaction.recurrence.dueDate}
-                        </Td>
-                        <Td color="secondaryGray.900" fontWeight="bold">
                           {transaction.recurrence.frequency === "DAILY" &&
-                            `Repeat daily `}
+                            `DAILY - `}
                           {transaction.recurrence.frequency === "WEEKLY" &&
-                            `Repeat weekly `}
+                            `WEEKLY - `}
                           {transaction.recurrence.frequency === "MONTHLY" &&
-                            `Repeat monthly `}
+                            `MONTHLY - `}
                           {transaction.recurrence.frequency === "YEARLY" &&
-                            `Repeat yearly `}
-                          {transaction.recurrence.frequency === "DAILY" &&
-                            `From ${transaction.recurrence.startDate}`}
-                          {transaction.recurrence.frequency === "WEEKLY" &&
-                            `From ${transaction.recurrence.startDate}`}
-                          {transaction.recurrence.frequency === "MONTHLY" &&
-                            `From ${transaction.recurrence.startDate}`}
-                          {transaction.recurrence.frequency === "YEARLY" &&
-                            `From ${transaction.recurrence.startDate}`}
-                          {transaction.recurrence.endType === "UNTIL" &&
-                            ` until ${transaction.recurrence.endDate}`}
-                          {transaction.recurrence.endType === "TIMES" &&
-                            ` for ${transaction.recurrence.times} times from ${transaction.recurrence.startDate}`}
+                            `YEARLY - `}
+                          {transaction.recurrence.frequency &&
+                            `Repeat at ${transaction.recurrence.dueDate}`}
                         </Td>
                       </Tr>
                     </Tbody>

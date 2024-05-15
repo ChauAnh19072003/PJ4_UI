@@ -26,8 +26,6 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  Center,
-  Spinner,
 } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -69,10 +67,7 @@ function AddTransactionRecurring({
 
   const [untilDate, setUntilDate] = useState(() => adjustDateToUTC(new Date()));
   const [changeWallet, setChangeWallet] = useState("");
-  const [changeGoal, setChangeGoal] = useState(null);
   const [times, setTimes] = useState(0);
-  const [goals, setGoals] = useState([]);
-  const [loadingGoals, setLoadingGoals] = useState(false);
   const [selectedFrequency, setSelectedFrequency] = useState("repeat daily");
   const [selectedMonthOption, setSelectedMonthOption] = useState("SAMEDAY");
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState("MONDAY");
@@ -113,20 +108,20 @@ function AddTransactionRecurring({
       });
       return false;
     }
-    const currentDate = adjustDateToUTC(new Date());
-    if (changeStartDate < currentDate) {
-      toast.error("Start date must be in present or future!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return false;
-    }
+    // const currentDate = adjustDateToUTC(new Date());
+    // if (changeStartDate < currentDate) {
+    //   toast.error("Start date must be in present or future!", {
+    //     position: "top-center",
+    //     autoClose: 3000,
+    //     hideProgressBar: false,
+    //     closeOnClick: true,
+    //     pauseOnHover: true,
+    //     draggable: true,
+    //     progress: undefined,
+    //     theme: "light",
+    //   });
+    //   return false;
+    // }
     if (!selectedOption) {
       toast.error("Please select type to repeat!", {
         position: "top-center",
@@ -141,14 +136,7 @@ function AddTransactionRecurring({
       return false;
     }
     return true;
-  }, [
-    changeWallet,
-    changeCategory,
-    changeStartDate,
-    selectedOption,
-    changeGoal,
-    wallets,
-  ]);
+  }, [changeWallet, changeCategory, changeStartDate, selectedOption, wallets]);
 
   const handleCreateTransaction = useCallback(async () => {
     if (!validateForm()) {
@@ -169,12 +157,11 @@ function AddTransactionRecurring({
             monthOption: selectedMonthOption || null,
             endType: selectedOption,
             endDate: selectedOption === "UNTIL" ? untilDate : null,
-            times: times === "TIMES" ? times : null,
+            times: selectedOption === "TIMES" ? times : null,
             startDate: changeStartDate,
           },
           walletId: changeWallet,
           categoryId: changeCategory,
-          savingGoalId: changeGoal,
         };
 
         await axios.post("/api/transactionsRecurring/create", transactionData, {
@@ -235,7 +222,6 @@ function AddTransactionRecurring({
     changeCategory,
     changeStartDate,
     changeWallet,
-    changeGoal,
     selectedDayOfWeek,
     selectedFrequency,
     selectedFrequencyValue,
@@ -562,6 +548,7 @@ function AddTransactionRecurring({
                   onChange={(value) => setTimes(value)}
                   color="gray.700"
                   w={200}
+                  min={1}
                 >
                   <NumberInputField color={inputText} />
                   <NumberInputStepper>

@@ -135,20 +135,6 @@ function AddBill({
       });
       return false;
     }
-
-    if (selectedOption === "TIMES" && times <= 0) {
-      toast.error("Please enter a number greater than 0 for times.", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return;
-    }
     return true;
   }, [changeWallet, changeCategoryId, changeStartDate, selectedOption]);
 
