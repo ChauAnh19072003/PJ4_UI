@@ -122,7 +122,9 @@ const WalletsOverview = () => {
         setLoading(false);
       } catch (error) {
         console.error("Failed to fetch wallet data:", error);
-        toast.error("Failed to fetch wallet data.");
+        if (error.response && error.response.status === 404) {
+          toast.info("No wallet found");
+        }
         setLoading(false);
       }
     }

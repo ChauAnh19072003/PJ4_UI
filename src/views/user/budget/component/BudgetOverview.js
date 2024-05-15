@@ -102,7 +102,11 @@ const BudgetsOverview = ({ userId }) => {
       setTransactions(response.data);
       setIsTransactionsModalOpen(true);
     } catch (error) {
-      toast.error(`Error fetching transactions for budget: ${error.message}`);
+      if (error.response && error.response.status === 404) {
+        toast.info("No transactions found for this budget.");
+      } else {
+        toast.error(`Error fetching transactions for budget: ${error.message}`);
+      }
     }
   };
 
