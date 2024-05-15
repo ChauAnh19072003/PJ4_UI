@@ -21,6 +21,7 @@ import {
   useColorModeValue,
   ModalFooter,
   ModalBody,
+  Textarea
 } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -52,6 +53,18 @@ const UpdateTransaction = ({
   const [changeNotes, setChangeNotes] = useState("");
   const [changeCategory, setChangeCategory] = useState("");
   const [changeGoal, setChangeGoal] = useState(null);
+
+  const handleAmountChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setChangeAmount(numericValue);
+  };
+
+  // Use the 'vi-VN' locale and 'VND' currency for formatting
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0, // Since VND doesn't commonly use decimal places
+  });
+
+  const formattedAmount = formatter.format(changeAmount || 0);
 
   const handleUpdateTransaction = useCallback(async () => {
     const currentUser = AuthService.getCurrentUser();
@@ -336,12 +349,12 @@ const UpdateTransaction = ({
           <FormControl mr={{ base: 0, md: 4 }}>
             <Text mb={2}>Amount:</Text>
             <Input
-              type="number"
-              value={changeAmount}
-              onChange={(e) => setChangeAmount(e.target.value)}
-              placeholder="00.0"
+              type="text" // Use "text" to allow the formatted currency to show
+              value={formattedAmount}
+              onChange={handleAmountChange}
+              placeholder="Enter amount"
               color={inputText}
-              isDisabled={isDisabled}
+              maxLength={12}
             />
           </FormControl>
         </Box>
@@ -363,13 +376,14 @@ const UpdateTransaction = ({
         </Box>
         <Box mb={4}>
           <Text mb={2}>Notes:</Text>
-          <Input
+          <Textarea
             type="text"
             value={changeNotes}
             onChange={(e) => setChangeNotes(e.target.value)}
             placeholder="Notes"
             color={inputText}
             isDisabled={isDisabled}
+            maxLength={100}
           />
         </Box>
       </ModalBody>

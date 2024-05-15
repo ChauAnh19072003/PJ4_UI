@@ -458,7 +458,9 @@ function ListTransactions() {
                     </Box>
 
                     <Box flex="1" color="secondaryGray.900" fontWeight="bold">
-                      {transaction.notes}
+                      {transaction.notes && transaction.notes.length > 9
+                        ? transaction.notes.substring(0, 9) + "..."
+                        : transaction.notes}
                     </Box>
                   </Flex>
                 </Box>
