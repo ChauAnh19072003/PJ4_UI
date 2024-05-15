@@ -86,8 +86,6 @@ function UpdateTransactionRecurring({
   const [untilDate, setUntilDate] = useState(() => adjustDateToUTC(new Date()));
   const [changeWallet, setChangeWallet] = useState("");
   const [changeGoal, setChangeGoal] = useState(null);
-  const [goals, setGoals] = useState([]);
-  const [loadingGoals, setLoadingGoals] = useState(false);
   const [times, setTimes] = useState(0);
   const [selectedFrequency, setSelectedFrequency] = useState("repeat daily");
   const [selectedMonthOption, setSelectedMonthOption] = useState("SAMEDAY");
@@ -110,9 +108,9 @@ function UpdateTransactionRecurring({
       );
       setSelectedOption(selectedTransaction.recurrence.endType);
       setUntilDate(
-        adjustDateToUTC(
-          adjustDateToUTC(new Date(selectedTransaction.recurrence.endDate))
-        )
+        selectedTransaction.recurrence.endDate
+          ? adjustDateToUTC(new Date(selectedTransaction.recurrence.endDate))
+          : adjustDateToUTC(new Date())
       );
       setTimes(selectedTransaction.recurrence.times || 0);
       setChangeStartDate(
@@ -151,22 +149,29 @@ function UpdateTransactionRecurring({
       });
       return false;
     }
-    const currentDate = adjustDateToUTC(new Date());
-    if (changeStartDate < currentDate) {
-      toast.error("Start date must be in present or future!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return false;
-    }
+    // const currentDate = adjustDateToUTC(new Date());
+    // if (changeStartDate < currentDate) {
+    //   toast.error("Start date must be in present or future!", {
+    //     position: "top-center",
+    //     autoClose: 3000,
+    //     hideProgressBar: false,
+    //     closeOnClick: true,
+    //     pauseOnHover: true,
+    //     draggable: true,
+    //     progress: undefined,
+    //     theme: "light",
+    //   });
+    //   return false;
+    // }
     return true;
-  }, [changeWallet, changeCategory, changeStartDate, wallets]);
+  }, [
+    changeWallet,
+    changeCategory,
+    changeStartDate,
+    wallets,
+    selectedOption,
+    times,
+  ]);
 
   const handleUpdateTransaction = useCallback(async () => {
     if (!validateForm()) {
@@ -192,7 +197,7 @@ function UpdateTransactionRecurring({
               monthOption: selectedMonthOption || null,
               endType: selectedOption,
               endDate: selectedOption === "UNTIL" ? untilDate : null,
-              times: times === "TIMES" ? times : null,
+              times: selectedOption === "TIMES" ? times : null,
               startDate: changeStartDate,
             },
             walletId: changeWallet,
@@ -589,6 +594,7 @@ function UpdateTransactionRecurring({
                   onChange={(value) => setTimes(value)}
                   color="gray.700"
                   w={200}
+                  min={1}
                 >
                   <NumberInputField color={inputText} />
                   <NumberInputStepper>

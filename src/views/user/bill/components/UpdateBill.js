@@ -102,7 +102,12 @@ function UpdateBill({
       setSelectedDayOfWeek(selectedBill.recurrence.dayOfWeek || null);
       setSelectedMonthOption(selectedBill.recurrence.monthOption || null);
       setSelectedOption(selectedBill.recurrence.endType);
-      setUntilDate(adjustDateToUTC(new Date(selectedBill.recurrence.endDate)));
+      setUntilDate(
+        selectedBill.recurrence.endDate
+          ? adjustDateToUTC(new Date(selectedBill.recurrence.endDate))
+          : adjustDateToUTC(new Date())
+      );
+
       setTimes(selectedBill.recurrence.times || 0);
       setChangeStartDate(
         adjustDateToUTC(new Date(selectedBill.recurrence.startDate))
@@ -139,27 +144,27 @@ function UpdateBill({
       });
       return false;
     }
-    const currentDate = new Date();
-    if (changeStartDate < currentDate) {
-      toast.error("Start date must be in present or future!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return false;
-    }
+    // const currentDate = new Date();
+    // if (changeStartDate < currentDate) {
+    //   toast.error("Start date must be in present or future!", {
+    //     position: "top-center",
+    //     autoClose: 3000,
+    //     hideProgressBar: false,
+    //     closeOnClick: true,
+    //     pauseOnHover: true,
+    //     draggable: true,
+    //     progress: undefined,
+    //     theme: "light",
+    //   });
+    //   return false;
+    // }
     return true;
   }, [changeWallet, changeCategory, changeStartDate]);
 
   const handleUpdateBill = useCallback(async () => {
-    // if (!validateForm()) {
-    //   return;
-    // }
+    if (!validateForm()) {
+      return;
+    }
     const currentUser = AuthService.getCurrentUser();
     try {
       if (currentUser) {
@@ -576,6 +581,7 @@ function UpdateBill({
                   onChange={(value) => setTimes(value)}
                   color="gray.700"
                   w={200}
+                  min={1}
                 >
                   <NumberInputField color={inputText} />
                   <NumberInputStepper>

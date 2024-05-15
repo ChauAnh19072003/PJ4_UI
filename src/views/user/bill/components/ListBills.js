@@ -4,7 +4,6 @@ import AuthService from "services/auth/auth.service";
 import DatePicker from "react-datepicker";
 import { format } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
-import { SearchBar } from "components/navbar/searchBar/SearchBar";
 import DeleteConfirmationAlert from "./Delete";
 import {
   Text,
@@ -52,7 +51,6 @@ function BillList() {
     onClose: onCreateModalClose,
   } = useDisclosure();
   const [isDeleteAlertOpen, setDeleteAlertOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [searchStartDate, setSearchStartDate] = useState(null);
   const [searchEndDate, setSearchEndDate] = useState(null);
   const [selectedBill, setSelectedBill] = useState(null);
@@ -176,14 +174,6 @@ function BillList() {
         direction={{ base: "column", md: "row" }}
         alignItems="center"
       >
-        <SearchBar
-          w={{ base: "60%", md: "40%", xl: "40%" }}
-          marginLeft={{ base: 0, md: "20px" }}
-          borderRadius="30px"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          mb={{ base: "20px", md: 0, xl: 0 }}
-        />
         <Box
           mr={4}
           w={{ base: "100%", md: "20%", xl: "20%" }}
@@ -304,19 +294,11 @@ function BillList() {
           <Table variant="simple">
             <Thead>
               <Tr>
-                <Th cursor={"pointer"} onClick={() => sortBy("id")}>
-                  Id
-                </Th>
+                <Th>Id</Th>
                 <Th>Category</Th>
-                <Th cursor={"pointer"} onClick={() => sortBy("amount")}>
-                  Amount
-                </Th>
-                <Th cursor={"pointer"} onClick={() => sortBy("dueDate")}>
-                  Due Date
-                </Th>
-                <Th cursor={"pointer"} onClick={() => sortBy("dueDate")}>
-                  Bill Recurring
-                </Th>
+                <Th>Amount</Th>
+                <Th>Due Date</Th>
+                <Th>Bill Recurring</Th>
               </Tr>
             </Thead>
             {bills &&
@@ -388,25 +370,15 @@ function BillList() {
                         </Td>
                         <Td color="secondaryGray.900" fontWeight="bold">
                           {bill.recurrence.frequency === "DAILY" &&
-                            `Repeat daily `}
+                            `Repeat DAILY - `}
                           {bill.recurrence.frequency === "WEEKLY" &&
-                            `Repeat weekly `}
+                            `WEEKLY - `}
                           {bill.recurrence.frequency === "MONTHLY" &&
-                            `Repeat monthly `}
+                            `MONTHLY - `}
                           {bill.recurrence.frequency === "YEARLY" &&
-                            `Repeat yearly `}
-                          {bill.recurrence.frequency === "DAILY" &&
-                            `From ${bill.recurrence.startDate}`}
-                          {bill.recurrence.frequency === "WEEKLY" &&
-                            `From ${bill.recurrence.startDate}`}
-                          {bill.recurrence.frequency === "MONTHLY" &&
-                            `From ${bill.recurrence.startDate}`}
-                          {bill.recurrence.frequency === "YEARLY" &&
-                            `From ${bill.recurrence.startDate}`}
-                          {bill.recurrence.endType === "UNTIL" &&
-                            ` until ${bill.recurrence.endDate}`}
-                          {bill.recurrence.endType === "TIMES" &&
-                            ` for ${bill.recurrence.times} times from ${bill.recurrence.startDate}`}
+                            `YEARLY = `}
+                          {bill.recurrence.frequency &&
+                            `From ${bill.recurrence.dueDate}`}
                         </Td>
                       </Tr>
                     </Tbody>
