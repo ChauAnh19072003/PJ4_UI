@@ -365,7 +365,7 @@ function ListDataTransactionRecurring() {
                           </Flex>
                         </Td>
                         <Td color="secondaryGray.900" fontWeight="bold">
-                          {transaction.amount}
+                          {transaction.amount.toLocaleString()}
                         </Td>
                         <Td color="secondaryGray.900" fontWeight="bold">
                           {transaction.recurrence.frequency === "DAILY" &&

@@ -138,6 +138,18 @@ function AddBill({
     return true;
   }, [changeWallet, changeCategoryId, changeStartDate, selectedOption]);
 
+  const handleAmountChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setChangeAmount(numericValue);
+  };
+
+  // Use the 'vi-VN' locale and 'VND' currency for formatting
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0, // Since VND doesn't commonly use decimal places
+  });
+
+  const formattedAmount = formatter.format(changeAmount || 0); // Use '0' as default if changeAmount is empty
+
   const handleCreateBill = useCallback(async () => {
     if (!validateForm()) {
       return;
@@ -344,12 +356,12 @@ function AddBill({
           <Box mb={4}>
             <Text mb={2}>Amount:</Text>
             <Input
-              type="number"
-              value={changeAmount}
-              onChange={(e) => setChangeAmount(e.target.value)}
-              placeholder="00.0"
-              min={1}
+              type="text"
+              value={formattedAmount}
+              onChange={handleAmountChange}
+              placeholder="Enter Amount"
               color={inputText}
+              maxLength={12}
             />
           </Box>
           <Box mb={4} mt={3}>

@@ -23,7 +23,12 @@ function GoalDetails({
   selectedGoal,
   validateForm,
   fetchSavingGoals,
+  currentPage,
   handleSavingGoalFormChange,
+  handleCurrentAmountChange,
+  handleTargetAmountChange,
+  formattedCurrentAmount,
+  formattedTargetAmount,
 }) {
   useEffect(() => {
     if (selectedGoal) {
@@ -71,7 +76,7 @@ function GoalDetails({
         }
       );
       toast.success("Saving goal update successfully");
-      fetchSavingGoals();
+      fetchSavingGoals(currentPage);
       onUpdateClose();
     } catch (error) {
       if (
@@ -135,11 +140,10 @@ function GoalDetails({
         <FormControl mt={4}>
           <FormLabel>Target Amount</FormLabel>
           <Input
-            type="number"
-            value={savingGoalForm.targetAmount}
-            onChange={(e) =>
-              handleSavingGoalFormChange("targetAmount", e.target.value)
-            }
+            type="text"
+            value={formattedTargetAmount}
+            onChange={handleTargetAmountChange}
+            maxLength={12}
             placeholder="Enter target amount"
           />
         </FormControl>
@@ -147,10 +151,9 @@ function GoalDetails({
           <FormLabel>Current Amount</FormLabel>
           <Input
             type="number"
-            value={savingGoalForm.currentAmount}
-            onChange={(e) =>
-              handleSavingGoalFormChange("currentAmount", e.target.value)
-            }
+            value={formattedCurrentAmount}
+            onChange={handleCurrentAmountChange}
+            maxLength={12}
             placeholder="Enter target amount"
           />
         </FormControl>

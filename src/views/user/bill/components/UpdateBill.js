@@ -93,7 +93,7 @@ function UpdateBill({
     if (selectedBill) {
       setChooseBillId(selectedBill.billId);
       setChangeCategory(selectedBill.categoryId);
-      setChangeAmount(selectedBill.amount);
+      setChangeAmount(selectedBill.amount?.toString() || "");
       setChangeWallet(selectedBill.walletId);
       setSelectedFrequency(
         convertFrequencyToOption(selectedBill.recurrence.frequency)
@@ -160,6 +160,18 @@ function UpdateBill({
     // }
     return true;
   }, [changeWallet, changeCategory, changeStartDate]);
+
+  const handleAmountChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setChangeAmount(numericValue);
+  };
+
+  // Use the 'vi-VN' locale and 'VND' currency for formatting
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0, // Since VND doesn't commonly use decimal places
+  });
+
+  const formattedAmount = formatter.format(changeAmount || 0);
 
   const handleUpdateBill = useCallback(async () => {
     if (!validateForm()) {
@@ -413,11 +425,11 @@ function UpdateBill({
           <Box mb={4}>
             <Text mb={2}>Amount:</Text>
             <Input
-              type="number"
-              value={changeAmount}
-              onChange={(e) => setChangeAmount(e.target.value)}
-              placeholder="00.0"
-              min={1}
+              type="text"
+              value={formattedAmount}
+              onChange={handleAmountChange}
+              placeholder="Enter Amount"
+              maxLength={12}
               color={inputText}
             />
           </Box>

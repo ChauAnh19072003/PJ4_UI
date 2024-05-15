@@ -61,7 +61,7 @@ const DebtsOverview = () => {
       .toISOString()
       .split("T")[0];
   };
-  
+
   const [tabIndex, setTabIndex] = useState(0);
   const [debtCategoryId, setDebtCategoryId] = useState(null);
   const [loanCategoryId, setLoanCategoryId] = useState(null);
@@ -94,7 +94,24 @@ const DebtsOverview = () => {
   };
   const [debtForm, setDebtForm] = useState(initialDebtState);
 
-  const fetchReportData = async (fromDate = getFirstDayOfMonth(), toDate = getLastDayOfMonth()) => {
+  const handleAmountChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setDebtForm((prev) => ({
+      ...prev,
+      amount: numericValue,
+    }));
+  };
+
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0,
+  });
+
+  const formattedAmount = formatter.format(debtForm.amount || 0);
+
+  const fetchReportData = async (
+    fromDate = getFirstDayOfMonth(),
+    toDate = getLastDayOfMonth()
+  ) => {
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
@@ -124,7 +141,10 @@ const DebtsOverview = () => {
     }
   };
 
-  const fetchDetailedReportData = async (fromDate = getFirstDayOfMonth(), toDate = getLastDayOfMonth()) => {
+  const fetchDetailedReportData = async (
+    fromDate = getFirstDayOfMonth(),
+    toDate = getLastDayOfMonth()
+  ) => {
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
@@ -597,7 +617,8 @@ const DebtsOverview = () => {
                               )}
                             </Flex>
                             <Text fontSize="md" mt={2}>
-                              Amount: <strong>${debt.amount}</strong>
+                              Amount:{" "}
+                              <strong>{debt.amount.toLocaleString()}VND</strong>
                             </Text>
                             <Text fontSize="md">
                               Due Date:{" "}
@@ -718,9 +739,10 @@ const DebtsOverview = () => {
               <FormLabel>Amount</FormLabel>
               <Input
                 placeholder="Enter amount"
-                type="number"
-                value={debtForm.amount}
-                onChange={(e) => handleDebtFormChange("amount", e.target.value)}
+                type="text"
+                maxLength={12}
+                value={formattedAmount}
+                onChange={handleAmountChange}
               />
             </FormControl>
             <FormControl mt={4}>

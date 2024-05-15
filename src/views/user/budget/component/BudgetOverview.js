@@ -82,6 +82,22 @@ const BudgetsOverview = ({ userId }) => {
   const [currentPageFuture, setCurrentPageFuture] = useState(0);
   const [totalPagesFuture, setTotalPagesFuture] = useState(1);
 
+  const handleAmountChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    // Update the state correctly by using setBudgetForm and passing in a function to ensure you're working with the most up-to-date state.
+    setBudgetForm((prev) => ({
+      ...prev,
+      threshold_amount: numericValue, // Assign numericValue directly to threshold_amount
+    }));
+  };
+
+  // Use the 'vi-VN' locale and 'VND' currency for formatting
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0, // Since VND doesn't commonly use decimal places
+  });
+
+  const formattedAmount = formatter.format(budgetForm.threshold_amount || 0);
+
   const fetchTransactionsForBudget = async (budget) => {
     const currentUser = AuthService.getCurrentUser();
     if (!currentUser || !currentUser.id) {
@@ -447,8 +463,8 @@ const BudgetsOverview = ({ userId }) => {
         />
         <Box>
           <Text fontSize="sm" fontWeight="normal" color="gray.700">
-            Amount: <strong>${budget.amount.toFixed(2)}</strong> of{" "}
-            <strong>${budget.threshold_amount.toFixed(2)}</strong>
+            Amount: <strong>{budget.amount.toLocaleString()}VND</strong> of{" "}
+            <strong>{budget.threshold_amount.toLocaleString()}VND</strong>
           </Text>
         </Box>
       </Flex>
@@ -698,15 +714,12 @@ const BudgetsOverview = ({ userId }) => {
             </FormControl>
             <FormControl mt={4} isInvalid={!!formErrors.threshold_amount}>
               <FormLabel>Threshold Amount</FormLabel>
-              <NumberInput
-                value={budgetForm.threshold_amount}
-                onChange={(valueString) =>
-                  handleBudgetFormChange("threshold_amount", valueString)
-                }
-                min={0}
-              >
-                <NumberInputField />
-              </NumberInput>
+              <Input
+                value={formattedAmount}
+                type="text"
+                onChange={handleAmountChange}
+                maxLength={12}
+              />
               {formErrors.threshold_amount && (
                 <Text color="red.500">{formErrors.threshold_amount}</Text>
               )}
