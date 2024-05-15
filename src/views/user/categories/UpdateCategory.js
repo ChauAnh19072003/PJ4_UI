@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import AuthService from "services/auth/auth.service";
 import IconSelect from "./IconSelect";
 import axios from "axios";
@@ -14,14 +14,10 @@ import {
 import { toast } from "react-toastify";
 import AuthHeader from "services/auth/authHeader";
 
-const UpdateCategory = ({
-  onClose,
-  selectedCategory,
-  iconOptions,
-  fetchCategories,
-}) => {
+const UpdateCategory = ({ onClose, selectedCategory, fetchCategories }) => {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("");
+  const [iconOptions, setIconOptions] = useState([]);
   const [newCategoryType, setNewCategoryType] = useState("EXPENSE");
 
   useEffect(() => {
@@ -31,6 +27,22 @@ const UpdateCategory = ({
       setNewCategoryType(selectedCategory.type);
     }
   }, [selectedCategory]);
+
+  const fetchIconOptions = useCallback(async () => {
+    try {
+      const response = await axios.get("/api/categories/icons");
+      setIconOptions(response.data);
+      if (response.data.length > 0) {
+        setSelectedIcon(selectedCategory.icon);
+      }
+    } catch (error) {
+      console.error("Error fetching icon options:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchIconOptions();
+  }, [fetchIconOptions]);
 
   const handleUpdateCategory = async () => {
     const currentUser = AuthService.getCurrentUser();
@@ -49,6 +61,7 @@ const UpdateCategory = ({
         );
 
         fetchCategories();
+        fetchIconOptions();
         onClose();
         toast.success("Update Category Successful!", {
           position: "top-center",
@@ -118,7 +131,6 @@ const UpdateCategory = ({
             value={newCategoryType}
             onChange={(e) => setNewCategoryType(e.target.value)}
             w={{ base: "30%", md: "30%" }}
-            isDisabled
           >
             <option value="EXPENSE">Expense</option>
             <option value="INCOME">Income</option>

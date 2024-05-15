@@ -210,7 +210,7 @@ const AddTransaction = ({
             </Button>
           </Box>
         ));
-    } else if (selectedWallet && selectedWallet.currency == "USD") {
+    } else if (selectedWallet && selectedWallet.currency === "USD") {
       return (
         <Box mb={2}>
           <Text fontWeight="bold" mb={2}>
