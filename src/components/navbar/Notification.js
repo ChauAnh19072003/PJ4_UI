@@ -13,6 +13,11 @@ import {
   useColorModeValue,
   MenuItem,
   Badge,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
 } from "@chakra-ui/react";
 import { MdNotificationsNone } from "react-icons/md";
 import { ItemContent } from "components/menu/ItemContent";
@@ -32,7 +37,7 @@ function Notification() {
 
   useEffect(() => {
     const currentUser = AuthService.getCurrentUser();
-    const fetchUnreadNotifications = async () => {
+    const fetchNotifications = async () => {
       try {
         const response = await axios.get(
           `/api/notifications/user/${currentUser.id}`,
@@ -45,7 +50,7 @@ function Notification() {
           response.data.filter((notification) => !notification.read).length
         );
       } catch (error) {
-        console.error("Error fetching unread notifications:", error);
+        console.error("Error fetching notifications:", error);
       }
     };
     const socket = new SockJS("/ws");
@@ -76,7 +81,7 @@ function Notification() {
     stompClient.activate();
     setStompClient(stompClient);
 
-    fetchUnreadNotifications();
+    fetchNotifications();
     return () => {
       stompClient.deactivate();
     };
@@ -97,10 +102,46 @@ function Notification() {
       );
 
       // Fetch updated notifications or clear them locally
-      setNotifications([]);
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notification) => ({
+          ...notification,
+          read: true,
+        }))
+      );
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking notifications as read:", error);
+    }
+  };
+
+  const handleNotificationClick = async (notificationId) => {
+    try {
+      const notificationToUpdate = notifications.find(
+        (notification) => notification.id === notificationId
+      );
+
+      // Check if the notification object exists
+      if (notificationToUpdate) {
+        await axios.put(`/api/notifications/update/${notificationId}`, {
+          ...notificationToUpdate,
+          is_read: true,
+          read: true,
+        });
+
+        // Update the notification in the local state
+        setNotifications((prevNotifications) =>
+          prevNotifications.map((notification) =>
+            notification.id === notificationId
+              ? { ...notification, read: true }
+              : notification
+          )
+        );
+        setUnreadCount((prevUnreadCount) => prevUnreadCount - 1);
+      } else {
+        console.warn(`Notification with id ${notificationId} not found.`);
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
     }
   };
 
@@ -154,25 +195,56 @@ function Notification() {
             Mark all read
           </Text>
         </Flex>
-        <Flex flexDirection="column" overflowY="auto" maxHeight="300px">
-          {notifications
-            .filter((notification) => !notification.read)
-            .map((notification, index) => (
-              <MenuItem
-                key={index}
-                _hover={{ bg: "none" }}
-                _focus={{ bg: "none" }}
-                px="0"
-                borderRadius="8px"
-                mb="10px"
-              >
-                <ItemContent
-                  info={notification.message}
-                  timestamp={notification.timestamp}
-                ></ItemContent>
-              </MenuItem>
-            ))}
-        </Flex>
+        <Tabs isFitted variant="enclosed">
+          <TabList mb="1em">
+            <Tab>Unread</Tab>
+            <Tab>All</Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel>
+              <Flex flexDirection="column" overflowY="auto" maxHeight="300px">
+                {notifications
+                  .filter((notification) => !notification.read)
+                  .map((notification, index) => (
+                    <MenuItem
+                      key={index}
+                      _hover={{ bg: "none" }}
+                      _focus={{ bg: "none" }}
+                      px="0"
+                      borderRadius="8px"
+                      mb="10px"
+                      onClick={() => handleNotificationClick(notification.id)}
+                    >
+                      <ItemContent
+                        info={notification.message}
+                        timestamp={notification.timestamp}
+                      ></ItemContent>
+                    </MenuItem>
+                  ))}
+              </Flex>
+            </TabPanel>
+            <TabPanel>
+              <Flex flexDirection="column" overflowY="auto" maxHeight="300px">
+                {notifications.map((notification, index) => (
+                  <MenuItem
+                    key={index}
+                    _hover={{ bg: "none" }}
+                    _focus={{ bg: "none" }}
+                    px="0"
+                    borderRadius="8px"
+                    mb="10px"
+                    onClick={() => handleNotificationClick(notification.id)}
+                  >
+                    <ItemContent
+                      info={notification.message}
+                      timestamp={notification.timestamp}
+                    ></ItemContent>
+                  </MenuItem>
+                ))}
+              </Flex>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </MenuList>
     </Menu>
   );

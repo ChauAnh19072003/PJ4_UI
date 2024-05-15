@@ -467,6 +467,8 @@ const AddTransaction = ({
             onChange={(e) => setChangeNotes(e.target.value)}
             placeholder="Notes"
             color={inputText}
+            size="lg"
+            maxLength={50}
           />
         </Box>
       </ModalBody>
