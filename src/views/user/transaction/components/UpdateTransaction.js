@@ -21,7 +21,7 @@ import {
   useColorModeValue,
   ModalFooter,
   ModalBody,
-  Textarea
+  Textarea,
 } from "@chakra-ui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -349,7 +349,7 @@ const UpdateTransaction = ({
           <FormControl mr={{ base: 0, md: 4 }}>
             <Text mb={2}>Amount:</Text>
             <Input
-              type="text" // Use "text" to allow the formatted currency to show
+              type="text"
               value={formattedAmount}
               onChange={handleAmountChange}
               placeholder="Enter amount"

@@ -84,6 +84,33 @@ const SavingGoalsView = () => {
   };
   const [savingGoalForm, setSavingGoalForm] = useState(initialSavingGoalState);
 
+  const handleTargetAmountChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setSavingGoalForm((prev) => ({
+      ...prev,
+      targetAmount: numericValue,
+    }));
+  };
+
+  const handleCurrentAmountChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setSavingGoalForm((prev) => ({
+      ...prev,
+      currentAmount: numericValue,
+    }));
+  };
+
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0,
+  });
+
+  const formattedTargetAmount = formatter.format(
+    savingGoalForm.targetAmount || 0
+  );
+  const formattedCurrentAmount = formatter.format(
+    savingGoalForm.currentAmount || 0
+  );
+
   const openModalToAdd = () => {
     setSavingGoalForm(initialSavingGoalState);
     onOpen();
@@ -353,8 +380,12 @@ const SavingGoalsView = () => {
                   />
                 </Flex>
               </Flex>
-              <Text mb={2}>Target Amount: {goal.targetAmount}VND</Text>
-              <Text mb={2}>Current Amount: {goal.currentAmount}VND</Text>
+              <Text mb={2}>
+                Target Amount: {goal.targetAmount.toLocaleString()}VND
+              </Text>
+              <Text mb={2}>
+                Current Amount: {goal.currentAmount.toLocaleString()}VND
+              </Text>
               {savingGoalForm.endDateType === "END_DATE" ? (
                 <Text mb={2}>
                   Start Date: {savingGoalForm.startDate} - End Date:{" "}
@@ -459,22 +490,20 @@ const SavingGoalsView = () => {
             <FormControl mt={4}>
               <FormLabel>Target Amount: </FormLabel>
               <Input
-                type="number"
-                value={savingGoalForm.targetAmount}
-                onChange={(e) =>
-                  handleSavingGoalFormChange("targetAmount", e.target.value)
-                }
+                type="text"
+                value={formattedTargetAmount}
+                onChange={handleTargetAmountChange}
+                maxLength={12}
                 placeholder="Enter target amount"
               />
             </FormControl>
             <FormControl mt={4}>
               <FormLabel>Current Amount: </FormLabel>
               <Input
-                type="number"
-                value={savingGoalForm.currentAmount}
-                onChange={(e) =>
-                  handleSavingGoalFormChange("currentAmount", e.target.value)
-                }
+                type="text"
+                value={formattedCurrentAmount}
+                onChange={handleCurrentAmountChange}
+                maxLength={12}
                 placeholder="Enter target amount"
               />
             </FormControl>
@@ -595,6 +624,10 @@ const SavingGoalsView = () => {
             fetchSavingGoals={fetchSavingGoals}
             currentPage={currentPage}
             handleSavingGoalFormChange={handleSavingGoalFormChange}
+            handleCurrentAmountChange={handleCurrentAmountChange}
+            handleTargetAmountChange={handleTargetAmountChange}
+            formattedCurrentAmount={formattedCurrentAmount}
+            formattedTargetAmount={formattedTargetAmount}
           />
         </ModalContent>
       </Modal>
@@ -650,7 +683,7 @@ const SavingGoalsView = () => {
                     <Box>
                       <Heading size="md">{transaction.categoryName}</Heading>
                       <Text mt={2}>
-                        Amount: {transaction.amount.toFixed(2)} VND
+                        Amount: {transaction.amount.toLocaleString()} VND
                       </Text>
                       <Text mt={2}>Date: {transaction.transactionDate}</Text>
                     </Box>

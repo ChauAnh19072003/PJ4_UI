@@ -94,6 +94,20 @@ const DebtsOverview = () => {
   };
   const [debtForm, setDebtForm] = useState(initialDebtState);
 
+  const handleAmountChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setDebtForm((prev) => ({
+      ...prev,
+      amount: numericValue,
+    }));
+  };
+
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0,
+  });
+
+  const formattedAmount = formatter.format(debtForm.amount || 0);
+
   const fetchReportData = async (
     fromDate = getFirstDayOfMonth(),
     toDate = getLastDayOfMonth()
@@ -361,7 +375,10 @@ const DebtsOverview = () => {
         const numericValue = Number(value);
         // Prevent negative numbers and ensure the value does not exceed 12 characters, including decimals
         if (numericValue >= 0) {
-          setDebtForm((prev) => ({ ...prev, [field]: numericValue.toString() }));
+          setDebtForm((prev) => ({
+            ...prev,
+            [field]: numericValue.toString(),
+          }));
         } else {
           setDebtForm((prev) => ({ ...prev, [field]: "" }));
         }
@@ -626,7 +643,8 @@ const DebtsOverview = () => {
                               )}
                             </Flex>
                             <Text fontSize="md" mt={2}>
-                              Amount: <strong>${debt.amount.toLocaleString()}</strong>
+                              Amount:{" "}
+                              <strong>{debt.amount.toLocaleString()}VND</strong>
                             </Text>
                             <Text fontSize="md">
                               Due Date:{" "}
@@ -750,9 +768,8 @@ const DebtsOverview = () => {
               <Input
                 placeholder="Enter amount"
                 type="text"
-                value={debtForm.amount}
-                onChange={(e) => handleDebtFormChange("amount", e.target.value)}
-                pattern="\d*"
+                value={formattedAmount}
+                onChange={handleAmountChange}
                 maxLength={12}
               />
             </FormControl>

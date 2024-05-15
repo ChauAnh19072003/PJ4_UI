@@ -93,6 +93,32 @@ const WalletsOverview = () => {
     }
   }, [walletTypes, currentPage]);
 
+  const handleAmountChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setWalletForm((prev) => ({
+      ...prev,
+      balance: numericValue,
+    }));
+  };
+
+  const handleAmountTransferChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setTransferAmount(numericValue);
+  };
+
+  const handleExchangeChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setExchangeRate(numericValue);
+  };
+
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0,
+  });
+
+  const formattedAmount = formatter.format(walletForm.balance || 0);
+  const formattedAmountTransfer = formatter.format(transferAmount || 0);
+  const formattedExchange = formatter.format(exchangeRate || 0);
+
   const fetchWalletTypes = async () => {
     const response = await axios.get("/api/wallet_types");
     console.log(response.data);
@@ -664,11 +690,10 @@ const WalletsOverview = () => {
                   <Box mt={4}>
                     <FormLabel>Wallet Balance</FormLabel>
                     <Input
-                      type="number"
-                      value={walletForm.balance}
-                      onChange={(e) =>
-                        handleInputChange("balance", e.target.value)
-                      }
+                      value={formattedAmount}
+                      type="text"
+                      onChange={handleAmountChange}
+                      maxLength={12}
                       placeholder="Enter initial balance"
                     />
                     {validationErrors.balance && (
@@ -682,9 +707,10 @@ const WalletsOverview = () => {
               <Box mt={4}>
                 <FormLabel>Wallet Balance</FormLabel>
                 <Input
-                  type="number"
-                  value={walletForm.balance}
-                  onChange={(e) => handleInputChange("balance", e.target.value)}
+                  value={formattedAmount}
+                  type="text"
+                  onChange={handleAmountChange}
+                  maxLength={12}
                   placeholder="Enter initial balance"
                   isDisabled={isDisabled}
                 />
@@ -776,10 +802,11 @@ const WalletsOverview = () => {
             <FormControl isRequired>
               <FormLabel>Amount (USD)</FormLabel>
               <Input
-                type="number"
-                value={transferAmount}
-                onChange={(e) => setTransferAmount(e.target.value)}
+                type="text"
+                value={formattedAmountTransfer}
+                onChange={handleAmountTransferChange}
                 placeholder="Enter amount to transfer"
+                maxLength={12}
               />
             </FormControl>
             <FormControl isRequired>
@@ -787,10 +814,11 @@ const WalletsOverview = () => {
               <InputGroup>
                 <InputLeftAddon children="1 USD =" />
                 <Input
-                  type="number"
-                  value={exchangeRate}
-                  onChange={(e) => setExchangeRate(e.target.value)}
+                  type="text"
+                  value={formattedExchange}
+                  onChange={handleExchangeChange}
                   placeholder="Enter exchange rate"
+                  maxLength={12}
                 />
                 <InputRightAddon children="VND" />
               </InputGroup>

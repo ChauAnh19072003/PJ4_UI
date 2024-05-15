@@ -355,7 +355,7 @@ function BillList() {
                           </Flex>
                         </Td>
                         <Td color="secondaryGray.900" fontWeight="bold">
-                          {bill.amount}
+                          {bill.amount.toLocaleString()}
                         </Td>
                         <Td color="secondaryGray.900" fontWeight="bold">
                           {bill.recurrence.dueDate}
