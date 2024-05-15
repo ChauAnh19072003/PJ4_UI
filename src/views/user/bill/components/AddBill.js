@@ -108,20 +108,20 @@ function AddBill({
       });
       return false;
     }
-    const currentDate = new Date();
-    if (changeStartDate < currentDate) {
-      toast.error("Start date must be in present or future!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return false;
-    }
+    // const currentDate = new Date();
+    // if (changeStartDate < currentDate) {
+    //   toast.error("Start date must be in present or future!", {
+    //     position: "top-center",
+    //     autoClose: 3000,
+    //     hideProgressBar: false,
+    //     closeOnClick: true,
+    //     pauseOnHover: true,
+    //     draggable: true,
+    //     progress: undefined,
+    //     theme: "light",
+    //   });
+    //   return false;
+    // }
     if (!selectedOption) {
       toast.error("Please select type to repeat!", {
         position: "top-center",
@@ -134,6 +134,20 @@ function AddBill({
         theme: "light",
       });
       return false;
+    }
+
+    if (selectedOption === "TIMES" && times <= 0) {
+      toast.error("Please enter a number greater than 0 for times.", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      return;
     }
     return true;
   }, [changeWallet, changeCategoryId, changeStartDate, selectedOption]);
@@ -157,7 +171,7 @@ function AddBill({
             monthOption: selectedMonthOption || null,
             endType: selectedOption,
             endDate: selectedOption === "UNTIL" ? untilDate : null,
-            times: times === "TIMES" ? times : null,
+            times: selectedOption === "TIMES" ? times : null,
             startDate: changeStartDate,
           },
           walletId: changeWallet,

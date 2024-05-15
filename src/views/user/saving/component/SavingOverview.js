@@ -360,14 +360,20 @@ const SavingGoalsView = () => {
               <Progress
                 value={goal.currentAmount < 0 ? 0 : goal.currentAmount}
                 max={goal.targetAmount}
-                colorScheme={isGoalCompleted ? "green" : "blue"}
+                colorScheme={
+                  goal.currentAmount < 0
+                    ? "gray"
+                    : isGoalCompleted
+                    ? "green"
+                    : "blue"
+                }
                 size="lg"
                 borderRadius="md"
                 mb={2}
                 width="100%"
                 sx={{
                   div: {
-                    width: "100%",
+                    width: goal.currentAmount < 0 ? "0%" : "100%", // Ensures that no progress is shown if the amount is negative
                   },
                 }}
               />

@@ -180,7 +180,7 @@ function UpdateBill({
               monthOption: selectedMonthOption || null,
               endType: selectedOption,
               endDate: selectedOption === "UNTIL" ? untilDate : null,
-              times: times === "TIMES" ? times : null,
+              times: selectedOption === "TIMES" ? times : null,
               startDate: changeStartDate,
             },
             walletId: changeWallet,
