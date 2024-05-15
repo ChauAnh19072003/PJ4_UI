@@ -152,12 +152,13 @@ const BudgetsOverview = ({ userId }) => {
           "Start date can't be before the original start date.";
         isValid = false;
       }
-    } else {
-      if (budgetForm.periodStart < today) {
-        errors.periodStart = "Start date must be today or in the future.";
-        isValid = false;
-      }
     }
+    // } else {
+    //   if (budgetForm.periodStart < today) {
+    //     errors.periodStart = "Start date must be today or in the future.";
+    //     isValid = false;
+    //   }
+    // }
 
     if (budgetForm.periodEnd < budgetForm.periodStart) {
       errors.periodEnd = "End date can't be less than start date.";
@@ -615,7 +616,7 @@ const BudgetsOverview = ({ userId }) => {
                 onChange={(e) =>
                   handleBudgetFormChange("periodStart", e.target.value)
                 }
-                min={new Date().toISOString().split("T")[0]}
+                //min={new Date().toISOString().split("T")[0]}
               />
               {formErrors.periodStart && (
                 <Text color="red.500">{formErrors.periodStart}</Text>
