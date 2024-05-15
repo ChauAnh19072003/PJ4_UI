@@ -94,20 +94,6 @@ const DebtsOverview = () => {
   };
   const [debtForm, setDebtForm] = useState(initialDebtState);
 
-  const handleAmountChange = (e) => {
-    const numericValue = e.target.value.replace(/[^0-9]/g, "");
-    setDebtForm((prev) => ({
-      ...prev,
-      amount: numericValue,
-    }));
-  };
-
-  const formatter = new Intl.NumberFormat("vi-VN", {
-    minimumFractionDigits: 0,
-  });
-
-  const formattedAmount = formatter.format(debtForm.amount || 0);
-
   const fetchReportData = async (
     fromDate = getFirstDayOfMonth(),
     toDate = getLastDayOfMonth()
@@ -117,8 +103,8 @@ const DebtsOverview = () => {
       try {
         const reportDebtParam = {
           userId: currentUser.id,
-          fromDate: fromDate ? fromDate : null, // Use fromDate if provided, otherwise set to null
-          toDate: toDate ? toDate : null, // Use toDate if provided, otherwise set to null
+          fromDate: fromDate ? fromDate : null,
+          toDate: toDate ? toDate : null,
         };
 
         const response = await axios.post(
@@ -150,8 +136,8 @@ const DebtsOverview = () => {
       try {
         const detailReportDebtParam = {
           userId: currentUser.id,
-          fromDate: fromDate ? fromDate : null, // Use fromDate if provided, otherwise set to null
-          toDate: toDate ? toDate : null, // Use toDate if provided, otherwise set to null
+          fromDate: fromDate ? fromDate : null,
+          toDate: toDate ? toDate : null,
         };
 
         const response = await axios.post(
@@ -163,7 +149,6 @@ const DebtsOverview = () => {
         );
 
         if (response.status === 200) {
-          // Handle the detailed report data as needed
           console.log("Detailed report data:", response.data);
         } else {
           toast.error("Failed to fetch detailed report data.");
@@ -245,7 +230,7 @@ const DebtsOverview = () => {
 
     if (shouldFetchDetailedReport) {
       fetchDetailedReportData(fromDate, toDate);
-      setShouldFetchDetailedReport(false); // Reset the flag after fetching data
+      setShouldFetchDetailedReport(false);
     }
   }, [currentPage, pageSize, fromDate, toDate, shouldFetchDetailedReport]);
 
@@ -360,7 +345,34 @@ const DebtsOverview = () => {
   };
 
   const handleDebtFormChange = (field, value) => {
-    setDebtForm((prev) => ({ ...prev, [field]: value }));
+    // Validation for 'name' and 'creditor' fields:
+    if (field === "name" || field === "creditor") {
+      if (!value) {
+        // If field is empty or null, display a toast error message and keep the previous value
+        toast.error(`${field[0].toUpperCase() + field.slice(1)} is required.`);
+      } else {
+        // If field has a value, update the state normally
+        setDebtForm((prev) => ({ ...prev, [field]: value }));
+      }
+    } else if (field === "amount") {
+      // Convert the input to a string and check its length
+      const valueAsString = value.toString();
+      if (valueAsString.length <= 12) {
+        const numericValue = Number(value);
+        // Prevent negative numbers and ensure the value does not exceed 12 characters, including decimals
+        if (numericValue >= 0) {
+          setDebtForm((prev) => ({
+            ...prev,
+            [field]: numericValue.toString(),
+          }));
+        } else {
+          setDebtForm((prev) => ({ ...prev, [field]: "" }));
+        }
+      }
+    } else {
+      // Update the form for other fields normally
+      setDebtForm((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleDebtFormSubmit = async () => {
@@ -617,8 +629,7 @@ const DebtsOverview = () => {
                               )}
                             </Flex>
                             <Text fontSize="md" mt={2}>
-                              Amount:{" "}
-                              <strong>{debt.amount.toLocaleString()}VND</strong>
+                              Amount: <strong>${debt.amount}</strong>
                             </Text>
                             <Text fontSize="md">
                               Due Date:{" "}
@@ -723,6 +734,7 @@ const DebtsOverview = () => {
                 placeholder="Enter debt name"
                 value={debtForm.name}
                 onChange={(e) => handleDebtFormChange("name", e.target.value)}
+                maxLength={25}
               />
             </FormControl>
             <FormControl mt={4}>
@@ -733,16 +745,16 @@ const DebtsOverview = () => {
                 onChange={(e) =>
                   handleDebtFormChange("creditor", e.target.value)
                 }
+                maxLength={25}
               />
             </FormControl>
             <FormControl mt={4}>
               <FormLabel>Amount</FormLabel>
               <Input
                 placeholder="Enter amount"
-                type="text"
-                maxLength={12}
-                value={formattedAmount}
-                onChange={handleAmountChange}
+                type="number"
+                value={debtForm.amount}
+                onChange={(e) => handleDebtFormChange("amount", e.target.value)}
               />
             </FormControl>
             <FormControl mt={4}>
