@@ -683,7 +683,7 @@ const SavingGoalsView = () => {
                     <Box>
                       <Heading size="md">{transaction.categoryName}</Heading>
                       <Text mt={2}>
-                        Amount: {transaction.amount.toFixed(2)} VND
+                        Amount: {transaction.amount.toLocaleString()} VND
                       </Text>
                       <Text mt={2}>Date: {transaction.transactionDate}</Text>
                     </Box>

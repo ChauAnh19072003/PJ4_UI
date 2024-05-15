@@ -94,6 +94,20 @@ const DebtsOverview = () => {
   };
   const [debtForm, setDebtForm] = useState(initialDebtState);
 
+  const handleAmountChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setDebtForm((prev) => ({
+      ...prev,
+      amount: numericValue,
+    }));
+  };
+
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    minimumFractionDigits: 0,
+  });
+
+  const formattedAmount = formatter.format(debtForm.amount || 0);
+
   const fetchReportData = async (
     fromDate = getFirstDayOfMonth(),
     toDate = getLastDayOfMonth()
@@ -629,7 +643,8 @@ const DebtsOverview = () => {
                               )}
                             </Flex>
                             <Text fontSize="md" mt={2}>
-                              Amount: <strong>${debt.amount}</strong>
+                              Amount:{" "}
+                              <strong>{debt.amount.toLocaleString()}VND</strong>
                             </Text>
                             <Text fontSize="md">
                               Due Date:{" "}
@@ -752,9 +767,10 @@ const DebtsOverview = () => {
               <FormLabel>Amount</FormLabel>
               <Input
                 placeholder="Enter amount"
-                type="number"
-                value={debtForm.amount}
-                onChange={(e) => handleDebtFormChange("amount", e.target.value)}
+                type="text"
+                value={formattedAmount}
+                onChange={handleAmountChange}
+                maxLength={12}
               />
             </FormControl>
             <FormControl mt={4}>
