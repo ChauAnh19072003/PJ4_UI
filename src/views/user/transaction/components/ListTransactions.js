@@ -117,14 +117,6 @@ function ListTransactions() {
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
-  const sortBy = (key) => {
-    let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
-  };
-
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
     fetchTransaction(pageNumber);
@@ -353,26 +345,10 @@ function ListTransactions() {
           fontSize={{ sm: "10px", lg: "12px" }}
           color="gray.400"
         >
-          <Text flex="1" cursor={"pointer"} onClick={() => sortBy("id")}>
-            Id
-          </Text>
-          <Text
-            flex="2"
-            cursor={"pointer"}
-            onClick={() => sortBy("walletName")}
-          >
-            Wallet
-          </Text>
-          <Text flex="2" cursor={"pointer"} onClick={() => sortBy("amount")}>
-            Amount
-          </Text>
-          <Text
-            flex="2"
-            cursor={"pointer"}
-            onClick={() => sortBy("transactionDate")}
-          >
-            Date
-          </Text>
+          <Text flex="1">Id</Text>
+          <Text flex="2">Wallet</Text>
+          <Text flex="2">Amount</Text>
+          <Text flex="2">Date</Text>
           <Text flex="2">Category</Text>
           <Text flex="1">Note</Text>
         </Flex>
@@ -423,18 +399,6 @@ function ListTransactions() {
               } else {
                 return true;
               }
-            })
-            .slice()
-            .sort((a, b) => {
-              if (sortConfig.key) {
-                if (a[sortConfig.key] < b[sortConfig.key]) {
-                  return sortConfig.direction === "asc" ? -1 : 1;
-                }
-                if (a[sortConfig.key] > b[sortConfig.key]) {
-                  return sortConfig.direction === "asc" ? 1 : -1;
-                }
-              }
-              return 0;
             })
             .map((transaction, contentIndex) => {
               const startIndex = currentPage * 10 + contentIndex + 1;

@@ -59,6 +59,9 @@ const WalletsOverview = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const cancelRef = useRef();
   const [transactions, setTransactions] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
   const initialWalletState = {
     name: "",
     balance: 0,
@@ -86,9 +89,9 @@ const WalletsOverview = () => {
 
   useEffect(() => {
     if (walletTypes.length > 0) {
-      fetchWallets();
+      fetchWallets(currentPage);
     }
-  }, [walletTypes]);
+  }, [walletTypes, currentPage]);
 
   const fetchWalletTypes = async () => {
     const response = await axios.get("/api/wallet_types");
@@ -96,19 +99,19 @@ const WalletsOverview = () => {
     setWalletTypes(response.data);
   };
 
-  const fetchWallets = async () => {
+  const fetchWallets = async (page) => {
     setLoading(true);
     const currentUser = AuthService.getCurrentUser();
     if (currentUser && currentUser.id) {
       try {
         const response = await axios.get(
-          `/api/wallets/users/${currentUser.id}`,
+          `/api/wallets/page/users/${currentUser.id}?page=${page}&size=5`,
           {
             headers: AuthHeader(),
           }
         );
 
-        const walletsWithTypeNames = response.data.map((wallet) => {
+        const walletsWithTypeNames = response.data.content.map((wallet) => {
           const walletType = walletTypes.find(
             (type) => type.typeId === wallet.walletType
           );
@@ -117,8 +120,8 @@ const WalletsOverview = () => {
             walletTypeName: walletType ? walletType.typeName : "Unknown",
           };
         });
-
         setWallets(walletsWithTypeNames);
+        setTotalPages(response.data.totalPages);
         setLoading(false);
       } catch (error) {
         console.error("Failed to fetch wallet data:", error);
@@ -128,6 +131,10 @@ const WalletsOverview = () => {
         setLoading(false);
       }
     }
+  };
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
   };
 
   const handleDeleteWallet = async () => {
@@ -310,7 +317,7 @@ const WalletsOverview = () => {
         });
         toast.success("Wallet added successfully");
       }
-      fetchWallets();
+      fetchWallets(currentPage);
       onEditModalClose();
     } catch (error) {
       const errorMessage = error.response?.data;
@@ -384,7 +391,7 @@ const WalletsOverview = () => {
         header: AuthHeader(),
       });
       toast.success(response.data);
-      fetchWallets();
+      fetchWallets(currentPage);
       onTransferModalClose();
       onEditModalClose();
     } catch (error) {
@@ -511,6 +518,37 @@ const WalletsOverview = () => {
           </Center>
         )}
       </Box>
+      <Flex justifyContent="center" mt={4}>
+        {/* Previous page button */}
+        <Button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+          mr={2}
+        >
+          Previous
+        </Button>
+
+        {/* Page numbers */}
+        {[...Array(totalPages).keys()].map((pageNumber) => (
+          <Button
+            key={pageNumber}
+            onClick={() => handlePageChange(pageNumber)}
+            variant={currentPage === pageNumber ? "solid" : "outline"}
+            colorScheme="teal"
+            mr={2}
+          >
+            {pageNumber + 1}
+          </Button>
+        ))}
+
+        {/* Next page button */}
+        <Button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages - 1}
+        >
+          Next
+        </Button>
+      </Flex>
       {/* Modal to show transactions */}
       <Modal
         isOpen={isTransactionsModalOpen}
