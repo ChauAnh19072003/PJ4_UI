@@ -460,7 +460,7 @@ const UserReports = () => {
             Switch to {currency === "VND" ? "USD" : "VND"}
           </Button>
           <Select
-            placeholder={wallets.length > 0 ? "All Wallet" : "No wallets found"}
+            placeholder={wallets.length > 0 ? " Select Wallet" : "No wallets found"}
             value={selectedWallet || ""}
             onChange={handleWalletChange}
             fontSize={{ base: "13px" }}
@@ -587,7 +587,7 @@ const UserReports = () => {
 
             <Select
               placeholder={
-                wallets.length > 0 ? "All Wallet" : "No wallets found"
+                wallets.length > 0 ? "Select Wallet" : "No wallets found"
               }
               value={selectedWallet || ""}
               onChange={(e) => {

@@ -107,8 +107,9 @@ const TotalSpent2 = ({ selectedWallet }) => {
       let incomeUrl, expenseUrl;
 
       if (selectedWallet === "All" || !selectedWallet) {
-        incomeUrl = `/api/transactions/allIncome/users/${currentUser.id}`;
-        expenseUrl = `/api/transactions/allExpense/users/${currentUser.id}`;
+        return (
+          <Text>Select a specific wallet to view the chart data.</Text>
+        );
       } else {
         incomeUrl = `/api/transactions/income/users/${currentUser.id}/wallets/${selectedWallet}`;
         expenseUrl = `/api/transactions/expense/users/${currentUser.id}/wallets/${selectedWallet}`;
