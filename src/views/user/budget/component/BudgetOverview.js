@@ -48,8 +48,7 @@ import axios from "axios";
 import AuthHeader from "services/auth/authHeader";
 
 const BudgetsOverview = ({ userId }) => {
-  const [budgets, setBudgets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedBudget, setSelectedBudget] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -76,6 +75,12 @@ const BudgetsOverview = ({ userId }) => {
   const [tabIndex, setTabIndex] = useState(1); // Start from 0, so '1' would be the second tab
   const [isTransactionsModalOpen, setIsTransactionsModalOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);
+  const [currentPageValid, setCurrentPageValid] = useState(0);
+  const [totalPagesValid, setTotalPagesValid] = useState(1);
+  const [currentPageOld, setCurrentPageOld] = useState(0);
+  const [totalPagesOld, setTotalPagesOld] = useState(1);
+  const [currentPageFuture, setCurrentPageFuture] = useState(0);
+  const [totalPagesFuture, setTotalPagesFuture] = useState(1);
 
   const fetchTransactionsForBudget = async (budget) => {
     const currentUser = AuthService.getCurrentUser();
@@ -170,48 +175,50 @@ const BudgetsOverview = ({ userId }) => {
   };
 
   useEffect(() => {
-    fetchBudgets();
     fetchCategories();
-    fetchValidBudgets();
-    fetchOldBudgets();
-    fetchFutureBudgets();
-  }, [userId]);
+    fetchValidBudgets(currentPageValid);
+    fetchOldBudgets(currentPageOld);
+    fetchFutureBudgets(currentPageFuture);
+  }, [userId, currentPageValid, currentPageOld, currentPageFuture]);
 
-  const fetchValidBudgets = async () => {
+  const fetchValidBudgets = async (page) => {
     const currentUser = AuthService.getCurrentUser();
     try {
       const response = await axios.get(
-        `/api/budgets/valid/user/${currentUser.id}`,
+        `/api/budgets/valid/user/${currentUser.id}?page=${page}&size=5`,
         { headers: AuthHeader() }
       );
       setValidBudgets(response.data);
+      setTotalPagesValid(response.data.totalPagesValid);
       console.log(response.data);
     } catch (error) {
       toast.error("Error fetching valid budgets");
     }
   };
 
-  const fetchOldBudgets = async () => {
+  const fetchOldBudgets = async (page) => {
     const currentUser = AuthService.getCurrentUser();
     try {
       const response = await axios.get(
-        `/api/budgets/past/user/${currentUser.id}`,
+        `/api/budgets/past/user/${currentUser.id}?page=${page}&size=5`,
         { headers: AuthHeader() }
       );
       setOldBudgets(response.data);
+      setTotalPagesOld(response.data.totalPagesOld);
     } catch (error) {
       toast.error("Error fetching past budgets");
     }
   };
 
-  const fetchFutureBudgets = async () => {
+  const fetchFutureBudgets = async (page) => {
     const currentUser = AuthService.getCurrentUser();
     try {
       const response = await axios.get(
-        `/api/budgets/future/user/${currentUser.id}`,
+        `/api/budgets/future/user/${currentUser.id}?page=${page}&size=5`,
         { headers: AuthHeader() }
       );
       setFutureBudgets(response.data);
+      setTotalPagesFuture(response.data.totalPagesFuture);
     } catch (error) {
       toast.error("Error fetching future budgets");
     }
@@ -235,27 +242,6 @@ const BudgetsOverview = ({ userId }) => {
     }
   };
 
-  const fetchBudgets = async () => {
-    setLoading(true);
-    try {
-      const currentUser = AuthService.getCurrentUser();
-      if (currentUser && currentUser.id) {
-        const response = await axios.get(
-          `/api/budgets/users/${currentUser.id}`,
-          {
-            headers: AuthHeader(),
-          }
-        );
-        setBudgets(response.data);
-      }
-    } catch (error) {
-      toast.error("Error fetching budgets");
-      console.log(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDeleteBudget = async () => {
     if (budgetToDelete) {
       try {
@@ -263,10 +249,9 @@ const BudgetsOverview = ({ userId }) => {
           headers: AuthHeader(),
         });
         toast.success("Budget successfully deleted");
-        fetchValidBudgets();
-        fetchOldBudgets();
-        fetchBudgets();
-        fetchFutureBudgets();
+        fetchValidBudgets(currentPageValid);
+        fetchOldBudgets(currentPageOld);
+        fetchFutureBudgets(currentPageFuture);
         setBudgetToDelete(null);
       } catch (error) {
         toast.error("Could not delete budget.");
@@ -291,6 +276,18 @@ const BudgetsOverview = ({ userId }) => {
 
   const handleBudgetFormChange = (field, value) => {
     setBudgetForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePageValidChange = (pageNumber) => {
+    setCurrentPageValid(pageNumber);
+  };
+
+  const handlePageOldChange = (pageNumber) => {
+    setCurrentPageOld(pageNumber);
+  };
+
+  const handlePageFutureChange = (pageNumber) => {
+    setCurrentPageFuture(pageNumber);
   };
 
   const handleSubmit = async () => {
@@ -329,10 +326,9 @@ const BudgetsOverview = ({ userId }) => {
       toast.success(
         `Budget ${selectedBudget ? "updated" : "added"} successfully`
       );
-      fetchBudgets();
-      fetchValidBudgets();
-      fetchOldBudgets();
-      fetchFutureBudgets();
+      fetchValidBudgets(currentPageValid);
+      fetchOldBudgets(currentPageOld);
+      fetchFutureBudgets(currentPageFuture);
     } catch (error) {
       const errorMessage =
         error.response?.data || error.message || "An error occurred";
@@ -364,90 +360,99 @@ const BudgetsOverview = ({ userId }) => {
   }
 
   const renderBudgetItem = (budget) => (
-    <Flex
-      key={budget.budgetId}
-      flexDirection="column"
-      bg={budget.amount > budget.threshold_amount ? "pink.200" : "gray.100"}
-      p={5}
-      shadow="md"
-      borderWidth="1px"
-      borderRadius="lg"
-      mb={4}
-      onClick={() => fetchTransactionsForBudget(budget)}
-      cursor="pointer"
-    >
-      <Flex justifyContent="space-between" alignItems="center">
-        <Flex alignItems="center" maxWidth="70%">
-          {categories.find((category) => category.id === budget.categoryId) && (
-            <Box
-              boxSize="40px"
-              mr={4}
-              as="img"
-              src={`/assets/img/icons/${
-                categories.find((category) => category.id === budget.categoryId)
-                  .icon.path
-              }`}
-              alt={
-                categories.find((category) => category.id === budget.categoryId)
-                  .name
-              }
+    <>
+      <Flex
+        key={budget.budgetId}
+        flexDirection="column"
+        bg={budget.amount > budget.threshold_amount ? "pink.200" : "gray.100"}
+        p={5}
+        shadow="md"
+        borderWidth="1px"
+        borderRadius="lg"
+        mb={4}
+        onClick={() => fetchTransactionsForBudget(budget)}
+        cursor="pointer"
+      >
+        <Flex justifyContent="space-between" alignItems="center">
+          <Flex alignItems="center" maxWidth="70%">
+            {categories.find(
+              (category) => category.id === budget.categoryId
+            ) && (
+              <Box
+                boxSize="40px"
+                mr={4}
+                as="img"
+                src={`/assets/img/icons/${
+                  categories.find(
+                    (category) => category.id === budget.categoryId
+                  ).icon.path
+                }`}
+                alt={
+                  categories.find(
+                    (category) => category.id === budget.categoryId
+                  ).name
+                }
+              />
+            )}
+            <Box>
+              <Heading size="md" isTruncated>
+                {budget.name}
+              </Heading>
+              <Text fontSize="sm" color="gray.600" isTruncated>
+                Category:{" "}
+                {categories.find(
+                  (category) => category.id === budget.categoryId
+                )?.name || "Uncategorized"}
+              </Text>
+              <Text fontSize="sm" color="gray.500" isTruncated>
+                Period: {new Date(budget.periodStart).toLocaleDateString()} -{" "}
+                {new Date(budget.periodEnd).toLocaleDateString()}
+              </Text>
+            </Box>
+          </Flex>
+          <Flex alignItems="center">
+            <IconButton
+              icon={<EditIcon />}
+              onClick={(e) => {
+                e.stopPropagation();
+                openModalToEdit(budget);
+              }}
+              aria-label="Edit"
+              colorScheme="blue"
+              size="sm"
+              mr={2}
             />
-          )}
-          <Box>
-            <Heading size="md" isTruncated>
-              {budget.name}
-            </Heading>
-            <Text fontSize="sm" color="gray.600" isTruncated>
-              Category:{" "}
-              {categories.find((category) => category.id === budget.categoryId)
-                ?.name || "Uncategorized"}
-            </Text>
-            <Text fontSize="sm" color="gray.500" isTruncated>
-              Period: {new Date(budget.periodStart).toLocaleDateString()} -{" "}
-              {new Date(budget.periodEnd).toLocaleDateString()}
-            </Text>
-          </Box>
+            <IconButton
+              icon={<DeleteIcon />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setBudgetToDelete(budget.budgetId);
+                setIsDeleteAlertOpen(true);
+              }}
+              aria-label="Delete"
+              colorScheme="red"
+              size="sm"
+            />
+          </Flex>
         </Flex>
-        <Flex alignItems="center">
-          <IconButton
-            icon={<EditIcon />}
-            onClick={(e) => {
-              e.stopPropagation();
-              openModalToEdit(budget);
-            }}
-            aria-label="Edit"
-            colorScheme="blue"
-            size="sm"
-            mr={2}
-          />
-          <IconButton
-            icon={<DeleteIcon />}
-            onClick={(e) => {
-              e.stopPropagation();
-              setBudgetToDelete(budget.budgetId);
-              setIsDeleteAlertOpen(true);
-            }}
-            aria-label="Delete"
-            colorScheme="red"
-            size="sm"
-          />
-        </Flex>
+        <Progress
+          value={(budget.amount / budget.threshold_amount) * 100}
+          colorScheme={
+            budget.amount > budget.threshold_amount ? "red" : "green"
+          }
+          size="md"
+          borderRadius="md"
+          my={3}
+          width="100%"
+        />
+        <Box>
+          <Text fontSize="sm" fontWeight="normal" color="gray.700">
+            Amount: <strong>${budget.amount.toFixed(2)}</strong> of{" "}
+            <strong>${budget.threshold_amount.toFixed(2)}</strong>
+          </Text>
+        </Box>
       </Flex>
-      <Progress
-        value={(budget.amount / budget.threshold_amount) * 100}
-        colorScheme={budget.amount > budget.threshold_amount ? "red" : "green"}
-        size="md"
-        borderRadius="md"
-        my={3}
-        width="100%"
-      />
-      <Box>
-        <Text fontSize="sm" fontWeight="normal" color="gray.700">
-          Amount: <strong>${budget.amount.toFixed(2)}</strong> of{" "}
-          <strong>${budget.threshold_amount.toFixed(2)}</strong>
-        </Text>
-      </Box>
-    </Flex>
+    </>
   );
 
   return (
@@ -482,18 +487,116 @@ const BudgetsOverview = ({ userId }) => {
           <TabPanels>
             <TabPanel>
               <Flex direction="column" mt={4}>
-                {oldBudgets.map((budget) => renderBudgetItem(budget))}
+                {oldBudgets &&
+                  oldBudgets.content &&
+                  oldBudgets.content.map((budget) => renderBudgetItem(budget))}
+                <Flex justifyContent="center" mt={4}>
+                  <Button
+                    onClick={() => handlePageOldChange(currentPageOld - 1)}
+                    disabled={currentPageOld === 0}
+                    mr={2}
+                  >
+                    Previous
+                  </Button>
+                  {[...Array(totalPagesOld).keys()].map((pageNumber) => (
+                    <Button
+                      key={pageNumber}
+                      onClick={() => handlePageOldChange(pageNumber)}
+                      variant={
+                        currentPageOld === pageNumber ? "solid" : "outline"
+                      }
+                      colorScheme="teal"
+                      mr={2}
+                    >
+                      {pageNumber + 1}
+                    </Button>
+                  ))}
+                  <Button
+                    onClick={() => handlePageOldChange(currentPageOld + 1)}
+                    disabled={currentPageOld === totalPagesOld - 1}
+                  >
+                    Next
+                  </Button>
+                </Flex>
               </Flex>
             </TabPanel>
             <TabPanel>
               <Flex direction="column" mt={4}>
-                {validBudgets.map((budget) => renderBudgetItem(budget))}
+                {validBudgets &&
+                  validBudgets.content &&
+                  validBudgets.content.map((budget) =>
+                    renderBudgetItem(budget)
+                  )}
+                <Flex justifyContent="center" mt={4}>
+                  <Button
+                    onClick={() => handlePageValidChange(currentPageValid - 1)}
+                    disabled={currentPageValid === 0}
+                    mr={2}
+                  >
+                    Previous
+                  </Button>
+                  {[...Array(totalPagesValid).keys()].map((pageNumber) => (
+                    <Button
+                      key={pageNumber}
+                      onClick={() => handlePageValidChange(pageNumber)}
+                      variant={
+                        currentPageValid === pageNumber ? "solid" : "outline"
+                      }
+                      colorScheme="teal"
+                      mr={2}
+                    >
+                      {pageNumber + 1}
+                    </Button>
+                  ))}
+                  <Button
+                    onClick={() => handlePageValidChange(currentPageValid + 1)}
+                    disabled={currentPageValid === totalPagesValid - 1}
+                  >
+                    Next
+                  </Button>
+                </Flex>
               </Flex>
             </TabPanel>
 
             <TabPanel>
               <Flex direction="column" mt={4}>
-                {futureBudgets.map((budget) => renderBudgetItem(budget))}
+                {futureBudgets &&
+                  futureBudgets.content &&
+                  futureBudgets.content.map((budget) =>
+                    renderBudgetItem(budget)
+                  )}
+                <Flex justifyContent="center" mt={4}>
+                  <Button
+                    onClick={() =>
+                      handlePageFutureChange(currentPageFuture - 1)
+                    }
+                    disabled={currentPageFuture === 0}
+                    mr={2}
+                  >
+                    Previous
+                  </Button>
+                  {[...Array(totalPagesFuture).keys()].map((pageNumber) => (
+                    <Button
+                      key={pageNumber}
+                      onClick={() => handlePageFutureChange(pageNumber)}
+                      variant={
+                        currentPageFuture === pageNumber ? "solid" : "outline"
+                      }
+                      colorScheme="teal"
+                      mr={2}
+                    >
+                      {pageNumber + 1}
+                    </Button>
+                  ))}
+                  <Button
+                    onClick={() =>
+                      handlePageFutureChange(currentPageFuture + 1)
+                    }
+                    disabled={currentPageFuture === totalPagesFuture - 1}
+                  >
+                    Next
+                  </Button>
+                </Flex>
               </Flex>
             </TabPanel>
           </TabPanels>

@@ -49,6 +49,8 @@ const SavingGoalsView = () => {
     date.setUTCHours(0, 0, 0, 0);
     return date;
   };
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [savingGoals, setSavingGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const cancelRef = useRef();
@@ -134,18 +136,19 @@ const SavingGoalsView = () => {
     }
   };
 
-  const fetchSavingGoals = useCallback(async () => {
+  const fetchSavingGoals = useCallback(async (page) => {
     setLoading(true);
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
       try {
         const response = await axios.get(
-          `/api/savinggoals/user/${currentUser.id}`,
+          `/api/savinggoals/page/users/${currentUser.id}?page=${page}&size=3`,
           {
             headers: AuthHeader(),
           }
         );
         setSavingGoals(response.data);
+        setTotalPages(response.data.totalPages);
         if (response.data.length === 0) {
           toast.info("No saving goals found.");
         }
@@ -163,9 +166,9 @@ const SavingGoalsView = () => {
   }, []);
 
   useEffect(() => {
-    fetchSavingGoals();
+    fetchSavingGoals(currentPage);
     fetchWallets();
-  }, [fetchSavingGoals]);
+  }, [fetchSavingGoals, currentPage]);
 
   const handleDeleteSavingGoal = async () => {
     try {
@@ -173,7 +176,7 @@ const SavingGoalsView = () => {
         headers: AuthHeader(),
       });
       toast.success("Saving goal successfully deleted");
-      await fetchSavingGoals();
+      await fetchSavingGoals(currentPage);
     } catch (error) {
       toast.error("Could not delete saving goal.");
       console.log(error);
@@ -213,7 +216,7 @@ const SavingGoalsView = () => {
         headers: AuthHeader(),
       });
       toast.success("Saving goal added successfully");
-      fetchSavingGoals();
+      fetchSavingGoals(currentPage);
       onClose();
     } catch (error) {
       if (
@@ -268,6 +271,10 @@ const SavingGoalsView = () => {
     }
   };
 
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
   if (loading) {
     return (
       <Center p={10}>
@@ -292,7 +299,7 @@ const SavingGoalsView = () => {
         >
           Add New Saving Goal
         </Button>
-        {savingGoals.map((goal) => {
+        {savingGoals.content.map((goal) => {
           const completionPercentage = Math.round(
             (goal.currentAmount / goal.targetAmount) * 100
           );
@@ -400,6 +407,37 @@ const SavingGoalsView = () => {
           );
         })}
       </Box>
+      <Flex justifyContent="center" mt={4}>
+        {/* Previous page button */}
+        <Button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+          mr={2}
+        >
+          Previous
+        </Button>
+
+        {/* Page numbers */}
+        {[...Array(totalPages).keys()].map((pageNumber) => (
+          <Button
+            key={pageNumber}
+            onClick={() => handlePageChange(pageNumber)}
+            variant={currentPage === pageNumber ? "solid" : "outline"}
+            colorScheme="teal"
+            mr={2}
+          >
+            {pageNumber + 1}
+          </Button>
+        ))}
+
+        {/* Next page button */}
+        <Button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages - 1}
+        >
+          Next
+        </Button>
+      </Flex>
 
       {/* Add Saving Goal Modal */}
       <Modal isOpen={isOpen} onClose={onClose}>
@@ -555,6 +593,7 @@ const SavingGoalsView = () => {
             savingGoalForm={savingGoalForm}
             validateForm={validateForm}
             fetchSavingGoals={fetchSavingGoals}
+            currentPage={currentPage}
             handleSavingGoalFormChange={handleSavingGoalFormChange}
           />
         </ModalContent>

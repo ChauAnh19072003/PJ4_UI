@@ -117,14 +117,6 @@ function BillList() {
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
-  const sortBy = (key) => {
-    let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
-  };
-
   const fetchData = useCallback(async () => {
     const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
