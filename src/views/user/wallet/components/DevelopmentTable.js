@@ -258,9 +258,21 @@ const WalletsOverview = () => {
   };
 
   const handleInputChange = (field, value) => {
-    const parsedValue = field === "balance" ? parseFloat(value) || 0 : value;
+    let parsedValue;
+    
+    if (field === "balance") {
+      // Parse balance as float and default to 0 if parsing fails
+      parsedValue = parseFloat(value) || 0;
+    } else if (field === "name") {
+      // Remove spaces from name input
+      parsedValue = value.replace(/\s/g, '');
+    } else {
+      // Handle other inputs normally
+      parsedValue = value;
+    }
+  
     setWalletForm((prev) => ({ ...prev, [field]: parsedValue }));
-
+  
     setValidationErrors((prevErrors) => {
       const updatedErrors = { ...prevErrors };
       if (parsedValue !== null && parsedValue !== "") {
@@ -644,6 +656,7 @@ const WalletsOverview = () => {
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Enter wallet name"
                 isDisabled={isDisabled}
+                maxLength={25}
               />
               {validationErrors.name && (
                 <ErrorMessage message={validationErrors.name} />
@@ -693,7 +706,7 @@ const WalletsOverview = () => {
                       value={formattedAmount}
                       type="text"
                       onChange={handleAmountChange}
-                      maxLength={12}
+                      maxLength={14}
                       placeholder="Enter initial balance"
                     />
                     {validationErrors.balance && (
@@ -710,7 +723,7 @@ const WalletsOverview = () => {
                   value={formattedAmount}
                   type="text"
                   onChange={handleAmountChange}
-                  maxLength={12}
+                  maxLength={14}
                   placeholder="Enter initial balance"
                   isDisabled={isDisabled}
                 />
@@ -806,7 +819,7 @@ const WalletsOverview = () => {
                 value={formattedAmountTransfer}
                 onChange={handleAmountTransferChange}
                 placeholder="Enter amount to transfer"
-                maxLength={12}
+                maxLength={14}
               />
             </FormControl>
             <FormControl isRequired>
@@ -818,7 +831,7 @@ const WalletsOverview = () => {
                   value={formattedExchange}
                   onChange={handleExchangeChange}
                   placeholder="Enter exchange rate"
-                  maxLength={12}
+                  maxLength={14}
                 />
                 <InputRightAddon children="VND" />
               </InputGroup>

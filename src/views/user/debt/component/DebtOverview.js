@@ -359,14 +359,16 @@ const DebtsOverview = () => {
   };
 
   const handleDebtFormChange = (field, value) => {
+    const trimmedValue = value.trim(); // Trim whitespace characters from the beginning and end
+  
     // Validation for 'name' and 'creditor' fields:
     if (field === "name" || field === "creditor") {
-      if (!value) {
-        // If field is empty or null, display a toast error message and keep the previous value
+      if (!trimmedValue) {
+        // If trimmed value is empty, display a toast error message and keep the previous value
         toast.error(`${field[0].toUpperCase() + field.slice(1)} is required.`);
       } else {
-        // If field has a value, update the state normally
-        setDebtForm((prev) => ({ ...prev, [field]: value }));
+        // If trimmed value is not empty, update the state with the trimmed value
+        setDebtForm((prev) => ({ ...prev, [field]: trimmedValue }));
       }
     } else if (field === "amount") {
       // Convert the input to a string and check its length
@@ -453,7 +455,7 @@ const DebtsOverview = () => {
         });
       }
     } finally {
-      setIsEditModalOpen(false);
+      //setIsEditModalOpen(false);
       fetchReportData();
     }
   };
@@ -748,7 +750,7 @@ const DebtsOverview = () => {
               <Input
                 placeholder="Enter debt name"
                 value={debtForm.name}
-                onChange={(e) => handleDebtFormChange("name", e.target.value)}
+                onChange={(e) => handleDebtFormChange("name", e.target.value.trim())}
                 maxLength={25}
               />
             </FormControl>
@@ -758,7 +760,7 @@ const DebtsOverview = () => {
                 placeholder="Enter creditor name"
                 value={debtForm.creditor}
                 onChange={(e) =>
-                  handleDebtFormChange("creditor", e.target.value)
+                  handleDebtFormChange("creditor", e.target.value.trim())
                 }
                 maxLength={25}
               />
@@ -770,7 +772,7 @@ const DebtsOverview = () => {
                 type="text"
                 value={formattedAmount}
                 onChange={handleAmountChange}
-                maxLength={12}
+                maxLength={14}
               />
             </FormControl>
             <FormControl mt={4}>

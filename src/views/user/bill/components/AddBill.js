@@ -361,7 +361,7 @@ function AddBill({
               onChange={handleAmountChange}
               placeholder="Enter Amount"
               color={inputText}
-              maxLength={12}
+              maxLength={14}
             />
           </Box>
           <Box mb={4} mt={3}>

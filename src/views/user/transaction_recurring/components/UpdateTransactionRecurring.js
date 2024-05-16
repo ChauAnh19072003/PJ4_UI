@@ -442,7 +442,7 @@ function UpdateTransactionRecurring({
               value={formattedAmount}
               onChange={handleAmountChange}
               placeholder="Enter Amount"
-              maxLength={12}
+              maxLength={14}
               color={inputText}
             />
           </Box>

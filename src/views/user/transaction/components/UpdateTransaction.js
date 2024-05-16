@@ -354,7 +354,7 @@ const UpdateTransaction = ({
               onChange={handleAmountChange}
               placeholder="Enter amount"
               color={inputText}
-              maxLength={12}
+              maxLength={14}
             />
           </FormControl>
         </Box>

@@ -493,7 +493,7 @@ const SavingGoalsView = () => {
                 type="text"
                 value={formattedTargetAmount}
                 onChange={handleTargetAmountChange}
-                maxLength={12}
+                maxLength={14}
                 placeholder="Enter target amount"
               />
             </FormControl>
@@ -503,7 +503,7 @@ const SavingGoalsView = () => {
                 type="text"
                 value={formattedCurrentAmount}
                 onChange={handleCurrentAmountChange}
-                maxLength={12}
+                maxLength={14}
                 placeholder="Enter target amount"
               />
             </FormControl>

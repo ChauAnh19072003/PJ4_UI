@@ -718,7 +718,7 @@ const BudgetsOverview = ({ userId }) => {
                 value={formattedAmount}
                 type="text"
                 onChange={handleAmountChange}
-                maxLength={12}
+                maxLength={14}
               />
               {formErrors.threshold_amount && (
                 <Text color="red.500">{formErrors.threshold_amount}</Text>
