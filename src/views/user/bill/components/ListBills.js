@@ -289,7 +289,6 @@ function BillList() {
                 <Th>Id</Th>
                 <Th>Category</Th>
                 <Th>Amount</Th>
-                <Th>Due Date</Th>
                 <Th>Bill Recurring</Th>
               </Tr>
             </Thead>
@@ -358,11 +357,7 @@ function BillList() {
                           {bill.amount.toLocaleString()}
                         </Td>
                         <Td color="secondaryGray.900" fontWeight="bold">
-                          {bill.recurrence.dueDate}
-                        </Td>
-                        <Td color="secondaryGray.900" fontWeight="bold">
-                          {bill.recurrence.frequency === "DAILY" &&
-                            `Repeat DAILY - `}
+                          {bill.recurrence.frequency === "DAILY" && `DAILY - `}
                           {bill.recurrence.frequency === "WEEKLY" &&
                             `WEEKLY - `}
                           {bill.recurrence.frequency === "MONTHLY" &&
@@ -370,7 +365,7 @@ function BillList() {
                           {bill.recurrence.frequency === "YEARLY" &&
                             `YEARLY = `}
                           {bill.recurrence.frequency &&
-                            `From ${bill.recurrence.dueDate}`}
+                            `Repeat at ${bill.recurrence.dueDate}`}
                         </Td>
                       </Tr>
                     </Tbody>
